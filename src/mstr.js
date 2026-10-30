@@ -62,7 +62,8 @@
       var row=document.createElement('div');row.className='trk';
       var tl=document.createElement('div');tl.className='tl';
       var tn=document.createElement('button');tn.type='button';tn.className='tn';tn.setAttribute('aria-haspopup','dialog');
-      tn.innerHTML='<span class="nm">'+T.n+'</span><span class="tb"></span>';
+      tn.innerHTML='<span class="nm">'+T.n+'</span><span class="tb"></span><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      tn.setAttribute('aria-label',T.n+': Einstellungen');
       tn.addEventListener('click',function(){trackSheet(r);});
       tl.appendChild(tn);
       ['M','S'].forEach(function(k){var b=document.createElement('button');b.type='button';b.className='ms '+k.toLowerCase();b.textContent=k;
