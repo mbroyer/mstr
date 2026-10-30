@@ -86,10 +86,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 #drop{height:44px;padding:0 18px}
 #drop.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .app.building #drop{animation:pulse .25s ease-in-out infinite alternate}
-.tempo{margin-left:auto;border:1px solid var(--line);border-radius:18px;background:none;cursor:pointer;display:flex;flex-direction:column;align-items:flex-end;padding:8px 12px;line-height:1;gap:4px}
+.tempo{margin-left:auto;border:0;background:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:4px 0;line-height:1}
+.tv{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
+.tempo .chev{width:30px;height:30px;padding:6px;border-radius:50%;background:var(--soft);color:var(--ink);flex:none}
 .big{font-weight:700;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums;font-size:32px}
 .big small{font-size:.42em;color:var(--mute);font-weight:600;letter-spacing:0;margin-left:2px}
-.swt{font-family:var(--f-mono);font-size:10px;letter-spacing:.06em;color:var(--mute)}
+.swt{font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
 
 /* Blätter */
 /* Unterseiten: ganze Seiten, die von rechts hereinschieben */
@@ -169,6 +171,12 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .toast button{border:0;border-radius:999px;background:var(--accent);color:var(--on-accent);font-weight:600;font-size:13px;padding:6px 12px;cursor:pointer}
 
 @media (prefers-reduced-motion:reduce){*,*::before,*::after{animation:none!important;transition:none!important}}
+
+/* Tempo-Zahl in der Serifenschrift, wie der Beat-Name */
+.tempo .big,.bpmrow .big{font-family:var(--f-ed);font-weight:400;letter-spacing:-.01em}
+.tempo .big{font-size:42px}
+.bpmrow .big{font-size:88px}
+.tempo .big small,.bpmrow .big small{font-family:var(--f-ui);font-weight:600;margin-left:4px}
 </style>
 </head>
 <body>
@@ -189,7 +197,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
   <footer class="transport">
     <button type="button" class="play" id="play" aria-label="Abspielen (Leertaste)"></button>
     <button type="button" class="pill" id="drop">Drop</button>
-    <button type="button" class="tempo" id="tempoBtn" aria-haspopup="dialog" aria-label="Tempo und Swing"><span class="big"><span id="bpm">100</span><small>bpm</small></span><span class="swt" id="swTxt">Swing 0 %</span></button>
+    <button type="button" class="tempo" id="tempoBtn" aria-haspopup="dialog" aria-label="Tempo und Swing"><span class="tv"><span class="swt" id="swTxt">Swing 0 %</span><span class="big"><span id="bpm">100</span><small>bpm</small></span></span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   </footer>
 </div>
 <section class="sheet" id="sheet" aria-labelledby="sheetT" hidden></section>
