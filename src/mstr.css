@@ -160,10 +160,12 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .fxi span{display:flex;flex-direction:column;gap:2px}
 .fxi b{font-size:17px;font-weight:600;letter-spacing:-.01em}
 .fxi small{font-size:13px;color:var(--mute)}
-.shx .go{width:18px;height:18px;flex:none;color:var(--mute)}
-.shx.ready .go{color:var(--on-accent)}
-.shx.ready{background:var(--accent);color:var(--on-accent);border-radius:16px;padding-inline:16px;margin-block:6px}
-.shx.ready small{color:var(--on-accent);opacity:.7}
+.namef{display:flex;flex-direction:column;gap:8px}
+.namef input{height:52px;border-radius:14px;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:0 16px;font-family:var(--f-ed);font-size:26px;outline:none;width:100%}
+.namef input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent)}
+.namef input::placeholder{color:var(--mute)}
+.pill.go{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-size:15px;height:48px}
+.shnote{margin:0;font-size:13px;color:var(--mute);text-align:center}
 .fxi i{width:26px;height:26px;border-radius:50%;background:var(--off);flex:none;transition:background .15s,transform .15s}
 .fxi[aria-pressed="true"] i{background:var(--accent);transform:scale(1.1)}
 .seg2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
