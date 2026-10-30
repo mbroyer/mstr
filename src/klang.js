@@ -66,8 +66,9 @@ function playSynth(id,t,n){
       [5100,6300,7400,8900].forEach(function(f){osc('square',f,t,t+.16,fj);});
       [0,.022].forEach(function(o2,i){var gn=band(t+o2,.12,'highpass',7500,.7,B.DUCK);gn.gain.setValueAtTime((i?.16:.28)*v,t+o2);gn.gain.exponentialRampToValueAtTime(.001,t+o2+.09);send(gn,B.REV,.06);});}
     else if(w==='3'){var gv=vca(t,.001,0,.045,.38*v,B.DUCK);osc('sine',2500,t,t+.07,gv);var gv2=vca(t,.001,0,.012,.06*v,B.DUCK);osc('triangle',5000,t,t+.03,gv2);send(gv,B.REV,.15);}
-    else if(w==='4'){var gg=vca(t,.001,0,.22,.55*v,B.DUCK),og=osc('sine',345,t,t+.28,gg);og.frequency.exponentialRampToValueAtTime(312,t+.04);
-      var gp=vca(t,.001,0,.06,.14*v,B.DUCK);osc('sine',510,t,t+.08,gp);nz(t,.015,.22*v,'bandpass',2200,1.2,0,B.DUCK);send(gg,B.REV,.12);}
+    /* Conga: Fellmoden einer Trommel (unharmonische Verhältnisse) ohne Gleitton, dazu der Handanschlag */
+    else if(w==='4'){[[1,1,.18],[1.59,.45,.07],[2.14,.25,.05],[2.65,.15,.035]].forEach(function(m){var gm=vca(t,.001,0,m[2],.42*m[1]*v,B.DUCK);osc('sine',300*m[0],t,t+m[2]+.05,gm);send(gm,B.REV,.1);});
+      var gh=band(t,.06,'bandpass',900,.9,B.DUCK);gh.gain.setValueAtTime(.35*v,t);gh.gain.exponentialRampToValueAtTime(.001,t+.03);nz(t,.006,.18*v,'highpass',2500,.7,0,B.DUCK);}
     /* Cowbell: unharmonische Teiltöne einer echten Kuhglocke, jeder mit eigenem Ausklang, dazu der Stockanschlag */
     else{[[587,1,.28],[845,.85,.34],[1245,.35,.12],[1640,.45,.1],[2470,.25,.07],[3330,.15,.05]].forEach(function(m){var gm=vca(t,.0015,0,m[2],.11*m[1]*v,B.DUCK),om=osc('sine',m[0],t,t+m[2]+.05,gm);om.frequency.setValueAtTime(m[0]*1.006,t);om.frequency.exponentialRampToValueAtTime(m[0],t+.02);send(gm,B.REV,.08);});
       nz(t,.008,.25*v,'bandpass',3200,1.5,0,B.DUCK);nz(t,.004,.15*v,'highpass',6000,.7,0,B.DUCK);}}
@@ -87,11 +88,11 @@ function playSynth(id,t,n){
       var gm=vca(t,.001,0,1.1,.06*v,B.DUCK),fm=ac.createBiquadFilter();fm.type='highpass';fm.frequency.value=5000;fm.connect(gm);[205,304,370,523,540,800].forEach(function(f){osc('square',f*1.7,t,t+1.2,fm);});}
     /* Wirbel: sechs Snare-Schläge in Zweiunddreißigsteln, lauter werdend */
     else if(w==='l'){for(var i=0;i<6;i++)playSynth('snare',t+i*six/2,[0,'p',1,v*(.3+.12*i)]);}
-    /* Riser: Rauschen und Ton steigen über vier Schritte an und brechen dann ab */
-    else if(w==='z'){var L=six*4,gz=ac.createGain(),bz=ac.createBiquadFilter();bz.type='bandpass';bz.Q.value=2;bz.frequency.setValueAtTime(400,t);bz.frequency.exponentialRampToValueAtTime(8000,t+L);bz.connect(gz);gz.connect(B.DUCK);
-      gz.gain.setValueAtTime(.0001,t);gz.gain.exponentialRampToValueAtTime(.4*v,t+L);gz.gain.setValueAtTime(0,t+L);
-      var sz=ac.createBufferSource();sz.buffer=B.NZ;sz.loop=true;sz.connect(bz);sz.start(t);sz.stop(t+L+.02);
-      var lt=ac.createBiquadFilter(),gt=ac.createGain();lt.type='lowpass';lt.frequency.value=2500;gt.gain.value=.25;lt.connect(gt);gt.connect(gz);var ot=osc('sawtooth',180,t,t+L+.02,lt);ot.frequency.exponentialRampToValueAtTime(1400,t+L);send(gz,B.REV,.3);}}
+    /* Riser: nur Rauschen, Hochpass und Band öffnen sich über vier Schritte, mit viel Hall, dann bricht es ab */
+    else if(w==='z'){var L=six*4,gz=ac.createGain(),hz2=ac.createBiquadFilter(),bz=ac.createBiquadFilter();hz2.type='highpass';hz2.frequency.setValueAtTime(150,t);hz2.frequency.exponentialRampToValueAtTime(3000,t+L);
+      bz.type='bandpass';bz.Q.value=.8;bz.frequency.setValueAtTime(800,t);bz.frequency.exponentialRampToValueAtTime(9000,t+L);hz2.connect(bz);bz.connect(gz);gz.connect(B.DUCK);
+      gz.gain.setValueAtTime(.0001,t);gz.gain.exponentialRampToValueAtTime(.45*v,t+L);gz.gain.setValueAtTime(0,t+L);
+      var sz=ac.createBufferSource();sz.buffer=B.NZ;sz.loop=true;sz.connect(hz2);sz.start(t);sz.stop(t+L+.02);send(gz,B.REV,.45);}}
 }
 
 /* ---------- Eigene Klänge: 1 Sekunde aufnehmen, Stille abschneiden, als WAV auf diesem Gerät speichern ---------- */
