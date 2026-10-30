@@ -1,4 +1,4 @@
-# Effekte: Blatt öffnen, jeden Effekt schalten, Zustand bleibt nach Neuladen, Pegel mit Effekt in vernünftigem Rahmen
+# Effekte: Blatt öffnen, jeden Effekt schalten, Regler und Auswahl, Zustand bleibt nach Neuladen, Pegel mit Effekt in vernünftigem Rahmen
 import os,json
 from playwright.sync_api import sync_playwright
 H=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -18,10 +18,10 @@ with sync_playwright() as p:
     pg.click('#play');pg.wait_for_timeout(600)
     base=pg.evaluate('__rms()')
     pg.click('#fxBtn');pg.wait_for_timeout(300)
-    assert pg.locator('.fxi').count()==4
+    assert pg.locator('.fxrow').count()==4
     lv={}
     for i,id in enumerate(['room','echo','sweep','lofi']):
-        it=pg.locator('.fxi').nth(i);it.click();pg.wait_for_timeout(300)
+        it=pg.locator('.fxrow .fxi').nth(i);it.click();pg.wait_for_timeout(300)
         assert it.get_attribute('aria-pressed')=='true'
         lv[id]=pg.evaluate('__rms()')
         it.click();pg.wait_for_timeout(200)
@@ -30,13 +30,30 @@ with sync_playwright() as p:
     for id,(r,pk) in lv.items():
         assert pk<1.0,(id,pk)
         assert .4*base[0]<r<2.2*base[0],(id,r,base)
+    # Regler ganz auf und ganz zu: Pegel bleibt im Rahmen, Auswahl wird gemerkt
+    for i,id in enumerate(['room','echo','sweep','lofi']):
+        row=pg.locator('.fxrow').nth(i);row.locator('.fxi').click();pg.wait_for_timeout(100)
+        assert row.locator('input[type=range]').is_visible()
+        for v in (0,100):
+            row.locator('input[type=range]').fill(str(v));row.locator('input[type=range]').dispatch_event('change');pg.wait_for_timeout(250)
+            r,pk=pg.evaluate('__rms()');print(id,v,round(r,3))
+            assert pk<1.0 and .3*base[0]<r<2.5*base[0],(id,v,r)
+        assert pg.evaluate('MSTR.state()')['fxa'][id]==100
+        row.locator('input[type=range]').fill('50');row.locator('input[type=range]').dispatch_event('change')
+        row.locator('.fxi').click();pg.wait_for_timeout(100)
+        assert not row.locator('input[type=range]').is_visible()
+    pg.locator('.fxrow').nth(1).locator('.fxi').click()
+    pg.locator('.fxrow').nth(1).locator('.opt').nth(2).click()
+    assert pg.evaluate('MSTR.state()')['fxo']['echo']==4
+    pg.locator('.fxrow').nth(1).locator('.fxi').click()
     # zwei an, Neuladen: bleiben an, Knopf zeigt die Zahl
-    pg.locator('.fxi').nth(0).click();pg.locator('.fxi').nth(3).click()
+    pg.locator('.fxrow .fxi').nth(0).click();pg.locator('.fxrow .fxi').nth(3).click()
     assert pg.locator('#fxBtn.on').count()==1 and pg.inner_text('#fxN').strip()=='2'
     pg.screenshot(path=os.environ.get('SHOT','/tmp/fx.png'))
     pg.reload();pg.wait_for_timeout(300)
     fx=pg.evaluate('MSTR.state()')['fx'];assert fx=={'room':True,'echo':False,'sweep':False,'lofi':True},fx
     assert pg.inner_text('#fxN').strip()=='2'
+    assert pg.evaluate('MSTR.state()')['fxo']['echo']==4
     b.close()
 assert not err,err
 print('t5 ok')

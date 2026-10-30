@@ -264,14 +264,21 @@
   }
   $('tempoBtn').addEventListener('click',tempoSheet);
 
-  /* Effekte: halbes Blatt, der Beat läuft darüber weiter. Jede Zeile schaltet einen Effekt, der Punkt rechts wird Flieder */
+  /* Effekte: halbes Blatt, der Beat läuft darüber weiter. Jede Zeile schaltet einen Effekt, der Punkt rechts wird Flieder.
+     Ist ein Effekt an, klappen darunter sein Regler und (bei Echo und Filter) die Auswahl auf */
   var fxB=$('fxBtn');
   function fxUI(){var n=fxCount();fxB.classList.toggle('on',n>0);$('fxN').textContent=n?' '+n:'';fxB.setAttribute('aria-label','Effekte'+(n?', '+n+' an':''));}
   function fxSheet(){
     openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Effekte</span>'+XB+'</div><div class="fxlist">'+
-      FXS.map(function(f){return '<button type="button" class="fxi" data-fx="'+f[0]+'" aria-pressed="'+(FX[f[0]]?'true':'false')+'"><span><b>'+f[1]+'</b><small>'+f[2]+'</small></span><i aria-hidden="true"></i></button>';}).join('')+'</div>',function(el){
-      el.querySelectorAll('.fxi').forEach(function(b){b.addEventListener('click',function(){var id=b.getAttribute('data-fx'),on=!FX[id];
-        if(on&&!playing)setPlay(true);fxSet(id,on);b.setAttribute('aria-pressed',on?'true':'false');fxUI();});});
+      FXS.map(function(f){var id=f[0];return '<div class="fxrow" data-fx="'+id+'"><button type="button" class="fxi" aria-pressed="'+(FX[id]?'true':'false')+'"><span><b>'+f[1]+'</b><small>'+f[2]+'</small></span><i aria-hidden="true"></i></button>'+
+        '<div class="fxctl"><div class="slider"><div class="lb"><span>'+f[3]+'</span><b>'+FXA[id]+' %</b></div><input type="range" min="0" max="100" step="1" value="'+FXA[id]+'" aria-label="'+f[1]+': '+f[3]+'"></div>'+
+        (f[4]?'<div class="opts">'+f[4].map(function(o){return '<button type="button" class="opt" data-v="'+o[0]+'" aria-pressed="'+(FXO[id]===o[0]?'true':'false')+'">'+o[1]+'</button>';}).join('')+'</div>':'')+'</div></div>';}).join('')+'</div>',function(el){
+      el.querySelectorAll('.fxrow').forEach(function(row){var id=row.getAttribute('data-fx'),b=row.querySelector('.fxi'),sl=row.querySelector('input'),v=row.querySelector('.lb b');
+        b.addEventListener('click',function(){var on=!FX[id];if(on&&!playing)setPlay(true);fxSet(id,on);b.setAttribute('aria-pressed',on?'true':'false');fxUI();});
+        sl.addEventListener('input',function(){fxAmt(id,sl.value);v.textContent=sl.value+' %';});
+        sl.addEventListener('change',function(){fxAmt(id,sl.value,true);});
+        row.querySelectorAll('.opt').forEach(function(o){o.addEventListener('click',function(){fxOpt(id,+o.getAttribute('data-v'));
+          row.querySelectorAll('.opt').forEach(function(x){x.setAttribute('aria-pressed',x===o?'true':'false');});});});});
     },'effekte',true);
   }
   fxB.addEventListener('click',fxSheet);
@@ -346,5 +353,5 @@
   if(window.matchMedia)try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',themeUI);}catch(e){}
 
   build();themeUI();playB.innerHTML=I_PLAY;
-  window.MSTR={setPlay:setPlay,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,fx:JSON.parse(JSON.stringify(FX))};}};
+  window.MSTR={setPlay:setPlay,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
 })();

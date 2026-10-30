@@ -142,8 +142,11 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .opt[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 /* Effekte: eine Zeile je Effekt, rechts ein Punkt wie im Raster (grau aus, Flieder an) */
 .fxlist{display:flex;flex-direction:column}
-.fxi{display:flex;justify-content:space-between;align-items:center;gap:16px;width:100%;padding:14px 0;border:0;border-top:1px solid var(--line);background:transparent;cursor:pointer;text-align:left}
-.fxi:first-child{border-top:0}
+.fxrow{border-top:1px solid var(--line)}
+.fxrow:first-child{border-top:0}
+.fxi{display:flex;justify-content:space-between;align-items:center;gap:16px;width:100%;padding:14px 0;border:0;background:transparent;cursor:pointer;text-align:left}
+.fxctl{display:none;flex-direction:column;gap:12px;padding:0 0 16px}
+.fxi[aria-pressed="true"]+.fxctl{display:flex}
 .fxi span{display:flex;flex-direction:column;gap:2px}
 .fxi b{font-size:17px;font-weight:600;letter-spacing:-.01em}
 .fxi small{font-size:13px;color:var(--mute)}
