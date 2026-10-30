@@ -9,7 +9,7 @@ var BEATS=[
   {n:'onedrop',bpm:76,sw:.3,K:'........x...............x.......',S:'........o...............o.......',H:'x.x.x.x.x.x.x.O.x.x.x.x.x.x.x.O.',hv:[.12,.07],fill:'tom'},
   {n:'bossa',bpm:126,sw:0,K:'x..x..x.x..x..x.x..x..x.x..x..x.',S:'..o..o..o..o..o...o..o..o..o..o.',H:'x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.',hv:[.12,.08],fill:'tom'},
   {n:'dnb',bpm:168,sw:0,K:'x.........x.....x...........x...',S:'....x.......x.......x.......x...',H:'x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.',hv:[.14,.09],fill:'snare'},
-  {n:'shuffle',bpm:100,sw:.5,K:'x.....x.x.....x.x.....x.x.....x.',S:'....x..o....x.......x..o....x...',H:'x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.',hv:[.17,.1],fill:'tom'},
+  {n:'afrobeats',bpm:106,sw:.12,K:'x.....x.x...x...x.....x.x...x...',S:'...o..o....c..o....o..o....c..o.',H:'xoxxxoxxxoxxxoxxxoxxxoxxxoxxxoxx',hv:[.13,.07],fill:'tom'},
   {n:'reggaeton',bpm:95,sw:0,K:'x...x...x...x...x...x...x...x...',S:'...x..x....x..x....x..x....x..x.',H:'x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.',hv:[.14,.08],fill:'snare'},
   {n:'minimal',bpm:126,sw:.08,K:'x...x...x...x...x...x...x...x...',S:'................c.......c.......',H:'..O...O.o.O...O...O...O.o.O...Oo',hv:[.14,.08],fill:'tom'},
   {n:'twostep',bpm:132,sw:.3,K:'x.........x..x..x.........x..x..',S:'....c.......c.......c.......c...',H:'..x.x.O...x.x.Ox..x.x.O...x.x.Ox',hv:[.14,.08],fill:'snare'}

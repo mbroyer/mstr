@@ -2,7 +2,7 @@
 (function(){
   /* Vorschläge zum Würfeln für Becken, Perc, Toms, FX und die eigene Aufnahme (16 Schritte) */
   var COMMON={cym:['c...............','r.r.r.r.r.r.r.r.','..r...r...r...r.'],click:['1.1.1.1.1.1.1.1.','....2.......2...','3..3..3...3.3...'],toms:['b...p...b...p...','b.......t.t.....','b..b....p...tt..'],fx:['....m.......m...','n.....n...n.....','............z...'],mic:['....a.......a...','a.......a.a.....','..a...a...a.h.t.']};
-  var NM={lofi:'Lo-Fi',house:'House',funk:'Funk',rock:'Rock',techno:'Techno',trap:'Trap',onedrop:'One Drop',bossa:'Bossa',dnb:"Drum'n'Bass",shuffle:'Shuffle',reggaeton:'Reggaeton',minimal:'Minimal',twostep:'2-Step'};
+  var NM={lofi:'Lo-Fi',house:'House',funk:'Funk',rock:'Rock',techno:'Techno',trap:'Trap',onedrop:'One Drop',bossa:'Bossa',dnb:"Drum'n'Bass",afrobeats:'Afrobeats',reggaeton:'Reggaeton',minimal:'Minimal',twostep:'2-Step'};
   /* Je Vorlage eigene Muster für Becken, Perc, Toms und FX. Becken: c Crash, r Ride, h China. Perc: 1 Shaker, 2 Tamburin, 3 Clave, 4 Conga, 5 Cowbell.
      FX: m Snap, n Sub, s Reverse, l Wirbel, z Riser. Riser und Reverse dauern vier Schritte, auf Schritt 13 laufen sie genau in die nächste Eins */
   var EXTRA={
@@ -15,7 +15,7 @@
     onedrop:['................','..3...3...3...3.','.............ttp','................'],
     bossa:['r.r.r.r.r.r.r.r.','3..3..3...3.3...','..t..t..t..t..t.','................'],
     dnb:['c...............','1.1.1.1.1.1.1.1.','..........p...tt','............z...'],
-    shuffle:['r.r.r.r.r.r.r.r.','....2.......2...','..........t..t..','............l...'],
+    afrobeats:['................','4..4..4...4.4...','................','....m.......m...'],
     reggaeton:['c...............','..2...2...2...2.','................','............z...'],
     minimal:['..............h.','......3.......3.','..............t.','............s...'],
     twostep:['................','1.1.1.1.1.1.1.1.','................','............s...']};
@@ -77,13 +77,15 @@
   /* Stand v3: Boom Bap, Disco, Afro und Hardtechno sind ersetzt (durch Lo-Fi, One Drop, Reggaeton, 2-Step).
      Wer eine davon geladen hatte, behält das Muster, es heißt dann Eigener Beat */
   if(P&&P.v===3){if([0,6,10,12].indexOf(P.pre)>=0)P.pre=-1;P.v=4;}
+  /* Stand v4: Shuffle ist durch Afrobeats ersetzt */
+  if(P&&P.v===4){if(P.pre===9)P.pre=-1;P.v=5;}
   if(P&&clean(P.g)){pat=clean(P.g);bpm=Math.round(num(P.bpm,60,180,100));sw=num(P.sw,0,.6,0);pre=P.pre|0;if(pre<-1||pre>=BEATS.length)pre=-1;edited=!!P.ed;}
   else{pat=empty();fromBeat(0);}
   vol=arr(P&&P.vol,function(x){return num(x,0,1,.8);},.8);
   mute=arr(P&&P.mute,function(x){return !!x;},false);
   solo=arr(P&&P.solo,function(x){return !!x;},false);
   if(P&&Array.isArray(P.br)&&P.br.length===R)brush=brush.map(function(d,r){return sndIx(r,P.br[r])>=0?P.br[r]:d;});
-  function persist(){S.pat={v:4,g:pat,bpm:bpm,sw:sw,vol:vol,mute:mute,solo:solo,pre:pre,ed:edited,br:brush};save();}
+  function persist(){S.pat={v:5,g:pat,bpm:bpm,sw:sw,vol:vol,mute:mute,solo:solo,pre:pre,ed:edited,br:brush};save();}
   function anySolo(){return solo.some(Boolean);}
   function audible(r){return anySolo()?solo[r]:!mute[r];}
   function gainOf(r){return Math.pow(vol[r]/.8,1.6);} /* 80 % entspricht dem Originalpegel */
