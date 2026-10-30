@@ -68,9 +68,9 @@ function playSynth(id,t,n){
     else if(w==='3'){var gv=vca(t,.001,0,.045,.38*v,B.DUCK);osc('sine',2500,t,t+.07,gv);var gv2=vca(t,.001,0,.012,.06*v,B.DUCK);osc('triangle',5000,t,t+.03,gv2);send(gv,B.REV,.15);}
     else if(w==='4'){var gg=vca(t,.001,0,.22,.55*v,B.DUCK),og=osc('sine',345,t,t+.28,gg);og.frequency.exponentialRampToValueAtTime(312,t+.04);
       var gp=vca(t,.001,0,.06,.14*v,B.DUCK);osc('sine',510,t,t+.08,gp);nz(t,.015,.22*v,'bandpass',2200,1.2,0,B.DUCK);send(gg,B.REV,.12);}
-    else{var gw=ac.createGain(),fw=ac.createBiquadFilter(),hw=ac.createBiquadFilter();fw.type='bandpass';fw.frequency.value=1000;fw.Q.value=1.1;hw.type='highpass';hw.frequency.value=500;fw.connect(hw);hw.connect(gw);gw.connect(B.DUCK);
-      gw.gain.setValueAtTime(.0001,t);gw.gain.exponentialRampToValueAtTime(.26*v,t+.001);gw.gain.exponentialRampToValueAtTime(.08*v,t+.03);gw.gain.exponentialRampToValueAtTime(.0001,t+.35);
-      osc('square',540,t,t+.36,fw);osc('square',800,t,t+.36,fw);send(gw,B.REV,.1);}}
+    /* Cowbell: unharmonische Teiltöne einer echten Kuhglocke, jeder mit eigenem Ausklang, dazu der Stockanschlag */
+    else{[[587,1,.28],[845,.85,.34],[1245,.35,.12],[1640,.45,.1],[2470,.25,.07],[3330,.15,.05]].forEach(function(m){var gm=vca(t,.0015,0,m[2],.11*m[1]*v,B.DUCK),om=osc('sine',m[0],t,t+m[2]+.05,gm);om.frequency.setValueAtTime(m[0]*1.006,t);om.frequency.exponentialRampToValueAtTime(m[0],t+.02);send(gm,B.REV,.08);});
+      nz(t,.008,.25*v,'bandpass',3200,1.5,0,B.DUCK);nz(t,.004,.15*v,'highpass',6000,.7,0,B.DUCK);}}
   else if(id==='toms'){if(w==='b'){dr.kick(t,.8*v);duck(t);}else if(w==='p')dr.snare(t,.5*v);else if(w==='t'){dr.tom(t,150,.55*v);}else{dr.noise(t,.3*v,.9,5000);}}
   else if(id==='fx'){
     /* Snap: zwei schnelle Rauschimpulse wie ein Fingerschnipsen */
