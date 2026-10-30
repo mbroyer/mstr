@@ -637,26 +637,32 @@
   /* ---------- Molekül-Ansicht: das Raster gegen das Ring-Molekül der Karte tauschen, live mit dem Beat.
      Schläge kommen aus head() (Schritt, Takt), Mute, Solo und Drop entscheiden mit; steht der Beat, steht das Bild.
      Ein Tipp aufs Molekül bringt das Raster zurück, bearbeitet wird nur dort ---------- */
-  var molC=$('mol'),molX=molC.getContext('2d'),viewB=$('view'),molS=null,molKey='',molRaf=0,molOn=false,molTick=0;
+  var molC=$('mol'),molX=molC.getContext('2d'),viewB=$('view'),molS=null,molKey='',molRaf=0,molOn=false,molTick=0,molLast=0;
   function molDark(){var t=document.documentElement.getAttribute('data-theme');return t==='dark'||(!t&&!!window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);}
   function molModel(){var k=shareCode();if(k===molKey&&molS)return;molKey=k;var m=cardModel();
     if(molS)molS.m=m;else{molS=new CARD.Scene(m);molS.clip=false;molS.act=function(r){return audible(r)&&!drop;};}}
   function molSize(){var b=molC.getBoundingClientRect(),d=Math.min(2,window.devicePixelRatio||1),w=Math.round(b.width*d),h=Math.round(b.height*d);
     if(w&&h&&(molC.width!==w||molC.height!==h)){molC.width=w;molC.height=h;}}
-  function molDraw(){if(!molOn){molRaf=0;return;}if(!(molTick++%12))molModel();molSize();
-    if(playing)molS.time(ac.currentTime-playT0,performance.now());else if(molS.ct>=0)molS.reset();
-    var d=molDark();CARD.view(molX,molC.width,molC.height,molS,{fg:d?'#F3F3F4':'#0F0F10',bg:d?'#0E0E0F':'#FFFFFF',dark:d});
+  /* Die Schleife läuft, solange die Ansicht an ist. Ein Fehler beim Zeichnen bricht sie nicht ab, und molGo startet sie
+     immer frisch, damit ein liegen gebliebener Frame (etwa nach dem Sperren des Handys) sie nicht blockiert */
+  function molDraw(){molRaf=0;if(!molOn)return;molLast=performance.now();
+    try{if(!(molTick++%12))molModel();molSize();
+      if(playing)molS.time(ac.currentTime-playT0,performance.now());else if(molS.ct>=0)molS.reset();
+      var d=molDark();CARD.view(molX,molC.width,molC.height,molS,{fg:d?'#F3F3F4':'#0F0F10',bg:d?'#0E0E0F':'#FFFFFF',dark:d});
+    }catch(e){}
     molRaf=requestAnimationFrame(molDraw);}
-  function molHit(s,b){if(!molOn||!molS)return;var L=FX.stut&&(b+1)%FXO.stut===0?fxStutLen():0,src=N-L,stu=L&&s>=src,q=stu?src:s,h=[],r;
+  function molGo(){if(!molOn)return;if(molRaf)cancelAnimationFrame(molRaf);molRaf=requestAnimationFrame(molDraw);}
+  function molHit(s,b){if(!molOn||!molS)return;if(performance.now()-molLast>400)molGo();var L=FX.stut&&(b+1)%FXO.stut===0?fxStutLen():0,src=N-L,stu=L&&s>=src,q=stu?src:s,h=[],r;
     if(!drop)for(r=0;r<7;r++)if(pat[r].charAt(q)!=='0'&&audible(r))h.push(r);
     molS.fire({s:q,b:b,h:h,st:stu?1:0},performance.now());
     if(stu)setTimeout(function(){if(molOn&&playing)molS.fire({s:q,b:b,h:h,st:1},performance.now());},st()*500);}
   function molSet(on){molOn=!!on;app.classList.toggle('molecule',molOn);molC.hidden=!molOn;
     viewB.setAttribute('aria-pressed',molOn?'true':'false');viewB.setAttribute('aria-label',molOn?'Show the grid':'Show as molecule');viewB.title=viewB.getAttribute('aria-label');
-    S.view=molOn?'mol':'';save();if(molOn){molModel();molSize();if(!molRaf)molRaf=requestAnimationFrame(molDraw);}}
+    S.view=molOn?'mol':'';save();if(molOn){molModel();molSize();molGo();}}
   viewB.addEventListener('click',function(){molSet(!molOn);});
   molC.addEventListener('click',function(){molSet(false);});
   molC.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();molSet(false);viewB.focus();}});
+  document.addEventListener('visibilitychange',function(){if(!document.hidden)molGo();});window.addEventListener('pageshow',molGo);
   if(S.view==='mol')molSet(true);
 
   window.MSTR={view:molSet,setPlay:setPlay,renderLoop:renderLoop,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};

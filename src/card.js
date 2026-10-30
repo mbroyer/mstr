@@ -136,21 +136,22 @@ var CARD=(function(){
   function halo(x,px,py,R,col,al){var g=x.createRadialGradient(px,py,0,px,py,R);g.addColorStop(0,col.replace('A',al.toFixed(3)));g.addColorStop(1,col.replace('A','0'));x.fillStyle=g;x.beginPath();x.arc(px,py,R,0,7);x.fill();}
   var LILA='rgba(199,179,255,A)',WHTA='rgba(243,243,244,A)';
   function atom(x,p,sc,fg,bg,kickStroke,glass,room){var tr=p.tr,v=p.v,px=p.x,py=p.y,va=(.3+.7*p.vis)*(1-.5*glass),k=(1+p.hp*.7)*(.35+.65*p.vis)*p.pk;
-    var fill0=x.fill.bind(x);x.fill=function(){fill0();if(glass>.6){var a0=x.globalAlpha,s0=x.strokeStyle,w0=x.lineWidth;x.globalAlpha=.9*p.vis;x.strokeStyle=x.fillStyle;x.lineWidth=1.1*sc;x.stroke();x.globalAlpha=a0;x.strokeStyle=s0;x.lineWidth=w0;}};
+    /* Glas: nach jeder Füllung ein feiner Rand in derselben Farbe */
+    var F=function(){x.fill();if(glass>.6){var a0=x.globalAlpha,s0=x.strokeStyle,w0=x.lineWidth;x.globalAlpha=.9*p.vis;x.strokeStyle=x.fillStyle;x.lineWidth=1.1*sc;x.stroke();x.globalAlpha=a0;x.strokeStyle=s0;x.lineWidth=w0;}};
     x.globalAlpha=p.vis;
     if(room>0)halo(x,px,py,(14+room*26)*sc*k*(tr===1?1.4:1),tr===1?LILA:WHTA,(.1+.22*room)*(1+p.hp));
     if(glass>0)halo(x,px,py,20*sc*k,tr===1?LILA:WHTA,.09*glass);
     x.globalAlpha=va;
     if(p.hp>0){x.strokeStyle=LIL;x.globalAlpha=p.hp*va;x.lineWidth=1.5*sc;x.beginPath();blob(x,p,px,py,(10+(1-p.hp)*22)*sc);x.stroke();x.globalAlpha=va;}
     x.fillStyle=p.hp>.3?LIL:fg;x.strokeStyle=x.fillStyle;x.lineWidth=2.4*sc;x.beginPath();
-    if(tr===1){x.fillStyle=LIL;blob(x,p,px,py,12*sc*k);x.fill();if(kickStroke){x.lineWidth=1.5*sc;x.strokeStyle=kickStroke;x.stroke();}}
-    else if(tr===2){blob(x,p,px,py,8*sc*k);x.fillStyle=bg;x.fill();x.stroke();if(v==='c'){x.beginPath();blob(x,p,px,py,3.5*sc*k);x.fillStyle=x.strokeStyle;x.fill();}}
-    else if(tr===0){blob(x,p,px,py,(v==='o'?7:v==='k'?3.5:5)*sc*k);x.fill();}
-    else if(tr===4){blob(x,p,px,py,4.5*sc*k);x.fill();x.beginPath();blob(x,p,px,py,8*sc*k);x.lineWidth=1.2*sc;x.stroke();}
-    else if(tr===5){blob(x,p,px,py,10*sc*k);x.fill();}
-    else if(tr===3){blob(x,p,px,py,3*sc*k);x.fill();x.beginPath();blob(x,p,px,py,13*sc*k);x.lineWidth=1*sc;x.globalAlpha=.5*va;x.stroke();}
-    else{blob(x,p,px,py,6*sc*k);x.fill();x.beginPath();blob(x,p,px,py,11*sc*k);x.lineWidth=1*sc;x.globalAlpha=.6*va;x.stroke();}
-    x.fill=fill0;x.globalAlpha=1;}
+    if(tr===1){x.fillStyle=LIL;blob(x,p,px,py,12*sc*k);F();if(kickStroke){x.lineWidth=1.5*sc;x.strokeStyle=kickStroke;x.stroke();}}
+    else if(tr===2){blob(x,p,px,py,8*sc*k);x.fillStyle=bg;F();x.stroke();if(v==='c'){x.beginPath();blob(x,p,px,py,3.5*sc*k);x.fillStyle=x.strokeStyle;F();}}
+    else if(tr===0){blob(x,p,px,py,(v==='o'?7:v==='k'?3.5:5)*sc*k);F();}
+    else if(tr===4){blob(x,p,px,py,4.5*sc*k);F();x.beginPath();blob(x,p,px,py,8*sc*k);x.lineWidth=1.2*sc;x.stroke();}
+    else if(tr===5){blob(x,p,px,py,10*sc*k);F();}
+    else if(tr===3){blob(x,p,px,py,3*sc*k);F();x.beginPath();blob(x,p,px,py,13*sc*k);x.lineWidth=1*sc;x.globalAlpha=.5*va;x.stroke();}
+    else{blob(x,p,px,py,6*sc*k);F();x.beginPath();blob(x,p,px,py,11*sc*k);x.lineWidth=1*sc;x.globalAlpha=.6*va;x.stroke();}
+    x.globalAlpha=1;}
   function ring(x,S,cx,cy,sc,fg,bg,live,glass){
     var m=S.m,T=clock(),g=rng(m.seed),i,fx=m.fx,now=performance.now(),room=fx.room?fx.room.a:0;glass=glass||0;
     if(live&&fx.stut&&now-S.stutT<110){var jj=(2+fx.stut.a*5)*sc;cx+=Math.sin(T*811)*jj;cy+=Math.cos(T*977)*jj;}
