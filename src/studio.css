@@ -1,0 +1,12 @@
+/* Teststudio: Kit-Auswahl und Pads (nur teststudio.html) */
+.studio{display:flex;flex-direction:column;gap:10px;padding:14px 0 16px;border-top:1px solid var(--line);border-bottom:1px solid var(--line)}
+.studio .srow{display:flex;justify-content:space-between;align-items:baseline;gap:12px}
+.studio a.eyebrow{text-decoration:none}
+.kits{display:flex;gap:6px;overflow-x:auto;scrollbar-width:none;margin:0 calc(-1 * var(--gutr)) 0 calc(-1 * var(--gut));padding:0 var(--gutr) 0 var(--gut)}
+.kits::-webkit-scrollbar{display:none}
+.kchip{flex:none;height:36px;border-radius:999px;border:1px solid var(--line);background:transparent;padding:0 14px;font-size:13px;font-weight:600;cursor:pointer}
+.kchip.sel{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
+.pads{display:grid;grid-template-columns:repeat(5,1fr);gap:6px}
+.kpad{height:44px;border-radius:10px;border:0;background:var(--soft);font-family:var(--f-mono);font-size:11px;letter-spacing:.04em;cursor:pointer;padding:0 4px;transition:background .08s}
+.kpad.hit{background:var(--ink);color:var(--bg)}
+@media (min-width:600px){.pads{grid-template-columns:repeat(10,1fr)}}

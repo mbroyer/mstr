@@ -19,6 +19,7 @@ Schwarz, Weiß und ein Signal: Die Akzentfarbe Flieder (`#C7B3FF`) erscheint nur
 
 ```
 python3 build.py        # schreibt index.html (eine einzelne Seite)
+python3 build.py studio # zusätzlich teststudio.html mit den DrumGizmo-Kits
 python3 tests/t1.py     # Playwright-Rauchtest bei 390 px (PW_CHROME=Pfad zu Chrome, falls nötig)
 ```
 
@@ -30,3 +31,9 @@ python3 tests/t1.py     # Playwright-Rauchtest bei 390 px (PW_CHROME=Pfad zu Chr
 - `src/mstr.js` – Raster, Sequencer, Drop, Vorlagen, Tempo, Spur-Einstellungen
 - `src/mstr.css` – Styles
 - `src/body.html` – Seitenaufbau
+
+## Teststudio (DrumGizmo-Kits)
+`teststudio.html` ist MSTR mit einer Leiste zum Umschalten zwischen den eingebauten Klängen und fünf echten Drumkits von DrumGizmo.org (CC BY 4.0, siehe `kits/drumgizmo/LIZENZ.md`). Hi-Hat, Kick, Snare und Toms spielen dann Samples, Clap, Perc und FX bleiben eingebaut. Pads spielen jeden Kit-Klang einzeln. `index.html` bleibt unverändert.
+- `src/studio.js`, `src/studio.css` – Kit-Auswahl, Pads, Abspielen der Samples
+- `kits/drumgizmo/` – je Kit bis zu 10 MP3s (Kick, Snare, Rim, Hi-Hat zu/offen/Pedal, Tom, Floor, Crash, Ride)
+- `tools/drumgizmo/` – holt die Klänge per HTTP-Range direkt aus den Kit-ZIPs (ohne die GB-großen Downloads)
