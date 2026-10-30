@@ -109,6 +109,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 #drop.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .app.building #drop{animation:pulse .25s ease-in-out infinite alternate}
 #fxBtn{height:44px;padding:0 12px 0 10px;gap:6px;font-variant-numeric:tabular-nums}
+#share{width:44px;height:44px;padding:0;flex:none}
+#share svg{width:19px;height:19px}
+/* Schmale Handys: Platz für Teilen in der Leiste, der Pfeil am Tempo entfällt (die Zahl selbst öffnet das Blatt) */
+@media (max-width:430px){.tempo .chev{display:none}.transport{gap:6px}#drop{padding:0 12px}}
+@media (max-width:380px){.transport{gap:4px}.play{width:50px;height:50px}#drop{padding:0 10px}#fxBtn{padding:0 9px 0 8px}}
 #fxBtn.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .tempo{margin-left:auto;border:0;background:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:4px 0;line-height:1}
 .tv{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
@@ -242,7 +247,6 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
     <span class="mark"><i aria-hidden="true"></i>MSTR</span>
     <div class="topr">
       <button type="button" class="pill" id="clr">Clear</button>
-      <button type="button" class="ib" id="share" aria-label="Share beat" title="Share beat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M8 8l4-4 4 4M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
       <button type="button" class="ib" id="theme" aria-label="Theme"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
     </div>
   </header>
@@ -256,6 +260,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
     <button type="button" class="play" id="play" aria-label="Play (Space)"></button>
     <button type="button" class="pill" id="drop">Drop</button>
     <button type="button" class="pill" id="fxBtn" aria-haspopup="dialog" aria-label="Effects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="15" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="17" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/></svg>Effects<span class="fxn" id="fxN"></span></button>
+    <button type="button" class="pill" id="share" aria-haspopup="dialog" aria-label="Share or download" title="Share or download"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M8 8l4-4 4 4M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <button type="button" class="tempo" id="tempoBtn" aria-haspopup="dialog" aria-label="Tempo and swing"><span class="tv"><span class="swt" id="swTxt">Swing 0 %</span><span class="big"><span id="bpm">100</span><small>bpm</small></span></span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   </footer>
 </div>
@@ -787,15 +792,18 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
       if(s===0){fxTempo();if(drop===1){drop=2;dropBuild(t,N*six);}else if(drop===2){drop=0;dropBoom(t);}}
       /* Drop: ein Takt Anlauf mit dem eigenen Beat (siehe dropBuild), die letzten zwei Schritte Pause, dann der Einschlag */
       if(drop===2)dropStep(s,t,six);
-      else{
-        /* Stottern: am Ende jedes n-ten Takts spielt statt der letzten Schritte immer wieder der erste davon, in Zweiunddreißigsteln */
-        var L=FX.stut&&(bar+1)%FXO.stut===0?fxStutLen():0,src=N-L,k;
-        if(L&&s>=src){for(r=0;r<R;r++)if(audible(r)){var w2=pat[r].charAt(src);if(w2!=='0')for(k=0;k<2;k++)play(TRACKS[r].id,t+k*six/2,[src,w2,2,gainOf(r)*(1-.35*(s-src+k/2)/L)]);}}
-        else for(r=0;r<R;r++)if(audible(r)){var w=pat[r].charAt(s);if(w!=='0')play(TRACKS[r].id,t,[s,w,2,gainOf(r)]);}
-        fxPump(t,s);}
+      else playStep(s,t,six,bar);
       queue.push({s:s,t:t});
       step=(step+1)%N;if(!step)bar++;nextT+=six;
     }
+  }
+  /* Ein Schritt des Beats (ohne Drop): Spuren, Stottern, Pumpen */
+  function playStep(s,t,six,bar){
+    /* Stottern: am Ende jedes n-ten Takts spielt statt der letzten Schritte immer wieder der erste davon, in Zweiunddreißigsteln */
+    var L=FX.stut&&(bar+1)%FXO.stut===0?fxStutLen():0,src=N-L,k,r;
+    if(L&&s>=src){for(r=0;r<R;r++)if(audible(r)){var w2=pat[r].charAt(src);if(w2!=='0')for(k=0;k<2;k++)play(TRACKS[r].id,t+k*six/2,[src,w2,2,gainOf(r)*(1-.35*(s-src+k/2)/L)]);}}
+    else for(r=0;r<R;r++)if(audible(r)){var w=pat[r].charAt(s);if(w!=='0')play(TRACKS[r].id,t,[s,w,2,gainOf(r)]);}
+    fxPump(t,s);
   }
   /* Drop: je nach Beat anders. Der Beat läuft im Anlauf weiter, nur ohne Kick, Toms, Becken und FX in der zweiten Hälfte.
      Ein Wirbel mit dem Snare-Klang des Beats (Snare, Clap oder Rim) wird schneller: Viertel, Achtel, Sechzehntel.
@@ -1058,19 +1066,71 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
     if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(shown,function(){window.prompt('Copy this link',url);});
     else window.prompt('Copy this link',url);
   }
+  /* Beat als WAV-Loop zum Samplen: vier Takte, offline berechnet, genau wie sie klingen (mit Effekten und eigener Aufnahme).
+     Nahtlos: ein Takt Vorlauf wird mitgerechnet und weggeschnitten, so liegen Hall und Echo des letzten Takts schon am Anfang,
+     und Filter und Stottern (Perioden 1, 2 oder 4 Takte) stehen am Ende wieder genau wie am Anfang.
+     Dafür wird ac kurz gegen einen OfflineAudioContext getauscht: Bus und Ausgang entstehen dort neu, alle Schritte werden
+     eingeplant, dann gilt sofort wieder der echte Kontext */
+  var BARS=4;
+  function renderLoop(done){
+    getAC();var OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!ac||!OAC)return done(null);
+    if(REC.mic&&!REC.mic.buf){decodeRec('mic');var w=0,iv=setInterval(function(){if(!REC.mic||REC.mic.buf||++w>20){clearInterval(iv);renderLoop(done);}},100);return;}
+    var six=st(),barT=N*six,sr=ac.sampleRate,n=Math.round(BARS*barT*sr),a=Math.round(barT*sr),off,keep={ac:ac,B:B,bac:_bac,oc:_oc,og:_og,live:FXLIVE},s,k;
+    try{
+      off=new OAC(2,a+n,sr);
+      ac=off;B=null;_bac=null;_oc=null;bus();FXLIVE=true;fxApply(true);
+      /* Takt -1 ist der Vorlauf; er zählt als letzter Takt der Schleife (wichtig fürs Stottern) */
+      for(k=-1;k<BARS;k++){fxTempo();for(s=0;s<N;s++)playStep(s,(k+1)*barT+s*six+((s%4===2)?six*sw:0),six,(k+BARS)%BARS);}
+    }catch(e){off=null;}
+    ac=keep.ac;B=keep.B;_bac=keep.bac;_oc=keep.oc;_og=keep.og;FXLIVE=keep.live;
+    if(!off)return done(null);
+    var p=off.startRendering(),fin=function(buf){done(wavBlob([buf.getChannelData(0).slice(a,a+n),buf.getChannelData(1).slice(a,a+n)],sr));};
+    if(p&&p.then)p.then(fin,function(){done(null);});else off.oncomplete=function(e){fin(e.renderedBuffer);};
+  }
+  function wavBlob(ch,sr){
+    var n=ch[0].length,C=ch.length,ab=new ArrayBuffer(44+n*C*2),v=new DataView(ab),i,c,o=44;
+    function w(at,t){for(var j=0;j<t.length;j++)v.setUint8(at+j,t.charCodeAt(j));}
+    w(0,'RIFF');v.setUint32(4,36+n*C*2,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,C,true);v.setUint32(24,sr,true);v.setUint32(28,sr*C*2,true);v.setUint16(32,C*2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*C*2,true);
+    for(i=0;i<n;i++)for(c=0;c<C;c++){var x=Math.max(-1,Math.min(1,ch[c][i]));v.setInt16(o,x*32767,true);o+=2;}
+    return new Blob([ab],{type:'audio/wav'});
+  }
+  function fileName(){
+    var nm=(title||(pre>=0?NM[BEATS[pre].n]:'MSTR beat')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'MSTR-beat';
+    return nm+'-'+bpm+'bpm.wav';
+  }
+  function canSendFile(f){try{return !!(navigator.canShare&&navigator.share&&navigator.canShare({files:[f]}));}catch(e){return false;}}
+  function saveFile(f){var u=URL.createObjectURL(f),a=document.createElement('a');a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},4000);}
   /* Teilen: halbes Blatt. Erst dem Beat einen Namen geben (bleibt gespeichert und steht oben als Titel), dann den Link schicken */
   function shareSheet(){
     var own=pat[MIC]&&pat[MIC]!==zero();
     openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Share your beat</span>'+XB+'</div>'+
       '<label class="namef"><span class="lbl">Name</span><input id="shName" type="text" maxlength="40" autocomplete="off" enterkeyhint="send" data-focus></label>'+
       '<button type="button" class="pill wide go" id="shSend">Send link</button>'+
-      '<p class="shnote">Opens your beat on asimplemanslab.com/mstr'+(own?'. Your recording stays on this device.':'.')+'</p>',function(el){
+      '<p class="shnote">Opens your beat on asimplemanslab.com/mstr'+(own?'. Your recording stays on this device.':'.')+'</p>'+
+      '<button type="button" class="pill wide" id="shWav"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Download WAV</span></button>'+
+      '<p class="shnote" id="shWavT">'+BARS+' bars that loop seamlessly, for sampling'+(own?', with your recording':'')+'</p>',function(el){
       var inp=el.querySelector('#shName');
       inp.value=title;inp.placeholder=pre>=0?NM[BEATS[pre].n]:'Your beat';
       function setName(){var v=inp.value.replace(/[\u0000-\u001f]/g,'').trim().slice(0,40);if(v!==title){title=v;paint();persist();}}
       inp.addEventListener('input',setName);
       inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();setName();shareBeat();}});
       el.querySelector('#shSend').addEventListener('click',function(){setName();shareBeat();});
+      /* Download: am Handy übers Teilen-Menü (dort „In Dateien sichern“), sonst direkt. Lässt der Browser das Teilen
+         nach dem Rechnen nicht mehr zu, braucht es einen zweiten Tipp */
+      var wb=el.querySelector('#shWav'),wt=el.querySelector('#shWavT'),file=null,busy=false;
+      function give(f){
+        if(navigator.share&&matchMedia('(pointer: coarse)').matches&&canSendFile(f)){
+          navigator.share({files:[f],title:f.name}).catch(function(e){if(e&&e.name==='NotAllowedError'){wb.querySelector('span').textContent='Save '+f.name;wb.classList.add('go');}});return;}
+        saveFile(f);wt.textContent='Saved '+f.name;
+      }
+      wb.addEventListener('click',function(){
+        setName();if(busy)return;
+        if(file&&file.name===fileName())return give(file);
+        busy=true;wt.textContent='Rendering …';
+        renderLoop(function(blob){busy=false;
+          if(!blob){wt.textContent='That did not work in this browser.';return;}
+          file=new File([blob],fileName(),{type:'audio/wav'});wt.textContent=file.name+', '+(Math.round(BARS*N*st()*10)/10)+' s';give(file);});
+      });
     },'teilen',true);
   }
   $('share').addEventListener('click',shareSheet);
@@ -1090,7 +1150,7 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
 
   build();themeUI();fxUI();playB.innerHTML=I_PLAY;
   if(shared){var before=shared;showToast(title?'“'+title+'” loaded':'Shared beat loaded','Undo',function(){restore(before);});}
-  window.MSTR={setPlay:setPlay,code:shareCode,url:shareUrl,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
+  window.MSTR={setPlay:setPlay,renderLoop:renderLoop,code:shareCode,url:shareUrl,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
 })();
 
 })();
