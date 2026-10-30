@@ -252,6 +252,12 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .vpick .opt i{font-style:normal;font-family:var(--f-mono);font-size:10px;font-weight:500;color:var(--mute)}
 .vpick .opt[aria-pressed="true"] i{color:var(--on-accent);opacity:.6}
 .vpick .opt.off{color:var(--mute);padding:0 13px}
+
+/* Molekül-Ansicht: ersetzt Raster und Taktzeile, füllt die Höhe bis zum Transport */
+.mol{display:block;width:100%;flex:1 1 auto;min-height:320px;border-radius:24px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.mol:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+.app.molecule .tracks,.app.molecule .beatrow{display:none}
+#view[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
 </style>
 </head>
 <body>
@@ -259,6 +265,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
   <header class="top">
     <span class="mark"><i aria-hidden="true"></i>MSTR</span>
     <div class="topr">
+      <button type="button" class="ib" id="view" aria-pressed="false" aria-label="Show as molecule" title="Show as molecule"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2.4" fill="currentColor"/><circle cx="12" cy="12" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="18.5" cy="12" r="1.9" fill="currentColor"/><circle cx="7.4" cy="7.4" r="1.9" fill="currentColor"/><circle cx="8.8" cy="17.6" r="1.9" fill="currentColor"/></svg></button>
       <button type="button" class="pill" id="clr">Clear</button>
       <button type="button" class="ib" id="theme" aria-label="Theme"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
     </div>
@@ -268,6 +275,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
     <p class="sub" id="sub"></p>
   </div>
   <main class="tracks" id="tracks" aria-label="Tracks"></main>
+  <canvas class="mol" id="mol" hidden aria-label="Your beat as a molecule, tap to go back to the grid" role="button" tabindex="0"></canvas>
   <div class="trk beatrow" aria-hidden="true"><div class="tl"></div><div class="steps"><div class="grp"><span>1</span><span></span><span></span><span></span></div><div class="grp"><span>2</span><span></span><span></span><span></span></div><div class="grp"><span>3</span><span></span><span></span><span></span></div><div class="grp"><span>4</span><span></span><span></span><span></span></div></div></div>
   <footer class="transport">
     <button type="button" class="play" id="play" aria-label="Play (Space)"></button>
@@ -645,7 +653,7 @@ var CARD=(function(){
     if(f<.4)return adj+' '+noun;if(f<.6)return noun+' at '+pk(TW.hour);if(f<.8)return pk(TW.place)+' '+noun;return 'The '+adj+' '+noun;}
 
   /* Eine Szene hält die Physik (Federn, Treffer) und den Stand im Clip */
-  function Scene(m){this.m=m;this.st={};this.hitT=[0,0,0,0,0,0,0];this.flashT=[];this.TV=[1,1,1,1,1,1,1];this.waves=[];this.step=-1;this.bar=0;this.ct=-1;this.barT=0;this.ghosts=[];this.dust=[];this.stutT=0;this.open=1;
+  function Scene(m){this.m=m;this.clip=true;this.act=null;this.st={};this.hitT=[0,0,0,0,0,0,0];this.flashT=[];this.TV=[1,1,1,1,1,1,1];this.waves=[];this.step=-1;this.bar=0;this.ct=-1;this.barT=0;this.ghosts=[];this.dust=[];this.stutT=0;this.open=1;
     for(var i=0;i<16;i++)this.flashT.push(0);this.ev=events(m);this.ei=0;}
   /* Ereignisse des Clips in Sekunden: je Schritt die Spuren, die klingen */
   function events(m){var six=60/m.bpm/4,E=[],fx=m.fx,L=fx.stut?2+Math.round(fx.stut.a*6):0,b,s,r;
@@ -659,21 +667,26 @@ var CARD=(function(){
     return E;}
   Scene.prototype.live=function(){return this.ct>=0;};
   Scene.prototype.pul=function(r,d){if(!this.live())return 0;var a=(performance.now()-this.hitT[r])/1000;return Math.max(0,1-a/(d||.2));};
-  /* Stand im Clip setzen: alle Ereignisse bis dahin auslösen */
-  Scene.prototype.seek=function(ct){var now=performance.now();this.ct=ct;
-    while(this.ei<this.ev.length&&this.ev[this.ei].t<=ct){var e=this.ev[this.ei++],self=this;
-      if(e.s===0&&!e.st)this.barT=now;this.step=e.s;this.bar=e.b;if(e.st)this.stutT=now;
-      var ec=this.m.fx.echo,six=60/this.m.bpm/4,DP=[.12,.2,.55,.9,.45,.5,.8];
-      e.h.forEach(function(r){self.hitT[r]=now;self.waves.push({t:now,r:[62,92,32,152,122,182,212][ORDER.indexOf(r)]});
-        if(self.dust.length<70&&Math.random()<DP[r]){var q=1+Math.floor(Math.random()*2);while(q--)self.dust.push({id:ORDER.indexOf(r)+'-'+e.s,t:now,life:2600+Math.random()*2600,da:(Math.random()-.5)*1.2,sp:7+Math.random()*13,ph:Math.random()*7,w:.6+Math.random(),sz:.9+Math.random()*1.3,lil:Math.random()<.35});}
-        if(ec){var n=1+Math.round(ec.a*3),dt=ec.o*six*1000,k;for(k=1;k<=n;k++)self.ghosts.push({id:ORDER.indexOf(r)+'-'+e.s,t:now+k*dt,dt:dt,k:k});}});
-      if(e.h.length)this.flashT[e.s]=now;}
+  /* Ein Ereignis auslösen: Schläge der Spuren h auf Schritt s in Takt b (st: Stotter-Wiederholung) */
+  Scene.prototype.fire=function(e,now){var self=this;
+    if(e.s===0&&!e.st)this.barT=now;this.step=e.s;this.bar=e.b;if(e.st)this.stutT=now;
+    var ec=this.m.fx.echo,six=60/this.m.bpm/4,DP=[.12,.2,.55,.9,.45,.5,.8];
+    e.h.forEach(function(r){self.hitT[r]=now;self.waves.push({t:now,r:[62,92,32,152,122,182,212][ORDER.indexOf(r)]});
+      if(self.dust.length<70&&Math.random()<DP[r]){var q=1+Math.floor(Math.random()*2);while(q--)self.dust.push({id:ORDER.indexOf(r)+'-'+e.s,t:now,life:2600+Math.random()*2600,da:(Math.random()-.5)*1.2,sp:7+Math.random()*13,ph:Math.random()*7,w:.6+Math.random(),sz:.9+Math.random()*1.3,lil:Math.random()<.35});}
+      if(ec){var n=1+Math.round(ec.a*3),dt=ec.o*six*1000,k;for(k=1;k<=n;k++)self.ghosts.push({id:ORDER.indexOf(r)+'-'+e.s,t:now+k*dt,dt:dt,k:k});}});
+    if(e.h.length)this.flashT[e.s]=now;};
+  /* Zeit weiterstellen: Wellen, Geister und Staub altern, Filter-Blende und Sichtbarkeit der Spuren folgen */
+  Scene.prototype.time=function(ct,now){this.ct=ct;
     this.waves=this.waves.filter(function(w){return now-w.t<1000;});
     this.ghosts=this.ghosts.filter(function(g){return now-g.t<g.dt;});
     this.dust=this.dust.filter(function(d){return now-d.t<d.life;});
     var sw=this.m.fx.sweep;this.open=sw?.5-.5*Math.cos(Math.PI*2*ct/(60/this.m.bpm/4*16*(sw.o||2))):1;
-    for(var r=0;r<7;r++){var tg=active(r,this.bar)?1:.1;this.TV[r]+=(tg-this.TV[r])*.07;}};
-  Scene.prototype.outro=function(){if(!this.live()||this.bar!==8)return 0;return Math.min(1,(performance.now()-this.barT)/1000/(240/this.m.bpm));};
+    for(var r=0;r<7;r++){var tg=(this.act?this.act(r):active(r,this.bar))?1:.1;this.TV[r]+=(tg-this.TV[r])*.07;}};
+  /* Stand im Clip setzen: alle Ereignisse bis dahin auslösen */
+  Scene.prototype.seek=function(ct){var now=performance.now();
+    while(this.ei<this.ev.length&&this.ev[this.ei].t<=ct)this.fire(this.ev[this.ei++],now);
+    this.time(ct,now);};
+  Scene.prototype.outro=function(){if(!this.clip||!this.live()||this.bar!==8)return 0;return Math.min(1,(performance.now()-this.barT)/1000/(240/this.m.bpm));};
   Scene.prototype.reset=function(){this.st={};this.ei=0;this.ct=-1;this.step=-1;this.bar=0;this.waves=[];this.ghosts=[];this.dust=[];this.stutT=0;this.open=1;this.TV=[1,1,1,1,1,1,1];};
 
   function atoms(S,cx,cy,sc,live){
@@ -790,6 +803,9 @@ var CARD=(function(){
     x.fillStyle=bg;for(var k=1;k<NBAR;k++)x.fillRect(32*sc+(W-64*sc)*k*(240/S.m.bpm)/tot-sc,799*sc,2*sc,6*sc);
     mono(x,'TAP TO PLAY · ASIMPLEMANSLAB.COM/MSTR',32*sc,H-40*sc,GRY,'left',sc);}
 
+  /* Molekül im Sequencer: füllt eine Fläche W×H in den Farben der App; o = {fg, bg, dark}. Läuft der Beat nicht, steht das Bild */
+  function view(x,W,H,S,o){var sc=Math.min(W,H)/560,live=S.live();x.setTransform(1,0,0,1,0,0);x.fillStyle=o.bg;x.fillRect(0,0,W,H);
+    ring(x,S,W/2,H/2,sc,o.fg,o.dark?INK:o.bg,live,0);if(S.m.fx.lofi&&o.dark)vinyl(x,W,H,S,S.m.fx.lofi.a,live,sc);}
   /* Video aufnehmen: Canvas plus Ton aus dem fertig gerechneten Puffer, in Echtzeit (so lang wie der Clip).
      buf: AudioBuffer des Clips, ac: AudioContext. onTick(sek, gesamt). done(File|null, Grund) */
   function mime(){var L=['video/mp4;codecs="avc1.42E01E,mp4a.40.2"','video/mp4;codecs=avc1,mp4a.40.2','video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'],i;
@@ -816,7 +832,7 @@ var CARD=(function(){
   /* Standbild als PNG */
   function image(S,o,done){var cv=document.createElement('canvas');cv.width=1080;cv.height=1920;S.reset();story(cv.getContext('2d'),1080,1920,S,o);
     cv.toBlob(function(b){done(b?new File([b],o.file+'.png',{type:'image/png'}):null);},'image/png');}
-  return {model:model,title:title,Scene:Scene,story:story,record:record,image:image,canVideo:canVideo,clipLen:clipLen,active:active,NBAR:NBAR,TAIL:TAIL};
+  return {model:model,title:title,Scene:Scene,story:story,view:view,record:record,image:image,canVideo:canVideo,clipLen:clipLen,active:active,NBAR:NBAR,TAIL:TAIL};
 })();
 
 /* ===== MSTR: Raster, Transport, Vorlagen, Spur-Einstellungen ===== */
@@ -914,7 +930,7 @@ var CARD=(function(){
   function persist(){S.pat={v:5,g:pat,bpm:bpm,sw:sw,vol:vol,mute:mute,solo:solo,pre:pre,ed:edited,br:brush,nm:title};save();}
   function anySolo(){return solo.some(Boolean);}
   /* ARR: beim Rechnen der Karte entscheidet das Arrangement je Takt mit, welche Spur klingt */
-  var ARR=null;
+  var ARR=null,playT0=0;
   function audible(r){if(ARR&&r<MIC&&!ARR(r))return false;return anySolo()?solo[r]:!mute[r];}
   function gainOf(r){return Math.pow(vol[r]/.8,1.6);} /* 80 % entspricht dem Originalpegel */
 
@@ -1008,10 +1024,10 @@ var CARD=(function(){
   function changed(){edited=true;paint();persist();}
 
   /* ---------- Wiedergabe ---------- */
-  function head(s){
+  function head(s,b){
     var r;
     if(shown>=0)for(r=0;r<R;r++)cells[r][shown].classList.remove('ph');
-    shown=s;
+    shown=s;if(s>=0)molHit(s,b);
     if(s>=0)for(r=0;r<R;r++){cells[r][s].classList.add('ph');if(pat[r].charAt(s)!=='0'&&audible(r)&&!drop)flash(r);}
     /* Taktzähler und Fortschrittslinie folgen dem laufenden Schritt */
     for(r=0;r<beats.length;r++)beats[r].classList.toggle('cur',s>=0&&r===Math.floor(s/4));
@@ -1021,7 +1037,7 @@ var CARD=(function(){
   function flash(r){var ic=rows[r].querySelector('.ic');ic.classList.remove('hit');void ic.offsetWidth;ic.classList.add('hit');clearTimeout(ic._t);ic._t=setTimeout(function(){ic.classList.remove('hit');},140);}
   function loop(){
     var nw=ac.currentTime;
-    while(queue.length&&queue[0].t<=nw){head(queue[0].s);queue.shift();}
+    while(queue.length&&queue[0].t<=nw){head(queue[0].s,queue[0].b);queue.shift();}
     if(playing)raf=requestAnimationFrame(loop);
   }
   function at(t,f){setTimeout(f,Math.max(0,(t-ac.currentTime)*1000));}
@@ -1033,7 +1049,7 @@ var CARD=(function(){
       /* Drop: ein Takt Anlauf mit dem eigenen Beat (siehe dropBuild), die letzten zwei Schritte Pause, dann der Einschlag */
       if(drop===2)dropStep(s,t,six);
       else playStep(s,t,six,bar);
-      queue.push({s:s,t:t});
+      queue.push({s:s,t:t,b:bar});
       step=(step+1)%N;if(!step)bar++;nextT+=six;
     }
   }
@@ -1094,7 +1110,7 @@ var CARD=(function(){
     if(on===playing)return;
     if(on){
       try{getAC();if(!ac)return;if(ac.state==='suspended')ac.resume();bus();}catch(e){return;}
-      playing=true;step=0;bar=0;fxStart();nextT=ac.currentTime+.06;queue=[];sched();timer=setInterval(sched,25);raf=requestAnimationFrame(loop);
+      playing=true;step=0;bar=0;fxStart();nextT=ac.currentTime+.06;playT0=nextT;queue=[];sched();timer=setInterval(sched,25);raf=requestAnimationFrame(loop);
     }else{
       playing=false;dropReset();fxHalt();clearInterval(timer);cancelAnimationFrame(raf);queue=[];head(-1);
     }
@@ -1455,7 +1471,32 @@ var CARD=(function(){
 
   build();themeUI();fxUI();playB.innerHTML=I_PLAY;
   if(shared){var before=shared;showToast(title?'“'+title+'” loaded':'Shared beat loaded','Undo',function(){restore(before);});}
-  window.MSTR={setPlay:setPlay,renderLoop:renderLoop,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
+  /* ---------- Molekül-Ansicht: das Raster gegen das Ring-Molekül der Karte tauschen, live mit dem Beat.
+     Schläge kommen aus head() (Schritt, Takt), Mute, Solo und Drop entscheiden mit; steht der Beat, steht das Bild.
+     Ein Tipp aufs Molekül bringt das Raster zurück, bearbeitet wird nur dort ---------- */
+  var molC=$('mol'),molX=molC.getContext('2d'),viewB=$('view'),molS=null,molKey='',molRaf=0,molOn=false,molTick=0;
+  function molDark(){var t=document.documentElement.getAttribute('data-theme');return t==='dark'||(!t&&!!window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);}
+  function molModel(){var k=shareCode();if(k===molKey&&molS)return;molKey=k;var m=cardModel();
+    if(molS)molS.m=m;else{molS=new CARD.Scene(m);molS.clip=false;molS.act=function(r){return audible(r)&&!drop;};}}
+  function molSize(){var b=molC.getBoundingClientRect(),d=Math.min(2,window.devicePixelRatio||1),w=Math.round(b.width*d),h=Math.round(b.height*d);
+    if(w&&h&&(molC.width!==w||molC.height!==h)){molC.width=w;molC.height=h;}}
+  function molDraw(){if(!molOn){molRaf=0;return;}if(!(molTick++%12))molModel();molSize();
+    if(playing)molS.time(ac.currentTime-playT0,performance.now());else if(molS.ct>=0)molS.reset();
+    var d=molDark();CARD.view(molX,molC.width,molC.height,molS,{fg:d?'#F3F3F4':'#0F0F10',bg:d?'#0E0E0F':'#FFFFFF',dark:d});
+    molRaf=requestAnimationFrame(molDraw);}
+  function molHit(s,b){if(!molOn||!molS)return;var L=FX.stut&&(b+1)%FXO.stut===0?fxStutLen():0,src=N-L,stu=L&&s>=src,q=stu?src:s,h=[],r;
+    if(!drop)for(r=0;r<7;r++)if(pat[r].charAt(q)!=='0'&&audible(r))h.push(r);
+    molS.fire({s:q,b:b,h:h,st:stu?1:0},performance.now());
+    if(stu)setTimeout(function(){if(molOn&&playing)molS.fire({s:q,b:b,h:h,st:1},performance.now());},st()*500);}
+  function molSet(on){molOn=!!on;app.classList.toggle('molecule',molOn);molC.hidden=!molOn;
+    viewB.setAttribute('aria-pressed',molOn?'true':'false');viewB.setAttribute('aria-label',molOn?'Show the grid':'Show as molecule');viewB.title=viewB.getAttribute('aria-label');
+    S.view=molOn?'mol':'';save();if(molOn){molModel();molSize();if(!molRaf)molRaf=requestAnimationFrame(molDraw);}}
+  viewB.addEventListener('click',function(){molSet(!molOn);});
+  molC.addEventListener('click',function(){molSet(false);});
+  molC.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();molSet(false);viewB.focus();}});
+  if(S.view==='mol')molSet(true);
+
+  window.MSTR={view:molSet,setPlay:setPlay,renderLoop:renderLoop,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
 })();
 
 })();

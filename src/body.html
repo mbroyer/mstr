@@ -2,6 +2,7 @@
   <header class="top">
     <span class="mark"><i aria-hidden="true"></i>MSTR</span>
     <div class="topr">
+      <button type="button" class="ib" id="view" aria-pressed="false" aria-label="Show as molecule" title="Show as molecule"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="2.4" fill="currentColor"/><circle cx="12" cy="12" r="6.5" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="12" cy="12" r="10" fill="none" stroke="currentColor" stroke-width="1.6"/><circle cx="18.5" cy="12" r="1.9" fill="currentColor"/><circle cx="7.4" cy="7.4" r="1.9" fill="currentColor"/><circle cx="8.8" cy="17.6" r="1.9" fill="currentColor"/></svg></button>
       <button type="button" class="pill" id="clr">Clear</button>
       <button type="button" class="ib" id="theme" aria-label="Theme"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
     </div>
@@ -11,6 +12,7 @@
     <p class="sub" id="sub"></p>
   </div>
   <main class="tracks" id="tracks" aria-label="Tracks"></main>
+  <canvas class="mol" id="mol" hidden aria-label="Your beat as a molecule, tap to go back to the grid" role="button" tabindex="0"></canvas>
   <div class="trk beatrow" aria-hidden="true"><div class="tl"></div><div class="steps"><div class="grp"><span>1</span><span></span><span></span><span></span></div><div class="grp"><span>2</span><span></span><span></span><span></span></div><div class="grp"><span>3</span><span></span><span></span><span></span></div><div class="grp"><span>4</span><span></span><span></span><span></span></div></div></div>
   <footer class="transport">
     <button type="button" class="play" id="play" aria-label="Play (Space)"></button>

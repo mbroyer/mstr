@@ -49,7 +49,7 @@ var CARD=(function(){
     if(f<.4)return adj+' '+noun;if(f<.6)return noun+' at '+pk(TW.hour);if(f<.8)return pk(TW.place)+' '+noun;return 'The '+adj+' '+noun;}
 
   /* Eine Szene hält die Physik (Federn, Treffer) und den Stand im Clip */
-  function Scene(m){this.m=m;this.st={};this.hitT=[0,0,0,0,0,0,0];this.flashT=[];this.TV=[1,1,1,1,1,1,1];this.waves=[];this.step=-1;this.bar=0;this.ct=-1;this.barT=0;this.ghosts=[];this.dust=[];this.stutT=0;this.open=1;
+  function Scene(m){this.m=m;this.clip=true;this.act=null;this.st={};this.hitT=[0,0,0,0,0,0,0];this.flashT=[];this.TV=[1,1,1,1,1,1,1];this.waves=[];this.step=-1;this.bar=0;this.ct=-1;this.barT=0;this.ghosts=[];this.dust=[];this.stutT=0;this.open=1;
     for(var i=0;i<16;i++)this.flashT.push(0);this.ev=events(m);this.ei=0;}
   /* Ereignisse des Clips in Sekunden: je Schritt die Spuren, die klingen */
   function events(m){var six=60/m.bpm/4,E=[],fx=m.fx,L=fx.stut?2+Math.round(fx.stut.a*6):0,b,s,r;
@@ -63,21 +63,26 @@ var CARD=(function(){
     return E;}
   Scene.prototype.live=function(){return this.ct>=0;};
   Scene.prototype.pul=function(r,d){if(!this.live())return 0;var a=(performance.now()-this.hitT[r])/1000;return Math.max(0,1-a/(d||.2));};
-  /* Stand im Clip setzen: alle Ereignisse bis dahin auslösen */
-  Scene.prototype.seek=function(ct){var now=performance.now();this.ct=ct;
-    while(this.ei<this.ev.length&&this.ev[this.ei].t<=ct){var e=this.ev[this.ei++],self=this;
-      if(e.s===0&&!e.st)this.barT=now;this.step=e.s;this.bar=e.b;if(e.st)this.stutT=now;
-      var ec=this.m.fx.echo,six=60/this.m.bpm/4,DP=[.12,.2,.55,.9,.45,.5,.8];
-      e.h.forEach(function(r){self.hitT[r]=now;self.waves.push({t:now,r:[62,92,32,152,122,182,212][ORDER.indexOf(r)]});
-        if(self.dust.length<70&&Math.random()<DP[r]){var q=1+Math.floor(Math.random()*2);while(q--)self.dust.push({id:ORDER.indexOf(r)+'-'+e.s,t:now,life:2600+Math.random()*2600,da:(Math.random()-.5)*1.2,sp:7+Math.random()*13,ph:Math.random()*7,w:.6+Math.random(),sz:.9+Math.random()*1.3,lil:Math.random()<.35});}
-        if(ec){var n=1+Math.round(ec.a*3),dt=ec.o*six*1000,k;for(k=1;k<=n;k++)self.ghosts.push({id:ORDER.indexOf(r)+'-'+e.s,t:now+k*dt,dt:dt,k:k});}});
-      if(e.h.length)this.flashT[e.s]=now;}
+  /* Ein Ereignis auslösen: Schläge der Spuren h auf Schritt s in Takt b (st: Stotter-Wiederholung) */
+  Scene.prototype.fire=function(e,now){var self=this;
+    if(e.s===0&&!e.st)this.barT=now;this.step=e.s;this.bar=e.b;if(e.st)this.stutT=now;
+    var ec=this.m.fx.echo,six=60/this.m.bpm/4,DP=[.12,.2,.55,.9,.45,.5,.8];
+    e.h.forEach(function(r){self.hitT[r]=now;self.waves.push({t:now,r:[62,92,32,152,122,182,212][ORDER.indexOf(r)]});
+      if(self.dust.length<70&&Math.random()<DP[r]){var q=1+Math.floor(Math.random()*2);while(q--)self.dust.push({id:ORDER.indexOf(r)+'-'+e.s,t:now,life:2600+Math.random()*2600,da:(Math.random()-.5)*1.2,sp:7+Math.random()*13,ph:Math.random()*7,w:.6+Math.random(),sz:.9+Math.random()*1.3,lil:Math.random()<.35});}
+      if(ec){var n=1+Math.round(ec.a*3),dt=ec.o*six*1000,k;for(k=1;k<=n;k++)self.ghosts.push({id:ORDER.indexOf(r)+'-'+e.s,t:now+k*dt,dt:dt,k:k});}});
+    if(e.h.length)this.flashT[e.s]=now;};
+  /* Zeit weiterstellen: Wellen, Geister und Staub altern, Filter-Blende und Sichtbarkeit der Spuren folgen */
+  Scene.prototype.time=function(ct,now){this.ct=ct;
     this.waves=this.waves.filter(function(w){return now-w.t<1000;});
     this.ghosts=this.ghosts.filter(function(g){return now-g.t<g.dt;});
     this.dust=this.dust.filter(function(d){return now-d.t<d.life;});
     var sw=this.m.fx.sweep;this.open=sw?.5-.5*Math.cos(Math.PI*2*ct/(60/this.m.bpm/4*16*(sw.o||2))):1;
-    for(var r=0;r<7;r++){var tg=active(r,this.bar)?1:.1;this.TV[r]+=(tg-this.TV[r])*.07;}};
-  Scene.prototype.outro=function(){if(!this.live()||this.bar!==8)return 0;return Math.min(1,(performance.now()-this.barT)/1000/(240/this.m.bpm));};
+    for(var r=0;r<7;r++){var tg=(this.act?this.act(r):active(r,this.bar))?1:.1;this.TV[r]+=(tg-this.TV[r])*.07;}};
+  /* Stand im Clip setzen: alle Ereignisse bis dahin auslösen */
+  Scene.prototype.seek=function(ct){var now=performance.now();
+    while(this.ei<this.ev.length&&this.ev[this.ei].t<=ct)this.fire(this.ev[this.ei++],now);
+    this.time(ct,now);};
+  Scene.prototype.outro=function(){if(!this.clip||!this.live()||this.bar!==8)return 0;return Math.min(1,(performance.now()-this.barT)/1000/(240/this.m.bpm));};
   Scene.prototype.reset=function(){this.st={};this.ei=0;this.ct=-1;this.step=-1;this.bar=0;this.waves=[];this.ghosts=[];this.dust=[];this.stutT=0;this.open=1;this.TV=[1,1,1,1,1,1,1];};
 
   function atoms(S,cx,cy,sc,live){
@@ -194,6 +199,9 @@ var CARD=(function(){
     x.fillStyle=bg;for(var k=1;k<NBAR;k++)x.fillRect(32*sc+(W-64*sc)*k*(240/S.m.bpm)/tot-sc,799*sc,2*sc,6*sc);
     mono(x,'TAP TO PLAY · ASIMPLEMANSLAB.COM/MSTR',32*sc,H-40*sc,GRY,'left',sc);}
 
+  /* Molekül im Sequencer: füllt eine Fläche W×H in den Farben der App; o = {fg, bg, dark}. Läuft der Beat nicht, steht das Bild */
+  function view(x,W,H,S,o){var sc=Math.min(W,H)/560,live=S.live();x.setTransform(1,0,0,1,0,0);x.fillStyle=o.bg;x.fillRect(0,0,W,H);
+    ring(x,S,W/2,H/2,sc,o.fg,o.dark?INK:o.bg,live,0);if(S.m.fx.lofi&&o.dark)vinyl(x,W,H,S,S.m.fx.lofi.a,live,sc);}
   /* Video aufnehmen: Canvas plus Ton aus dem fertig gerechneten Puffer, in Echtzeit (so lang wie der Clip).
      buf: AudioBuffer des Clips, ac: AudioContext. onTick(sek, gesamt). done(File|null, Grund) */
   function mime(){var L=['video/mp4;codecs="avc1.42E01E,mp4a.40.2"','video/mp4;codecs=avc1,mp4a.40.2','video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'],i;
@@ -220,5 +228,5 @@ var CARD=(function(){
   /* Standbild als PNG */
   function image(S,o,done){var cv=document.createElement('canvas');cv.width=1080;cv.height=1920;S.reset();story(cv.getContext('2d'),1080,1920,S,o);
     cv.toBlob(function(b){done(b?new File([b],o.file+'.png',{type:'image/png'}):null);},'image/png');}
-  return {model:model,title:title,Scene:Scene,story:story,record:record,image:image,canVideo:canVideo,clipLen:clipLen,active:active,NBAR:NBAR,TAIL:TAIL};
+  return {model:model,title:title,Scene:Scene,story:story,view:view,record:record,image:image,canVideo:canVideo,clipLen:clipLen,active:active,NBAR:NBAR,TAIL:TAIL};
 })();

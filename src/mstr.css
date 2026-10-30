@@ -239,3 +239,9 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .vpick .opt i{font-style:normal;font-family:var(--f-mono);font-size:10px;font-weight:500;color:var(--mute)}
 .vpick .opt[aria-pressed="true"] i{color:var(--on-accent);opacity:.6}
 .vpick .opt.off{color:var(--mute);padding:0 13px}
+
+/* Molekül-Ansicht: ersetzt Raster und Taktzeile, füllt die Höhe bis zum Transport */
+.mol{display:block;width:100%;flex:1 1 auto;min-height:320px;border-radius:24px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.mol:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
+.app.molecule .tracks,.app.molecule .beatrow{display:none}
+#view[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
