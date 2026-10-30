@@ -196,6 +196,10 @@
     playB.innerHTML=on?I_STOP:I_PLAY;playB.classList.toggle('on',on);playB.setAttribute('aria-label',on?'Stoppen (Leertaste)':'Abspielen (Leertaste)');
   }
   playB.addEventListener('click',function(){setPlay(!playing);});
+  /* Handy gesperrt, App oder Tab gewechselt: Beat anhalten und den Ton sofort stumm schalten (auch nachklingende Hallfahnen) */
+  function away(){setPlay(false);try{if(ac&&ac.state==='running'&&ac.suspend)ac.suspend();}catch(e){}}
+  document.addEventListener('visibilitychange',function(){if(document.hidden)away();});
+  window.addEventListener('pagehide',away);
   document.addEventListener('keydown',function(e){
     if(e.key==='Escape'&&!sheet.hidden){closeSheet();return;}
     if(e.code!=='Space'||e.repeat)return;var tg=e.target,tn=tg&&tg.tagName;

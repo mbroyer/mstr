@@ -23,6 +23,7 @@ python3 build.py        # schreibt index.html (eine einzelne Seite)
 python3 tests/t1.py     # Playwright-Rauchtest bei 390 px (PW_CHROME=Pfad zu Chrome, falls nötig)
 python3 tests/t2.py     # jeder Klang, alle Vorlagen, Drop
 python3 tests/t3.py     # Spur Aufnahme
+python3 tests/t4.py     # Stopp beim Sperren / Tab verlassen
 ```
 
 ## Dateien

@@ -96,7 +96,11 @@ function playSynth(id,t,n){
   /* Becken: viele unharmonische Sinus-Teiltöne (fest ausgewürfelt, damit jeder Schlag gleich klingt), jeder mit eigenem Ausklang.
      Das ergibt den schimmernden Metallklang; Rauschen gibt es nur für den Stockanschlag */
   else if(id==='cym'){
-    if(w==='r')cymbal(t,v*.3,{lo:2500,hi:9000,n:14,dec:.7,lp:6000,stick:.08,rev:.08});
+    if(w==='r'){/* Ride: leiser, seidiger Schimmer weit oben statt pfeifender Teiltöne im empfindlichen 2–5-kHz-Bereich,
+      darunter nur ein zarter Ping. Achtel zwischen den Vierteln kommen leiser */
+      var ra=v*(n[0]%4===0?1:.6);
+      cymbal(t,ra*.13,{lo:5200,hi:12500,n:36,dec:.55,lp:11000,stick:.03,rev:.05});
+      cymbal(t,ra*.1,{lo:700,hi:1500,n:5,dec:.3,lp:4000,stick:0});}
     else if(w==='h')cymbal(t,v*.9,{lo:600,hi:7000,n:24,dec:.8,lp:9000,stick:.35,rev:.15,trash:1});
     else crash(t,v);}
   else if(id==='toms'){dr.tom(t,w==='b'?100:w==='p'?140:190,.6*v);}

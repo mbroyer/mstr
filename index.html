@@ -247,6 +247,8 @@ var ac=null;
 function getAC(){
   try{
     ac=ac||new (window.AudioContext||window.webkitAudioContext)();
+    /* iOS (Safari 16.4+): als Medienwiedergabe anmelden, damit die Medienlautstärke gilt und nicht der leisere Umgebungsmodus */
+    try{if(navigator.audioSession&&navigator.audioSession.type!=='playback')navigator.audioSession.type='playback';}catch(e){}
     if(ac.state!=='running'&&ac.resume){var p=ac.resume();if(p&&p.catch)p.catch(function(){});}
   }catch(e){}
   return ac;
@@ -258,9 +260,20 @@ function getAC(){
     if(c&&!c.__u){c.__u=1;try{var b=c.createBuffer(1,1,22050),sr=c.createBufferSource();sr.buffer=b;sr.connect(c.destination);sr.start(0);}catch(e){}}
   },true);
 });
-/* Lautstärke: alle Klänge laufen über Master-Gain + Limiter */
-var _oc=null,_og=null;
-function OUT(){if(_oc!==ac){_oc=ac;var g=ac.createGain();g.gain.value=2.8;var c=ac.createDynamicsCompressor();c.threshold.value=-14;c.knee.value=12;c.ratio.value=10;c.attack.value=.003;c.release.value=.15;g.connect(c);c.connect(ac.destination);_og=g;}return _og;}
+/* Lautstärke: alle Klänge laufen über Master-Gain, Kompressor, Aufholverstärkung und einen weichen Begrenzer.
+   Der Begrenzer fängt die Spitzen ab, die der Kompressor durchlässt; so bleibt nichts übersteuert und das Ganze
+   kann deutlich lauter sein (vor allem für Handylautsprecher). OUT_PRE und OUT_MK steuern den Pegel */
+var _oc=null,_og=null,OUT_PRE=2.4,OUT_MK=2.2;
+function OUT(){if(_oc!==ac){_oc=ac;
+  var g=ac.createGain();g.gain.value=OUT_PRE;
+  var c=ac.createDynamicsCompressor();c.threshold.value=-20;c.knee.value=8;c.ratio.value=6;c.attack.value=.001;c.release.value=.12;
+  var mk=ac.createGain();mk.gain.value=OUT_MK;
+  /* Weicher Begrenzer: bis 0,6 linear, darüber sanft gerundet gegen 0,97 (ohne Oversampling, das würde wieder über 0 dB schwingen) */
+  var lim=ac.createWaveShaper(),n=4096,cv=new Float32Array(n),i,K=.6,M=.97;
+  for(i=0;i<n;i++){var x=i/(n-1)*4-2,a=Math.abs(x),y=a<=K?a:K+(M-K)*Math.tanh((a-K)/(M-K));cv[i]=x<0?-y:y;}
+  lim.curve=cv;lim.oversample='none';
+  g.connect(c);c.connect(mk);mk.connect(lim);lim.connect(ac.destination);_og=g;}
+  return _og;}
 
 /* 13 Vorlagen (Stil, Tempo, Swing, Kick/Snare/Hat; genutzt werden die ersten 16 Schritte). Die erste ist die Start-Vorlage */
 var BEATS=[
@@ -377,7 +390,11 @@ function playSynth(id,t,n){
   /* Becken: viele unharmonische Sinus-Teiltöne (fest ausgewürfelt, damit jeder Schlag gleich klingt), jeder mit eigenem Ausklang.
      Das ergibt den schimmernden Metallklang; Rauschen gibt es nur für den Stockanschlag */
   else if(id==='cym'){
-    if(w==='r')cymbal(t,v*.3,{lo:2500,hi:9000,n:14,dec:.7,lp:6000,stick:.08,rev:.08});
+    if(w==='r'){/* Ride: leiser, seidiger Schimmer weit oben statt pfeifender Teiltöne im empfindlichen 2–5-kHz-Bereich,
+      darunter nur ein zarter Ping. Achtel zwischen den Vierteln kommen leiser */
+      var ra=v*(n[0]%4===0?1:.6);
+      cymbal(t,ra*.13,{lo:5200,hi:12500,n:36,dec:.55,lp:11000,stick:.03,rev:.05});
+      cymbal(t,ra*.1,{lo:700,hi:1500,n:5,dec:.3,lp:4000,stick:0});}
     else if(w==='h')cymbal(t,v*.9,{lo:600,hi:7000,n:24,dec:.8,lp:9000,stick:.35,rev:.15,trash:1});
     else crash(t,v);}
   else if(id==='toms'){dr.tom(t,w==='b'?100:w==='p'?140:190,.6*v);}
@@ -643,6 +660,10 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
     playB.innerHTML=on?I_STOP:I_PLAY;playB.classList.toggle('on',on);playB.setAttribute('aria-label',on?'Stoppen (Leertaste)':'Abspielen (Leertaste)');
   }
   playB.addEventListener('click',function(){setPlay(!playing);});
+  /* Handy gesperrt, App oder Tab gewechselt: Beat anhalten und den Ton sofort stumm schalten (auch nachklingende Hallfahnen) */
+  function away(){setPlay(false);try{if(ac&&ac.state==='running'&&ac.suspend)ac.suspend();}catch(e){}}
+  document.addEventListener('visibilitychange',function(){if(document.hidden)away();});
+  window.addEventListener('pagehide',away);
   document.addEventListener('keydown',function(e){
     if(e.key==='Escape'&&!sheet.hidden){closeSheet();return;}
     if(e.code!=='Space'||e.repeat)return;var tg=e.target,tn=tg&&tg.tagName;
