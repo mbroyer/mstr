@@ -93,7 +93,7 @@
   function persist(){S.pat={v:5,g:pat,bpm:bpm,sw:sw,vol:vol,mute:mute,solo:solo,pre:pre,ed:edited,br:brush,nm:title};save();}
   function anySolo(){return solo.some(Boolean);}
   /* ARR: beim Rechnen der Karte entscheidet das Arrangement je Takt mit, welche Spur klingt */
-  var ARR=null;
+  var ARR=null,playT0=0;
   function audible(r){if(ARR&&r<MIC&&!ARR(r))return false;return anySolo()?solo[r]:!mute[r];}
   function gainOf(r){return Math.pow(vol[r]/.8,1.6);} /* 80 % entspricht dem Originalpegel */
 
@@ -187,10 +187,10 @@
   function changed(){edited=true;paint();persist();}
 
   /* ---------- Wiedergabe ---------- */
-  function head(s){
+  function head(s,b){
     var r;
     if(shown>=0)for(r=0;r<R;r++)cells[r][shown].classList.remove('ph');
-    shown=s;
+    shown=s;if(s>=0)molHit(s,b);
     if(s>=0)for(r=0;r<R;r++){cells[r][s].classList.add('ph');if(pat[r].charAt(s)!=='0'&&audible(r)&&!drop)flash(r);}
     /* Taktzähler und Fortschrittslinie folgen dem laufenden Schritt */
     for(r=0;r<beats.length;r++)beats[r].classList.toggle('cur',s>=0&&r===Math.floor(s/4));
@@ -200,7 +200,7 @@
   function flash(r){var ic=rows[r].querySelector('.ic');ic.classList.remove('hit');void ic.offsetWidth;ic.classList.add('hit');clearTimeout(ic._t);ic._t=setTimeout(function(){ic.classList.remove('hit');},140);}
   function loop(){
     var nw=ac.currentTime;
-    while(queue.length&&queue[0].t<=nw){head(queue[0].s);queue.shift();}
+    while(queue.length&&queue[0].t<=nw){head(queue[0].s,queue[0].b);queue.shift();}
     if(playing)raf=requestAnimationFrame(loop);
   }
   function at(t,f){setTimeout(f,Math.max(0,(t-ac.currentTime)*1000));}
@@ -212,7 +212,7 @@
       /* Drop: ein Takt Anlauf mit dem eigenen Beat (siehe dropBuild), die letzten zwei Schritte Pause, dann der Einschlag */
       if(drop===2)dropStep(s,t,six);
       else playStep(s,t,six,bar);
-      queue.push({s:s,t:t});
+      queue.push({s:s,t:t,b:bar});
       step=(step+1)%N;if(!step)bar++;nextT+=six;
     }
   }
@@ -273,7 +273,7 @@
     if(on===playing)return;
     if(on){
       try{getAC();if(!ac)return;if(ac.state==='suspended')ac.resume();bus();}catch(e){return;}
-      playing=true;step=0;bar=0;fxStart();nextT=ac.currentTime+.06;queue=[];sched();timer=setInterval(sched,25);raf=requestAnimationFrame(loop);
+      playing=true;step=0;bar=0;fxStart();nextT=ac.currentTime+.06;playT0=nextT;queue=[];sched();timer=setInterval(sched,25);raf=requestAnimationFrame(loop);
     }else{
       playing=false;dropReset();fxHalt();clearInterval(timer);cancelAnimationFrame(raf);queue=[];head(-1);
     }
@@ -634,5 +634,30 @@
 
   build();themeUI();fxUI();playB.innerHTML=I_PLAY;
   if(shared){var before=shared;showToast(title?'“'+title+'” loaded':'Shared beat loaded','Undo',function(){restore(before);});}
-  window.MSTR={setPlay:setPlay,renderLoop:renderLoop,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
+  /* ---------- Molekül-Ansicht: das Raster gegen das Ring-Molekül der Karte tauschen, live mit dem Beat.
+     Schläge kommen aus head() (Schritt, Takt), Mute, Solo und Drop entscheiden mit; steht der Beat, steht das Bild.
+     Ein Tipp aufs Molekül bringt das Raster zurück, bearbeitet wird nur dort ---------- */
+  var molC=$('mol'),molX=molC.getContext('2d'),viewB=$('view'),molS=null,molKey='',molRaf=0,molOn=false,molTick=0;
+  function molDark(){var t=document.documentElement.getAttribute('data-theme');return t==='dark'||(!t&&!!window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);}
+  function molModel(){var k=shareCode();if(k===molKey&&molS)return;molKey=k;var m=cardModel();
+    if(molS)molS.m=m;else{molS=new CARD.Scene(m);molS.clip=false;molS.act=function(r){return audible(r)&&!drop;};}}
+  function molSize(){var b=molC.getBoundingClientRect(),d=Math.min(2,window.devicePixelRatio||1),w=Math.round(b.width*d),h=Math.round(b.height*d);
+    if(w&&h&&(molC.width!==w||molC.height!==h)){molC.width=w;molC.height=h;}}
+  function molDraw(){if(!molOn){molRaf=0;return;}if(!(molTick++%12))molModel();molSize();
+    if(playing)molS.time(ac.currentTime-playT0,performance.now());else if(molS.ct>=0)molS.reset();
+    var d=molDark();CARD.view(molX,molC.width,molC.height,molS,{fg:d?'#F3F3F4':'#0F0F10',bg:d?'#0E0E0F':'#FFFFFF',dark:d});
+    molRaf=requestAnimationFrame(molDraw);}
+  function molHit(s,b){if(!molOn||!molS)return;var L=FX.stut&&(b+1)%FXO.stut===0?fxStutLen():0,src=N-L,stu=L&&s>=src,q=stu?src:s,h=[],r;
+    if(!drop)for(r=0;r<7;r++)if(pat[r].charAt(q)!=='0'&&audible(r))h.push(r);
+    molS.fire({s:q,b:b,h:h,st:stu?1:0},performance.now());
+    if(stu)setTimeout(function(){if(molOn&&playing)molS.fire({s:q,b:b,h:h,st:1},performance.now());},st()*500);}
+  function molSet(on){molOn=!!on;app.classList.toggle('molecule',molOn);molC.hidden=!molOn;
+    viewB.setAttribute('aria-pressed',molOn?'true':'false');viewB.setAttribute('aria-label',molOn?'Show the grid':'Show as molecule');viewB.title=viewB.getAttribute('aria-label');
+    S.view=molOn?'mol':'';save();if(molOn){molModel();molSize();if(!molRaf)molRaf=requestAnimationFrame(molDraw);}}
+  viewB.addEventListener('click',function(){molSet(!molOn);});
+  molC.addEventListener('click',function(){molSet(false);});
+  molC.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();molSet(false);viewB.focus();}});
+  if(S.view==='mol')molSet(true);
+
+  window.MSTR={view:molSet,setPlay:setPlay,renderLoop:renderLoop,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
 })();
