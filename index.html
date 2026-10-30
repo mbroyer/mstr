@@ -281,6 +281,17 @@ function nz(t,d,v,type,f,q,rev,dest){var s=ac.createBufferSource();s.buffer=B.NZ
 function osc(type,f,t,end,dest){var o=ac.createOscillator();o.type=type;o.frequency.setValueAtTime(f,t);o.connect(dest);o.start(t);o.stop(end);return o;}
 /* Gefiltertes Rauschen, dessen Hüllkurve der Aufrufer selbst setzt (Gain startet bei 0) */
 function band(t,d,type,f,q,dest){var s=ac.createBufferSource(),fl=ac.createBiquadFilter(),g=ac.createGain();s.buffer=B.NZ;fl.type=type;fl.frequency.value=f;fl.Q.value=q;g.gain.value=0;s.connect(fl);fl.connect(g);g.connect(dest);s.start(t,Math.random()*.4);s.stop(t+d+.05);return g;}
+/* Crash wie bei der 808: sechs Rechteckoszillatoren modulieren Rauschen (dichter Metallklang ohne Einzeltöne),
+   ein mittleres Band klingt kurz, ein hohes lange, dazu der Stockanschlag */
+function crash(t,v){
+  var mt=ac.createGain();mt.gain.value=.2;[205,304,370,523,540,800].forEach(function(f){osc('square',f*1.6,t,t+2,mt);});
+  var sz=ac.createBufferSource(),rm=ac.createGain();sz.buffer=B.NZ;sz.loop=true;rm.gain.value=0;mt.connect(rm.gain);sz.connect(rm);sz.start(t,Math.random()*.4);sz.stop(t+2);
+  var mid=ac.createBiquadFilter(),gm=ac.createGain();mid.type='bandpass';mid.frequency.value=3400;mid.Q.value=.8;rm.connect(mid);mid.connect(gm);gm.connect(B.DUCK);
+  gm.gain.setValueAtTime(.0001,t);gm.gain.exponentialRampToValueAtTime(1.1*v,t+.002);gm.gain.exponentialRampToValueAtTime(.0001,t+.4);
+  var hi=ac.createBiquadFilter(),gh=ac.createGain();hi.type='highpass';hi.frequency.value=6500;rm.connect(hi);hi.connect(gh);gh.connect(B.DUCK);
+  gh.gain.setValueAtTime(.0001,t);gh.gain.exponentialRampToValueAtTime(.9*v,t+.002);gh.gain.exponentialRampToValueAtTime(.25*v,t+.15);gh.gain.exponentialRampToValueAtTime(.0001,t+1.8);send(gh,B.REV,.1);
+  var gs=band(t,.05,'highpass',2000,.7,B.DUCK);gs.gain.setValueAtTime(.35*v,t);gs.gain.exponentialRampToValueAtTime(.001,t+.025);
+}
 var CYP=null;
 function cymbal(t,v,o){
   if(!CYP){var x=7;CYP=[];for(var j=0;j<40;j++){x=(x*16807)%2147483647;var r1=x/2147483647;x=(x*16807)%2147483647;CYP.push([r1,x/2147483647]);}}
@@ -328,9 +339,9 @@ function playSynth(id,t,n){
   /* Becken: viele unharmonische Sinus-Teiltöne (fest ausgewürfelt, damit jeder Schlag gleich klingt), jeder mit eigenem Ausklang.
      Das ergibt den schimmernden Metallklang; Rauschen gibt es nur für den Stockanschlag */
   else if(id==='cym'){
-    if(w==='r')cymbal(t,v*.5,{lo:2500,hi:9000,n:14,dec:.7,lp:8000,stick:.18,rev:.08});
+    if(w==='r')cymbal(t,v*.3,{lo:2500,hi:9000,n:14,dec:.7,lp:6000,stick:.08,rev:.08});
     else if(w==='h')cymbal(t,v*.9,{lo:600,hi:7000,n:24,dec:.8,lp:9000,stick:.35,rev:.15,trash:1});
-    else cymbal(t,v,{lo:350,hi:11000,n:32,dec:1.8,lp:12000,stick:.4,rev:.12});}
+    else crash(t,v);}
   else if(id==='toms'){dr.tom(t,w==='b'?100:w==='p'?140:190,.6*v);}
   else if(id==='fx'){
     /* Snap: harter Klick des Fingers, dann die Resonanz der hohlen Hand (schmales Band um 1,8 und 3,2 kHz), ein leiser Körper und etwas Raum.
