@@ -7,7 +7,7 @@ Herausgelöst aus der Monster-Beatbox in NumNum (Repo `mbroyer/numnum`, Datei `s
 - 7 Spuren: Hi-Hat (Zu, Offen, Tick), Kick, Snare (Snare, Rim, Rauschen, Clap), Becken (Crash, Ride, China), Perc (Shaker, Tamburin, Clave, Conga, Cowbell), Toms (Tief, Mittel, Hoch), FX (Snap, Sub, Reverse, Wirbel, Riser)
 - Spur 8 „Aufnahme“: der eigene Klang (1 Sekunde übers Mikrofon, nur auf diesem Gerät) in drei Tonhöhen (Normal, Tief, Hoch). Nur hier gibt es das Mikrofon; Vorlagen lassen diese Spur unverändert
 - Je Spur: Klangauswahl, Mute, Solo, Lautstärke, Vorschlag
-- 16 Vorlagen (Lo-Fi als Start, One Drop, Reggaeton, Afrobeats, Funk, Rock, House, Bossa, Minimal, 2-Step, Trap, Techno, Drum'n'Bass, Jungle, Electro, Amapiano) mit Tempo und Swing, Tempo 60–180 BPM mit Tap-Tempo, Swing auf jedem zweiten Achtel
+- 16 Vorlagen (Lo-Fi als Start, One Drop, Reggaeton, Afrobeats, Funk, Rock, House, 80s Pop, Minimal, 2-Step, Trap, Techno, Drum'n'Bass, Jungle, Electro, Amapiano) mit Tempo und Swing, Tempo 60–180 BPM mit Tap-Tempo, Swing auf jedem zweiten Achtel
 - Drop: ein Takt Anlauf mit Filter, dann der Knall
 - Leertaste startet und stoppt, „Leeren“ lässt sich rückgängig machen
 - Heller und dunkler Modus (folgt dem System oder fest eingestellt)
