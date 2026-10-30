@@ -92,15 +92,17 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .app.live .transport::before{width:calc(var(--prog,0) * 100%);transition:width .06s linear}
 .play svg{width:20px;height:20px}
 .play.on{background:var(--accent);color:var(--on-accent)}
-#drop{height:44px;padding:0 14px}
+#drop{height:44px;padding:0 14px 0 12px;gap:6px}
+#drop.on svg path{fill:currentColor}
 #drop.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .app.building #drop{animation:pulse .25s ease-in-out infinite alternate}
 #fxBtn{height:44px;padding:0 12px 0 10px;gap:6px;font-variant-numeric:tabular-nums}
 #share{width:44px;height:44px;padding:0;flex:none}
 #share svg{width:19px;height:19px}
 /* Schmale Handys: Platz für Teilen in der Leiste, der Pfeil am Tempo entfällt (die Zahl selbst öffnet das Blatt) */
-@media (max-width:430px){.tempo .chev{display:none}.transport{gap:6px}#drop{padding:0 12px}}
-@media (max-width:380px){.transport{gap:4px}.play{width:50px;height:50px}#drop{padding:0 10px}#fxBtn{padding:0 9px 0 8px}}
+/* Handys: Effects und Drop nur als Symbol (Effects mit Zahl, wenn Effekte an sind), damit Teilen und Tempo Luft haben */
+@media (max-width:430px){.transport .fxl{display:none}#fxBtn,#drop{min-width:44px;padding:0 12px;justify-content:center;gap:4px}#drop{width:44px;padding:0}#fxBtn.on{padding:0 14px 0 12px}}
+@media (max-width:380px){.tempo .chev{display:none}}
 #fxBtn.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .tempo{margin-left:auto;border:0;background:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:4px 0;line-height:1}
 .tv{display:flex;flex-direction:column;align-items:flex-end;gap:6px}

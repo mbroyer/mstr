@@ -105,15 +105,17 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .app.live .transport::before{width:calc(var(--prog,0) * 100%);transition:width .06s linear}
 .play svg{width:20px;height:20px}
 .play.on{background:var(--accent);color:var(--on-accent)}
-#drop{height:44px;padding:0 14px}
+#drop{height:44px;padding:0 14px 0 12px;gap:6px}
+#drop.on svg path{fill:currentColor}
 #drop.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .app.building #drop{animation:pulse .25s ease-in-out infinite alternate}
 #fxBtn{height:44px;padding:0 12px 0 10px;gap:6px;font-variant-numeric:tabular-nums}
 #share{width:44px;height:44px;padding:0;flex:none}
 #share svg{width:19px;height:19px}
 /* Schmale Handys: Platz für Teilen in der Leiste, der Pfeil am Tempo entfällt (die Zahl selbst öffnet das Blatt) */
-@media (max-width:430px){.tempo .chev{display:none}.transport{gap:6px}#drop{padding:0 12px}}
-@media (max-width:380px){.transport{gap:4px}.play{width:50px;height:50px}#drop{padding:0 10px}#fxBtn{padding:0 9px 0 8px}}
+/* Handys: Effects und Drop nur als Symbol (Effects mit Zahl, wenn Effekte an sind), damit Teilen und Tempo Luft haben */
+@media (max-width:430px){.transport .fxl{display:none}#fxBtn,#drop{min-width:44px;padding:0 12px;justify-content:center;gap:4px}#drop{width:44px;padding:0}#fxBtn.on{padding:0 14px 0 12px}}
+@media (max-width:380px){.tempo .chev{display:none}}
 #fxBtn.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .tempo{margin-left:auto;border:0;background:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:4px 0;line-height:1}
 .tv{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
@@ -258,8 +260,8 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
   <div class="trk beatrow" aria-hidden="true"><div class="tl"></div><div class="steps"><div class="grp"><span>1</span><span></span><span></span><span></span></div><div class="grp"><span>2</span><span></span><span></span><span></span></div><div class="grp"><span>3</span><span></span><span></span><span></span></div><div class="grp"><span>4</span><span></span><span></span><span></span></div></div></div>
   <footer class="transport">
     <button type="button" class="play" id="play" aria-label="Play (Space)"></button>
-    <button type="button" class="pill" id="drop">Drop</button>
-    <button type="button" class="pill" id="fxBtn" aria-haspopup="dialog" aria-label="Effects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="15" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="17" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/></svg>Effects<span class="fxn" id="fxN"></span></button>
+    <button type="button" class="pill" id="fxBtn" aria-haspopup="dialog" aria-label="Effects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="15" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="17" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/></svg><span class="fxl">Effects</span><span class="fxn" id="fxN"></span></button>
+    <button type="button" class="pill" id="drop" aria-label="Drop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2.5L5 13.5h6l-1.5 8 8.5-11h-6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span class="fxl">Drop</span></button>
     <button type="button" class="pill" id="share" aria-haspopup="dialog" aria-label="Share or download" title="Share or download"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M8 8l4-4 4 4M5 13v5.5A1.5 1.5 0 0 0 6.5 20h11a1.5 1.5 0 0 0 1.5-1.5V13" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <button type="button" class="tempo" id="tempoBtn" aria-haspopup="dialog" aria-label="Tempo and swing"><span class="tv"><span class="swt" id="swTxt">Swing 0 %</span><span class="big"><span id="bpm">100</span><small>bpm</small></span></span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   </footer>
@@ -1057,12 +1059,14 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
   /* Geteilte Links zeigen immer auf die Website, egal wo die App gerade läuft */
   var SITE='https://asimplemanslab.com/mstr/app/';
   function shareUrl(){return SITE+'?b='+shareCode();}
-  function shareBeat(){
+  /* Handy mit Teilen-Menü: der Link wird gesendet. Rechner: er wird kopiert, und der Knopf sagt das auch */
+  function nativeShare(){return !!navigator.share&&matchMedia('(pointer: coarse)').matches;}
+  function shareBeat(copied){
     var url=shareUrl(),name=title||(pre>=0?NM[BEATS[pre].n]:'my beat'),note=pat[MIC]&&pat[MIC]!==zero()?' Your recording stays on this device.':'';
     /* Handy: das Teilen-Menü des Systems. Sonst (oder wenn es fehlt) den Link kopieren */
-    if(navigator.share&&matchMedia('(pointer: coarse)').matches){
+    if(nativeShare()){
       navigator.share({title:name+' · MSTR',text:'Listen to “'+name+'” on MSTR',url:url}).then(function(){closeSheet();if(note)showToast(note.trim());}).catch(function(){});return;}
-    function shown(){closeSheet();showToast('Link copied.'+note);}
+    function shown(){if(copied)copied();else showToast('Link copied.'+note);}
     if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(shown,function(){window.prompt('Copy this link',url);});
     else window.prompt('Copy this link',url);
   }
@@ -1105,16 +1109,18 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
     var own=pat[MIC]&&pat[MIC]!==zero();
     openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Share your beat</span>'+XB+'</div>'+
       '<label class="namef"><span class="lbl">Name</span><input id="shName" type="text" maxlength="40" autocomplete="off" enterkeyhint="send" data-focus></label>'+
-      '<button type="button" class="pill wide go" id="shSend">Send link</button>'+
-      '<p class="shnote">Opens your beat on asimplemanslab.com/mstr'+(own?'. Your recording stays on this device.':'.')+'</p>'+
+      '<button type="button" class="pill wide go" id="shSend">'+(nativeShare()?'Send link':'Copy link')+'</button>'+
+      '<p class="shnote" id="shSendT">'+(nativeShare()?'':'Paste it into a chat or mail. ')+'Opens your beat on asimplemanslab.com/mstr'+(own?'. Your recording stays on this device.':'.')+'</p>'+
       '<button type="button" class="pill wide" id="shWav"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Download WAV</span></button>'+
       '<p class="shnote" id="shWavT">'+BARS+' bars that loop seamlessly, for sampling'+(own?', with your recording':'')+'</p>',function(el){
       var inp=el.querySelector('#shName');
       inp.value=title;inp.placeholder=pre>=0?NM[BEATS[pre].n]:'Your beat';
       function setName(){var v=inp.value.replace(/[\u0000-\u001f]/g,'').trim().slice(0,40);if(v!==title){title=v;paint();persist();}}
       inp.addEventListener('input',setName);
-      inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();setName();shareBeat();}});
-      el.querySelector('#shSend').addEventListener('click',function(){setName();shareBeat();});
+      inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();sb.click();}});
+      var sb=el.querySelector('#shSend'),sbT=0;
+      sb.addEventListener('click',function(){setName();shareBeat(function(){
+        sb.textContent='\u2713 Link copied';clearTimeout(sbT);sbT=setTimeout(function(){sb.textContent='Copy link';},2500);});});
       /* Download: am Handy übers Teilen-Menü (dort „In Dateien sichern“), sonst direkt. Lässt der Browser das Teilen
          nach dem Rechnen nicht mehr zu, braucht es einen zweiten Tipp */
       var wb=el.querySelector('#shWav'),wt=el.querySelector('#shWavT'),file=null,busy=false;

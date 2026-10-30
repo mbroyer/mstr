@@ -474,12 +474,14 @@
   /* Geteilte Links zeigen immer auf die Website, egal wo die App gerade läuft */
   var SITE='https://asimplemanslab.com/mstr/app/';
   function shareUrl(){return SITE+'?b='+shareCode();}
-  function shareBeat(){
+  /* Handy mit Teilen-Menü: der Link wird gesendet. Rechner: er wird kopiert, und der Knopf sagt das auch */
+  function nativeShare(){return !!navigator.share&&matchMedia('(pointer: coarse)').matches;}
+  function shareBeat(copied){
     var url=shareUrl(),name=title||(pre>=0?NM[BEATS[pre].n]:'my beat'),note=pat[MIC]&&pat[MIC]!==zero()?' Your recording stays on this device.':'';
     /* Handy: das Teilen-Menü des Systems. Sonst (oder wenn es fehlt) den Link kopieren */
-    if(navigator.share&&matchMedia('(pointer: coarse)').matches){
+    if(nativeShare()){
       navigator.share({title:name+' · MSTR',text:'Listen to “'+name+'” on MSTR',url:url}).then(function(){closeSheet();if(note)showToast(note.trim());}).catch(function(){});return;}
-    function shown(){closeSheet();showToast('Link copied.'+note);}
+    function shown(){if(copied)copied();else showToast('Link copied.'+note);}
     if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(shown,function(){window.prompt('Copy this link',url);});
     else window.prompt('Copy this link',url);
   }
@@ -522,16 +524,18 @@
     var own=pat[MIC]&&pat[MIC]!==zero();
     openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Share your beat</span>'+XB+'</div>'+
       '<label class="namef"><span class="lbl">Name</span><input id="shName" type="text" maxlength="40" autocomplete="off" enterkeyhint="send" data-focus></label>'+
-      '<button type="button" class="pill wide go" id="shSend">Send link</button>'+
-      '<p class="shnote">Opens your beat on asimplemanslab.com/mstr'+(own?'. Your recording stays on this device.':'.')+'</p>'+
+      '<button type="button" class="pill wide go" id="shSend">'+(nativeShare()?'Send link':'Copy link')+'</button>'+
+      '<p class="shnote" id="shSendT">'+(nativeShare()?'':'Paste it into a chat or mail. ')+'Opens your beat on asimplemanslab.com/mstr'+(own?'. Your recording stays on this device.':'.')+'</p>'+
       '<button type="button" class="pill wide" id="shWav"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Download WAV</span></button>'+
       '<p class="shnote" id="shWavT">'+BARS+' bars that loop seamlessly, for sampling'+(own?', with your recording':'')+'</p>',function(el){
       var inp=el.querySelector('#shName');
       inp.value=title;inp.placeholder=pre>=0?NM[BEATS[pre].n]:'Your beat';
       function setName(){var v=inp.value.replace(/[\u0000-\u001f]/g,'').trim().slice(0,40);if(v!==title){title=v;paint();persist();}}
       inp.addEventListener('input',setName);
-      inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();setName();shareBeat();}});
-      el.querySelector('#shSend').addEventListener('click',function(){setName();shareBeat();});
+      inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();sb.click();}});
+      var sb=el.querySelector('#shSend'),sbT=0;
+      sb.addEventListener('click',function(){setName();shareBeat(function(){
+        sb.textContent='\u2713 Link copied';clearTimeout(sbT);sbT=setTimeout(function(){sb.textContent='Copy link';},2500);});});
       /* Download: am Handy übers Teilen-Menü (dort „In Dateien sichern“), sonst direkt. Lässt der Browser das Teilen
          nach dem Rechnen nicht mehr zu, braucht es einen zweiten Tipp */
       var wb=el.querySelector('#shWav'),wt=el.querySelector('#shWavT'),file=null,busy=false;
