@@ -35,6 +35,7 @@
   var cells=[],rows=[],playing=false,step=0,nextT=0,timer=0,queue=[],raf=0,shown=-1,drop=0;
   var $=function(id){return document.getElementById(id);};
   var app=$('app'),tracksEl=$('tracks'),playB=$('play'),dropB=$('drop'),sheet=$('sheet');
+  var beats=document.querySelectorAll('.beatrow .grp span:first-child');
 
   function zero(){return new Array(N+1).join('0');}
   function empty(){var a=[],r;for(r=0;r<R;r++)a.push(zero());return a;}
@@ -144,6 +145,9 @@
     if(shown>=0)for(r=0;r<R;r++)cells[r][shown].classList.remove('ph');
     shown=s;
     if(s>=0)for(r=0;r<R;r++){cells[r][s].classList.add('ph');if(pat[r].charAt(s)!=='0'&&audible(r)&&!drop)flash(r);}
+    /* Taktzähler und Fortschrittslinie folgen dem laufenden Schritt */
+    for(r=0;r<beats.length;r++)beats[r].classList.toggle('cur',s>=0&&r===Math.floor(s/4));
+    app.style.setProperty('--prog',s<0?0:(s+1)/N);
   }
   /* Das Spur-Icon blinkt kurz in Flieder, wenn die Spur klingt */
   function flash(r){var ic=rows[r].querySelector('.ic');ic.classList.remove('hit');void ic.offsetWidth;ic.classList.add('hit');clearTimeout(ic._t);ic._t=setTimeout(function(){ic.classList.remove('hit');},140);}

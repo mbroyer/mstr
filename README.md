@@ -14,7 +14,7 @@ Herausgelöst aus der Monster-Beatbox in NumNum (Repo `mbroyer/numnum`, Datei `s
 - Der Beat liegt in localStorage unter `mstr-v1` (nie umbenennen), die Aufnahme unter `mstr-rec-mic` (ältere Aufnahmen anderer Spuren werden beim Laden dorthin übernommen)
 
 ## Design
-Schwarz, Weiß und ein Signal: Die Akzentfarbe Flieder (`#C7B3FF`) erscheint nur für Zustände, also den laufenden Schritt, die Aufnahme, die gewählte Vorlage und Play während der Wiedergabe. Schriften: Figtree, Instrument Serif (nur Seitentitel), JetBrains Mono (Labels).
+Schwarz, Weiß und ein Signal: Die Akzentfarbe Flieder (`#C7B3FF`) erscheint nur für Takt und Zustände: den laufenden Schritt, die Zählzeiten 1, 5, 9 und 13 (leicht getönt), den Taktzähler und die Fortschrittslinie beim Abspielen, gedrückte Schalter (Mute, Solo, gewählter Klang), die Aufnahme, die gewählte Vorlage und Play während der Wiedergabe. Schriften: Figtree, Instrument Serif (nur Seitentitel), JetBrains Mono (Labels).
 
 ## Bauen und testen
 
