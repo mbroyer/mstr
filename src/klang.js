@@ -7,7 +7,9 @@ var TRACKS=[
   {id:'cym',n:'Becken',s:[['c','Crash'],['r','Ride'],['h','China']]},
   {id:'click',n:'Perc',s:[['1','Shaker'],['2','Tamburin'],['3','Clave'],['4','Conga'],['5','Cowbell']]},
   {id:'toms',n:'Toms',s:[['b','Tief'],['p','Mittel'],['t','Hoch']]},
-  {id:'fx',n:'FX',s:[['m','Snap'],['n','Sub'],['s','Reverse'],['l','Wirbel'],['z','Riser']]}];
+  {id:'fx',n:'FX',s:[['m','Snap'],['n','Sub'],['s','Reverse'],['l','Wirbel'],['z','Riser']]},
+  /* Eigene Spur: spielt nur die eigene Aufnahme, in drei Tonhöhen */
+  {id:'mic',n:'Aufnahme',s:[['a','Normal'],['t','Tief'],['h','Hoch']]}];
 var N=16,R=TRACKS.length;
 var PENT=[0,57,60,62,64,67],RATE=[1,.84,1.19,1.33,1.5];
 var bpm=100,sw=0;
@@ -62,6 +64,7 @@ var dr={
 };
 /* n = [Schritt, Klangzeichen, Länge, Lautstärke] */
 function playSynth(id,t,n){
+  if(id==='mic')return;
   var v=n[3],w=n[1],six=st();
   if(id==='beat'){var kl=bpm>=128?.38:.22;
     var g=vca(t,.001,0,kl,1.05*v,kl>.3?B.SAT:B.OUT);var o=osc('sine',150,t,t+kl+.05,g);o.frequency.exponentialRampToValueAtTime(kl>.3?44:52,t+.07);
@@ -118,9 +121,11 @@ function playSynth(id,t,n){
       var sz=ac.createBufferSource();sz.buffer=B.NZ;sz.loop=true;sz.connect(hz2);sz.start(t);sz.stop(t+L+.02);send(gz,B.REV,.45);}}
 }
 
-/* ---------- Eigene Klänge: 1 Sekunde aufnehmen, Stille abschneiden, als WAV auf diesem Gerät speichern ---------- */
-var REC={},ownV={};
-TRACKS.forEach(function(m){var s=lsGet('mstr-rec-'+m.id);if(s){ownV[m.id]=lsGet('mstr-own-'+m.id)!=='0';REC[m.id]={b64:s};}});
+/* ---------- Eigener Klang: 1 Sekunde aufnehmen, Stille abschneiden, als WAV auf diesem Gerät speichern. Nur für die Spur Aufnahme ---------- */
+var REC={};
+/* Früher konnte jede Spur eine Aufnahme haben: die erste vorhandene wandert in die Spur Aufnahme, die übrigen fallen weg */
+TRACKS.forEach(function(m){if(m.id==='mic')return;var s=lsGet('mstr-rec-'+m.id);if(s&&!lsGet('mstr-rec-mic'))lsSet('mstr-rec-mic',s);if(s)lsSet('mstr-rec-'+m.id,null);lsSet('mstr-own-'+m.id,null);});
+(function(){var s=lsGet('mstr-rec-mic');if(s)REC.mic={b64:s};})();
 function b64buf(s){var bin=atob(s),a=new Uint8Array(bin.length),i;for(i=0;i<bin.length;i++)a[i]=bin.charCodeAt(i);return a.buffer;}
 function trimBuf(buf){var d=buf.getChannelData(0),sr=buf.sampleRate,peak=0,i;for(i=0;i<d.length;i++)peak=Math.max(peak,Math.abs(d[i]));if(peak<.01)return null;
   var th=peak*.12,a=0,b=d.length-1;while(a<d.length&&Math.abs(d[a])<th)a++;while(b>a&&Math.abs(d[b])<th*.5)b--;a=Math.max(0,a-sr*.01|0);b=Math.min(d.length,b+sr*.08|0,a+sr*.7|0);
@@ -131,7 +136,7 @@ function wavB64(buf){var d=buf.getChannelData(0),stp=buf.sampleRate>=44100?2:1,s
   w(0,'RIFF');v.setUint32(4,36+n*2,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*2,true);
   for(i=0;i<n;i++){var x=Math.max(-1,Math.min(1,d[i*stp]));v.setInt16(44+i*2,x*32767,true);}
   var u=new Uint8Array(ab),bin='';for(i=0;i<u.length;i+=8192)bin+=String.fromCharCode.apply(null,u.subarray(i,i+8192));return btoa(bin);}
-function useOwn(id){return !!(REC[id]&&ownV[id]);}
+function useOwn(id){return id==='mic'&&!!REC.mic;}
 function playRec(id,t,n){var r=REC[id];if(!r.buf){decodeRec(id);return playSynth(id,t,n);}var s=ac.createBufferSource();s.buffer=r.buf;var k=Math.max(0,sndIx(trIx(id),n[1]));s.playbackRate.value=id==='click'?Math.pow(2,(PENT[+n[1]]-60)/12):RATE[k%5];
   var g=vca(t,.003,0,.06,.9*n[3],id==='beat'?B.SAT:B.DUCK);s.connect(g);s.start(t);if(id==='beat')duck(t);send(g,B.REV,.15);}
 function play(id,t,n){if(!bus())return;if(useOwn(id))return playRec(id,t,n);playSynth(id,t,n);}
@@ -151,10 +156,10 @@ function record(id,status,done){
       var n=0,k,o=0;parts.forEach(function(x){n+=x.length;});if(!n){status('Die Aufnahme ist leer. Bitte noch einmal versuchen.');return done(false);}
       var raw=ac.createBuffer(1,n,ac.sampleRate),d=raw.getChannelData(0);for(k=0;k<parts.length;k++){d.set(parts[k],o);o+=parts[k].length;}
       var tb=trimBuf(raw);if(!tb){status('Zu leise. Bitte näher ans Mikrofon und noch einmal.');return done(false);}
-      var b64=wavB64(tb);REC[id]={b64:b64,buf:tb};ownV[id]=true;lsSet('mstr-rec-'+id,b64);lsSet('mstr-own-'+id,'1');
+      var b64=wavB64(tb);REC[id]={b64:b64,buf:tb};lsSet('mstr-rec-'+id,b64);
       status('Gespeichert, nur auf diesem Gerät.');setTimeout(function(){playRec(id,ac.currentTime+.05,[0,TRACKS[trIx(id)].s[0][0],2,1]);},300);done(true);}
     status('3',1);setTimeout(function(){status('2',1);},500);setTimeout(function(){status('1',1);},1000);
     setTimeout(function(){status('Aufnahme läuft',2);on=true;setTimeout(fin,1100);},1500);})
   .catch(function(){status('Kein Zugriff aufs Mikrofon. Bitte in den Browser-Einstellungen erlauben.');done(false);});
 }
-function dropRec(id){delete REC[id];delete ownV[id];lsSet('mstr-rec-'+id,null);lsSet('mstr-own-'+id,null);}
+function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
