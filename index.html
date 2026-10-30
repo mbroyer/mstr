@@ -319,9 +319,13 @@ function playSynth(id,t,n){
       nz(t,.008,.25*v,'bandpass',3200,1.5,0,B.DUCK);nz(t,.004,.15*v,'highpass',6000,.7,0,B.DUCK);}}
   else if(id==='toms'){if(w==='b'){dr.kick(t,.8*v);duck(t);}else if(w==='p')dr.snare(t,.5*v);else if(w==='t'){dr.tom(t,150,.55*v);}else{dr.noise(t,.3*v,.9,5000);}}
   else if(id==='fx'){
-    /* Snap: zwei schnelle Rauschimpulse wie ein Fingerschnipsen */
-    if(w==='m'){[0,.005].forEach(function(o2,i){var gn=band(t+o2,.1,'bandpass',2100,2.5,B.DUCK);gn.gain.setValueAtTime((i?.35:.5)*v,t+o2);gn.gain.exponentialRampToValueAtTime(.001,t+o2+(i?.07:.012));send(gn,B.REV,.2);});
-      var gk=vca(t,.001,0,.012,.12*v,B.DUCK);osc('sine',1400,t,t+.03,gk);}
+    /* Snap: harter Klick des Fingers, dann die Resonanz der hohlen Hand (schmales Band um 1,8 und 3,2 kHz), ein leiser Körper und etwas Raum.
+       Die Resonanz schwankt bei jedem Schnipsen leicht, wie bei einer echten Hand */
+    if(w==='m'){var rj=1+(Math.random()-.5)*.12;
+      var gc=band(t,.01,'highpass',3500,.7,B.DUCK);gc.gain.setValueAtTime(.55*v,t);gc.gain.exponentialRampToValueAtTime(.001,t+.003);
+      var gr=band(t,.08,'bandpass',1800*rj,6,B.DUCK);gr.gain.setValueAtTime(.0001,t);gr.gain.exponentialRampToValueAtTime(1.6*v,t+.0015);gr.gain.exponentialRampToValueAtTime(.001,t+.045);send(gr,B.REV,.22);
+      var gh=band(t,.05,'bandpass',3200*rj,4,B.DUCK);gh.gain.setValueAtTime(.0001,t);gh.gain.exponentialRampToValueAtTime(.7*v,t+.001);gh.gain.exponentialRampToValueAtTime(.001,t+.025);send(gh,B.REV,.15);
+      var gk=vca(t,.001,0,.018,.12*v,B.DUCK);osc('sine',260,t,t+.04,gk);}
     /* Sub: kurzer, tiefer 808-Bass, läuft über die Sättigung */
     else if(w==='n'){var gb=vca(t,.002,.05,.4,.9*v,B.SAT),ob=osc('sine',95,t,t+.5,gb);ob.frequency.exponentialRampToValueAtTime(52,t+.05);duck(t);}
     /* Crash: langes Becken aus Rauschen und Metallklang */
