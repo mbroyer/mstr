@@ -135,7 +135,7 @@
     at(t,function(){app.classList.add('building');});
   }
   function dropBoom(t){
-    play('beat',t,[0,'b',2,1]);play('toms',t,[0,'c',2,1]);
+    play('beat',t,[0,'b',2,1]);play('snare',t,[0,'s',2,1]);
     var g=vca(t,.005,.15,.9,.9,B.SAT),o=osc('sine',80,t,t+1.1,g);o.frequency.exponentialRampToValueAtTime(30,t+.9);
     at(t,function(){app.classList.remove('building');dropB.classList.remove('on');});
   }
