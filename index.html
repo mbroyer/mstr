@@ -11,7 +11,7 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;500;600;700;800&family=Instrument+Serif&family=JetBrains+Mono:wght@400;500&display=swap">
 <style>
-/* MSTR: Schwarz, Weiß und ein Signal (Flieder). Farbe nur für Zustände: Playhead, Aufnahme, gewählte Vorlage, laufende Wiedergabe. */
+/* MSTR: Schwarz, Weiß und ein Signal (Flieder). Farbe nur für Takt und Zustände: Playhead, Zählzeiten, Taktzähler, Fortschritt, Aufnahme, Schalter, gewählte Vorlage, laufende Wiedergabe. */
 :root{
   --bg:#FFFFFF; --ink:#0F0F10; --mute:#8E8E94; --off:#EDEDEF; --line:#E4E4E7; --soft:#F4F4F5;
   --accent:#C7B3FF; --on-accent:#0F0F10;
@@ -62,7 +62,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .tn .tb{font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tn .go{width:12px;height:12px;color:var(--mute);flex:none;align-self:center;margin-left:-4px}
 .ms{width:26px;height:22px;border-radius:6px;border:1px solid var(--line);background:transparent;font-family:var(--f-mono);font-size:10px;font-weight:500;cursor:pointer;color:var(--mute);padding:0;flex:none}
-.ms[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.ms[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .trk.quiet .steps{opacity:.28}
 /* Die eigene Spur Aufnahme steht etwas abgesetzt unter den eingebauten */
 .trk.own{border-top:1px solid var(--line);padding-top:clamp(12px,2.6vh,24px)}
@@ -70,10 +70,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .grp{flex:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(3px,1vw,6px)}
 .dot{aspect-ratio:1;width:100%;max-width:100%;border-radius:50%;border:0;background:var(--off);padding:0;cursor:pointer;display:grid;place-items:center;font-family:var(--f-mono);font-size:clamp(8px,2.2vw,11px);font-weight:500;color:var(--bg);line-height:1;transition:background .1s,transform .1s,box-shadow .1s}
 .dot.on{background:var(--ink)}
+/* Zählzeiten 1, 5, 9, 13 leicht flieder, damit man ohne Hinsehen zählt */
+.grp .dot:first-child:not(.on){background:color-mix(in srgb,var(--accent) 30%,var(--off))}
 .dot.ph{box-shadow:0 0 0 2px var(--accent)}
 .dot.on.ph{background:var(--accent);color:var(--on-accent);transform:scale(1.14)}
 .beatrow .steps span{font-family:var(--f-mono);font-size:10px;color:var(--mute);text-align:center}
 .beatrow{margin-top:-6px}
+/* Taktzähler: die laufende Zählzeit sitzt im Flieder-Kreis */
+.beatrow .grp span:first-child{justify-self:center;width:18px;height:18px;line-height:18px;border-radius:50%;transition:background .08s,color .08s}
+.beatrow .grp span.cur{background:var(--accent);color:var(--on-accent);font-weight:500}
 .beatrow .tl{display:none}
 @media (min-width:640px){
   .trk{grid-template-columns:220px minmax(0,1fr);gap:16px;align-items:center}
@@ -83,6 +88,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 /* Transport unten */
 .transport{position:sticky;bottom:0;margin-top:auto;display:flex;align-items:center;gap:10px;background:var(--bg);border-top:1px solid var(--line);margin-left:calc(-1 * var(--gut));margin-right:calc(-1 * var(--gutr));padding:12px var(--gutr) max(12px,env(safe-area-inset-bottom,0px)) var(--gut);z-index:5;transition:background .25s}
 .play{width:58px;height:58px;border-radius:50%;border:0;background:var(--ink);color:var(--bg);display:grid;place-items:center;cursor:pointer;flex:none;padding:0}
+/* Fortschrittslinie: die Linie über Play läuft beim Abspielen durch den Takt */
+.transport::before{content:"";position:absolute;left:0;top:-1px;height:2px;width:0;background:var(--accent);pointer-events:none}
+.app.live .transport::before{width:calc(var(--prog,0) * 100%);transition:width .06s linear}
 .play svg{width:20px;height:20px}
 .play.on{background:var(--accent);color:var(--on-accent)}
 #drop{height:44px;padding:0 18px}
@@ -142,10 +150,10 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .lbl{font-size:13px;color:var(--mute)}
 .opts{display:flex;gap:6px;flex-wrap:wrap}
 .opt{height:34px;border-radius:999px;border:1px solid var(--line);background:transparent;padding:0 14px;font-size:13px;font-weight:600;cursor:pointer}
-.opt[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.opt[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .seg2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .seg2 button{height:42px;border-radius:999px;border:1px solid var(--line);background:transparent;font-size:13px;font-weight:600;cursor:pointer;color:var(--mute)}
-.seg2 button[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
+.seg2 button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .seg2.sm{flex:1}
 .seg2.sm button{height:30px;font-size:12px}
 .recbox{position:relative;display:flex;flex-direction:column;align-items:center;gap:14px;padding:26px 0 4px;overflow:hidden}
@@ -474,6 +482,7 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
   var cells=[],rows=[],playing=false,step=0,nextT=0,timer=0,queue=[],raf=0,shown=-1,drop=0;
   var $=function(id){return document.getElementById(id);};
   var app=$('app'),tracksEl=$('tracks'),playB=$('play'),dropB=$('drop'),sheet=$('sheet');
+  var beats=document.querySelectorAll('.beatrow .grp span:first-child');
 
   function zero(){return new Array(N+1).join('0');}
   function empty(){var a=[],r;for(r=0;r<R;r++)a.push(zero());return a;}
@@ -583,6 +592,9 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
     if(shown>=0)for(r=0;r<R;r++)cells[r][shown].classList.remove('ph');
     shown=s;
     if(s>=0)for(r=0;r<R;r++){cells[r][s].classList.add('ph');if(pat[r].charAt(s)!=='0'&&audible(r)&&!drop)flash(r);}
+    /* Taktzähler und Fortschrittslinie folgen dem laufenden Schritt */
+    for(r=0;r<beats.length;r++)beats[r].classList.toggle('cur',s>=0&&r===Math.floor(s/4));
+    app.style.setProperty('--prog',s<0?0:(s+1)/N);
   }
   /* Das Spur-Icon blinkt kurz in Flieder, wenn die Spur klingt */
   function flash(r){var ic=rows[r].querySelector('.ic');ic.classList.remove('hit');void ic.offsetWidth;ic.classList.add('hit');clearTimeout(ic._t);ic._t=setTimeout(function(){ic.classList.remove('hit');},140);}
