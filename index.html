@@ -604,7 +604,8 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
    Drehsymmetrie, zeigt sie nur gerade Linien von innen nach außen. Beim Ändern bitte beibehalten
    Effekte sind sichtbar: Raum legt Schimmer um die Atome, Echo lässt Geister nach außen ziehen, Filter dimmt die hohen
    Spuren im Takt, Pump zieht alles außer der Kick zusammen, Stutter lässt das Molekül zittern und den letzten Schritt
-   doppelt blitzen, Vinyl legt Korn, Staub und Knistern darüber. o.glass (0–1) macht Atome durchscheinend */
+   doppelt blitzen, Vinyl legt Korn, Staub und Knistern darüber. o.glass (0–1) macht Atome durchscheinend.
+   Staub: bei manchen Schlägen bleiben kleine Körner zurück, die langsam nach außen und oben in die Atmosphäre gleiten */
 var CARD=(function(){
   var LIL='#C7B3FF',INK='#0F0F10',WHT='#F3F3F4',GRY='#7A7A81',ORDER=[1,2,0,4,5,3,6],NBAR=9,TAIL=2.4;
   function hash(s){var h=2166136261,i;for(i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
@@ -644,7 +645,7 @@ var CARD=(function(){
     if(f<.4)return adj+' '+noun;if(f<.6)return noun+' at '+pk(TW.hour);if(f<.8)return pk(TW.place)+' '+noun;return 'The '+adj+' '+noun;}
 
   /* Eine Szene hält die Physik (Federn, Treffer) und den Stand im Clip */
-  function Scene(m){this.m=m;this.st={};this.hitT=[0,0,0,0,0,0,0];this.flashT=[];this.TV=[1,1,1,1,1,1,1];this.waves=[];this.step=-1;this.bar=0;this.ct=-1;this.barT=0;this.ghosts=[];this.stutT=0;this.open=1;
+  function Scene(m){this.m=m;this.st={};this.hitT=[0,0,0,0,0,0,0];this.flashT=[];this.TV=[1,1,1,1,1,1,1];this.waves=[];this.step=-1;this.bar=0;this.ct=-1;this.barT=0;this.ghosts=[];this.dust=[];this.stutT=0;this.open=1;
     for(var i=0;i<16;i++)this.flashT.push(0);this.ev=events(m);this.ei=0;}
   /* Ereignisse des Clips in Sekunden: je Schritt die Spuren, die klingen */
   function events(m){var six=60/m.bpm/4,E=[],fx=m.fx,L=fx.stut?2+Math.round(fx.stut.a*6):0,b,s,r;
@@ -662,16 +663,18 @@ var CARD=(function(){
   Scene.prototype.seek=function(ct){var now=performance.now();this.ct=ct;
     while(this.ei<this.ev.length&&this.ev[this.ei].t<=ct){var e=this.ev[this.ei++],self=this;
       if(e.s===0&&!e.st)this.barT=now;this.step=e.s;this.bar=e.b;if(e.st)this.stutT=now;
-      var ec=this.m.fx.echo,six=60/this.m.bpm/4;
+      var ec=this.m.fx.echo,six=60/this.m.bpm/4,DP=[.12,.2,.55,.9,.45,.5,.8];
       e.h.forEach(function(r){self.hitT[r]=now;self.waves.push({t:now,r:[62,92,32,152,122,182,212][ORDER.indexOf(r)]});
+        if(self.dust.length<70&&Math.random()<DP[r]){var q=1+Math.floor(Math.random()*2);while(q--)self.dust.push({id:ORDER.indexOf(r)+'-'+e.s,t:now,life:2600+Math.random()*2600,da:(Math.random()-.5)*1.2,sp:7+Math.random()*13,ph:Math.random()*7,w:.6+Math.random(),sz:.9+Math.random()*1.3,lil:Math.random()<.35});}
         if(ec){var n=1+Math.round(ec.a*3),dt=ec.o*six*1000,k;for(k=1;k<=n;k++)self.ghosts.push({id:ORDER.indexOf(r)+'-'+e.s,t:now+k*dt,dt:dt,k:k});}});
       if(e.h.length)this.flashT[e.s]=now;}
     this.waves=this.waves.filter(function(w){return now-w.t<1000;});
     this.ghosts=this.ghosts.filter(function(g){return now-g.t<g.dt;});
+    this.dust=this.dust.filter(function(d){return now-d.t<d.life;});
     var sw=this.m.fx.sweep;this.open=sw?.5-.5*Math.cos(Math.PI*2*ct/(60/this.m.bpm/4*16*(sw.o||2))):1;
     for(var r=0;r<7;r++){var tg=active(r,this.bar)?1:.1;this.TV[r]+=(tg-this.TV[r])*.07;}};
   Scene.prototype.outro=function(){if(!this.live()||this.bar!==8)return 0;return Math.min(1,(performance.now()-this.barT)/1000/(240/this.m.bpm));};
-  Scene.prototype.reset=function(){this.st={};this.ei=0;this.ct=-1;this.step=-1;this.bar=0;this.waves=[];this.ghosts=[];this.stutT=0;this.open=1;this.TV=[1,1,1,1,1,1,1];};
+  Scene.prototype.reset=function(){this.st={};this.ei=0;this.ct=-1;this.step=-1;this.bar=0;this.waves=[];this.ghosts=[];this.dust=[];this.stutT=0;this.open=1;this.TV=[1,1,1,1,1,1,1];};
 
   function atoms(S,cx,cy,sc,live){
     var m=S.m,T=clock(),sd=Math.PI/8,bp=((live?S.ct:T)*m.bpm/240)%1,drift=live&&bp>.7?Math.pow((bp-.7)/.3,1.6)*30*sc:0,out=S.outro(),A=[],byStep=[],byId={},i;
@@ -753,6 +756,11 @@ var CARD=(function(){
     if(live&&fx.echo)S.ghosts.forEach(function(gh){var age=(now-gh.t)/gh.dt;if(age<0||age>=1)return;var p=G.byId[gh.id];if(!p)return;
       var d=gh.k*11*sc*(1+age*.7),qx=p.x+Math.cos(p.a)*d,qy=p.y+Math.sin(p.a)*d;
       x.globalAlpha=.6*fx.echo.a*Math.pow(.62,gh.k-1)*(1-age)*p.vis;x.fillStyle=LIL;x.beginPath();blob(x,p,qx,qy,(p.tr===1?9:6)*sc*(1-age*.4));x.fill();x.globalAlpha=1;});
+    /* Staub: Körner lösen sich am Atom, treiben nach außen und leicht nach oben, schlingern dabei und verblassen */
+    if(live)S.dust.forEach(function(d){var age=(now-d.t)/d.life,tt=(now-d.t)/1000;if(d.x0==null){var p=G.byId[d.id];if(!p)return;d.x0=p.x;d.y0=p.y;d.a=p.a+d.da;}
+      var qx=d.x0+Math.cos(d.a)*d.sp*tt*sc+Math.sin(T*d.w+d.ph)*5*sc,qy=d.y0+Math.sin(d.a)*d.sp*tt*sc-9*tt*sc+Math.cos(T*d.w*.7+d.ph)*3*sc;
+      x.globalAlpha=.75*Math.pow(1-age,1.3)*Math.min(1,age*10);x.fillStyle=d.lil?LIL:fg;x.beginPath();x.arc(qx,qy,d.sz*sc,0,7);x.fill();});
+    x.globalAlpha=1;
     if(glass>0&&bg===INK)x.globalCompositeOperation='lighter';
     G.A.forEach(function(p){atom(x,p,sc,fg,bg,bg!==INK?INK:null,glass,room);});
     x.globalCompositeOperation='source-over';
