@@ -1,4 +1,4 @@
-/* ===== Klang: alle Spuren per Web Audio erzeugt, über einen Bus mit Hall, Delay, Sättigung und Sidechain ===== */
+/* ===== Klang: alle Spuren per Web Audio erzeugt, über einen Bus mit Hall, Delay, Sättigung, Sidechain und zuschaltbaren Effekten ===== */
 /* Spuren: id (für die Klangerzeugung), Name, Klänge [Zeichen im Pattern, Name] */
 var TRACKS=[
   {id:'hats',n:'Hi-Hat',s:[['x','Zu'],['o','Offen'],['k','Tick']]},
@@ -21,16 +21,55 @@ function st(){return 60/bpm/4;}
 var B=null,_bac=null;
 function bus(){
   getAC();if(!ac)return null;if(_bac===ac&&B)return B;_bac=ac;B={};var i;
-  B.OUT=ac.createGain();B.OUT.gain.value=.9;B.FILT=ac.createBiquadFilter();B.FILT.type='lowpass';B.FILT.frequency.value=20000;B.FILT.Q.value=.7;B.OUT.connect(B.FILT);B.FILT.connect(OUT());
+  B.OUT=ac.createGain();B.OUT.gain.value=.9;B.FILT=ac.createBiquadFilter();B.FILT.type='lowpass';B.FILT.frequency.value=20000;B.FILT.Q.value=.7;B.OUT.connect(B.FILT);
   B.DUCK=ac.createGain();B.DUCK.connect(B.OUT);
   var len=ac.sampleRate*1.1|0,ir=ac.createBuffer(2,len,ac.sampleRate),ch;for(ch=0;ch<2;ch++){var d=ir.getChannelData(ch);for(i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,4);}
   B.REV=ac.createConvolver();B.REV.buffer=ir;var rg=ac.createGain();rg.gain.value=.25;B.REV.connect(rg);rg.connect(B.OUT);
-  B.DLY=ac.createDelay(2);var fb=ac.createGain(),lp=ac.createBiquadFilter(),dg=ac.createGain();lp.type='lowpass';lp.frequency.value=2800;fb.gain.value=.3;dg.gain.value=.25;
+  B.DLY=ac.createDelay(2);var fb=ac.createGain(),lp=ac.createBiquadFilter(),dg=ac.createGain();lp.type='lowpass';lp.frequency.value=2800;fb.gain.value=.38;dg.gain.value=.45;
   B.DLY.connect(lp);lp.connect(fb);fb.connect(B.DLY);lp.connect(dg);dg.connect(B.OUT);
   B.SAT=ac.createWaveShaper();var cv=new Float32Array(1024);for(i=0;i<1024;i++){var x=i/512-1;cv[i]=Math.tanh(x*2.5)/Math.tanh(2.5);}B.SAT.curve=cv;var sg=ac.createGain();sg.gain.value=.8;B.SAT.connect(sg);sg.connect(B.OUT);
   B.NZ=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);var c=B.NZ.getChannelData(0);for(i=0;i<c.length;i++)c[i]=Math.random()*2-1;
+  fxChain();fxApply(true);
   return B;
 }
+
+/* ---------- Zuschaltbare Effekte: Raum, Echo, Filter, Vinyl. Gelten für den ganzen Beat und bleiben gespeichert ----------
+   Raum und Echo sind Sends vom Bus ohne Kick und Sub (sonst wird der Bass matschig), Vinyl und Filter liegen hinter dem Drop-Filter */
+var FXS=[['room','Raum','Großer, langer Hall'],['echo','Echo','Punktierte Achtel im Tempo'],['sweep','Filter','Langsamer Filter, öffnet und schließt über zwei Takte'],['lofi','Vinyl','Dumpfer, etwas körnig, mit Knistern']];
+var FX={};FXS.forEach(function(f){FX[f[0]]=!!(S.fx&&S.fx[f[0]]);});
+function fxChain(){
+  var i,sr=ac.sampleRate;
+  /* Vinyl: trockener und bearbeiteter Weg nebeneinander, umgeschaltet wird über die Lautstärke beider Wege */
+  B.LD=ac.createGain();B.LW=ac.createGain();B.LW.gain.value=0;var sum=ac.createGain();
+  var cr=ac.createWaveShaper(),cv=new Float32Array(4096),q=40;for(i=0;i<4096;i++){var x=i/2048-1;cv[i]=Math.round(x*q)/q;}cr.curve=cv;
+  var lh=ac.createBiquadFilter(),ll=ac.createBiquadFilter();lh.type='highpass';lh.frequency.value=180;ll.type='lowpass';ll.frequency.value=3600;ll.Q.value=.9;
+  B.FILT.connect(B.LD);B.LD.connect(sum);B.FILT.connect(cr);cr.connect(lh);lh.connect(ll);ll.connect(B.LW);B.LW.connect(sum);
+  /* Knistern: vereinzelte Knackser in einer Schleife von drei Sekunden */
+  var kb=ac.createBuffer(1,sr*3,sr),kd=kb.getChannelData(0),seed=11;for(i=0;i<kd.length;i++){seed=(seed*16807)%2147483647;var r=seed/2147483647;if(r<.0004)kd[i]=(r*5000-1)*.9;else kd[i]=(r-.5)*.006;}
+  var ks=ac.createBufferSource(),kf=ac.createBiquadFilter();ks.buffer=kb;ks.loop=true;kf.type='bandpass';kf.frequency.value=2500;kf.Q.value=.6;B.KN=ac.createGain();B.KN.gain.value=0;ks.connect(kf);kf.connect(B.KN);B.KN.connect(sum);ks.start();
+  /* Filter: Tiefpass mit Resonanz, ein langsamer Oszillator im Tempo bewegt die Grenzfrequenz */
+  B.SW=ac.createBiquadFilter();B.SW.type='lowpass';B.SW.frequency.value=20000;B.SW.Q.value=.7;sum.connect(B.SW);B.SW.connect(OUT());
+  B.LFO=ac.createOscillator();B.LFO.type='sine';B.LFD=ac.createGain();B.LFD.gain.value=0;B.LFO.connect(B.LFD);B.LFD.connect(B.SW.frequency);B.LFO.start();
+  /* Raum: eigener, langer Hall; tiefe Frequenzen gehen nicht hinein */
+  var len=sr*2.8|0,ir=ac.createBuffer(2,len,sr),ch;for(ch=0;ch<2;ch++){var d=ir.getChannelData(ch);for(i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);}
+  var rv=ac.createConvolver(),rh=ac.createBiquadFilter(),ro=ac.createGain();rv.buffer=ir;rh.type='highpass';rh.frequency.value=350;ro.gain.value=.55;
+  B.RS=ac.createGain();B.RS.gain.value=0;B.DUCK.connect(B.RS);B.RS.connect(rh);rh.connect(rv);rv.connect(ro);ro.connect(B.OUT);
+  /* Echo: nutzt die Delay-Schleife des Busses */
+  B.ES=ac.createGain();B.ES.gain.value=0;B.DUCK.connect(B.ES);B.ES.connect(B.DLY);
+}
+/* Setzt alle Effekte auf den gespeicherten Stand; tempoabhängige Werte (Echo-Zeit, Filter-Tempo) gleich mit */
+function fxApply(now){
+  if(!B||!B.SW)return;var t=ac.currentTime,k=now?.001:.06;
+  function to(p,v){p.cancelScheduledValues(t);p.setTargetAtTime(v,t,k);}
+  to(B.RS.gain,FX.room?1:0);
+  to(B.ES.gain,FX.echo?.55:0);
+  to(B.LD.gain,FX.lofi?0:1);to(B.LW.gain,FX.lofi?.9:0);to(B.KN.gain,FX.lofi?1:0);
+  to(B.SW.frequency,FX.sweep?1500:20000);to(B.SW.Q,FX.sweep?4:.7);to(B.LFD.gain,FX.sweep?1250:0);
+  fxTempo();
+}
+function fxTempo(){if(!B||!B.SW)return;var t=ac.currentTime;B.DLY.delayTime.setTargetAtTime(st()*3,t,.05);B.LFO.frequency.setTargetAtTime(1/(st()*32),t,.05);}
+function fxSet(id,on){FX[id]=!!on;S.fx={};FXS.forEach(function(f){if(FX[f[0]])S.fx[f[0]]=1;});save();fxApply(false);}
+function fxCount(){return FXS.filter(function(f){return FX[f[0]];}).length;}
 function send(node,dest,amt){var g=ac.createGain();g.gain.value=amt;node.connect(g);g.connect(dest);}
 function vca(t,a,hold,rel,v,dest){var g=ac.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0002,v),t+a);if(hold>0)g.gain.setValueAtTime(Math.max(.0002,v),t+a+hold);g.gain.exponentialRampToValueAtTime(.0001,t+a+hold+rel);g.connect(dest||B.OUT);return g;}
 function nz(t,d,v,type,f,q,rev,dest){var s=ac.createBufferSource();s.buffer=B.NZ;var fl=ac.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q||.8;var g=vca(t,.001,0,d,v,dest);s.connect(fl);fl.connect(g);if(rev)send(g,B.REV,rev);s.start(t,Math.random()*.4);s.stop(t+d+.05);return g;}

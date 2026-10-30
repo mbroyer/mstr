@@ -96,6 +96,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 #drop{height:44px;padding:0 18px}
 #drop.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .app.building #drop{animation:pulse .25s ease-in-out infinite alternate}
+#fxBtn{height:44px;padding:0 16px;font-variant-numeric:tabular-nums}
+#fxBtn.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .tempo{margin-left:auto;border:0;background:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:4px 0;line-height:1}
 .tv{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .tempo .chev{width:30px;height:30px;padding:6px;border-radius:50%;background:var(--soft);color:var(--ink);flex:none}
@@ -151,6 +153,15 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .opts{display:flex;gap:6px;flex-wrap:wrap}
 .opt{height:34px;border-radius:999px;border:1px solid var(--line);background:transparent;padding:0 14px;font-size:13px;font-weight:600;cursor:pointer}
 .opt[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+/* Effekte: eine Zeile je Effekt, rechts ein Punkt wie im Raster (grau aus, Flieder an) */
+.fxlist{display:flex;flex-direction:column}
+.fxi{display:flex;justify-content:space-between;align-items:center;gap:16px;width:100%;padding:14px 0;border:0;border-top:1px solid var(--line);background:transparent;cursor:pointer;text-align:left}
+.fxi:first-child{border-top:0}
+.fxi span{display:flex;flex-direction:column;gap:2px}
+.fxi b{font-size:17px;font-weight:600;letter-spacing:-.01em}
+.fxi small{font-size:13px;color:var(--mute)}
+.fxi i{width:26px;height:26px;border-radius:50%;background:var(--off);flex:none;transition:background .15s,transform .15s}
+.fxi[aria-pressed="true"] i{background:var(--accent);transform:scale(1.1)}
 .seg2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .seg2 button{height:42px;border-radius:999px;border:1px solid var(--line);background:transparent;font-size:13px;font-weight:600;cursor:pointer;color:var(--mute)}
 .seg2 button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
@@ -216,6 +227,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
   <footer class="transport">
     <button type="button" class="play" id="play" aria-label="Abspielen (Leertaste)"></button>
     <button type="button" class="pill" id="drop">Drop</button>
+    <button type="button" class="pill" id="fxBtn" aria-haspopup="dialog" aria-label="Effekte">FX<span class="fxn" id="fxN"></span></button>
     <button type="button" class="tempo" id="tempoBtn" aria-haspopup="dialog" aria-label="Tempo und Swing"><span class="tv"><span class="swt" id="swTxt">Swing 0 %</span><span class="big"><span id="bpm">100</span><small>bpm</small></span></span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   </footer>
 </div>
@@ -295,7 +307,7 @@ var BEATS=[
   {n:'amapiano',bpm:113,sw:.1,K:'x...x...x...x...x...x...x...x...',S:'..o..o....o..c....o..o....o..c..',H:'..O...O...O...O...O...O...O...O.',hv:[.12,.07],fill:'tom'}
 ];
 
-/* ===== Klang: alle Spuren per Web Audio erzeugt, über einen Bus mit Hall, Delay, Sättigung und Sidechain ===== */
+/* ===== Klang: alle Spuren per Web Audio erzeugt, über einen Bus mit Hall, Delay, Sättigung, Sidechain und zuschaltbaren Effekten ===== */
 /* Spuren: id (für die Klangerzeugung), Name, Klänge [Zeichen im Pattern, Name] */
 var TRACKS=[
   {id:'hats',n:'Hi-Hat',s:[['x','Zu'],['o','Offen'],['k','Tick']]},
@@ -318,16 +330,55 @@ function st(){return 60/bpm/4;}
 var B=null,_bac=null;
 function bus(){
   getAC();if(!ac)return null;if(_bac===ac&&B)return B;_bac=ac;B={};var i;
-  B.OUT=ac.createGain();B.OUT.gain.value=.9;B.FILT=ac.createBiquadFilter();B.FILT.type='lowpass';B.FILT.frequency.value=20000;B.FILT.Q.value=.7;B.OUT.connect(B.FILT);B.FILT.connect(OUT());
+  B.OUT=ac.createGain();B.OUT.gain.value=.9;B.FILT=ac.createBiquadFilter();B.FILT.type='lowpass';B.FILT.frequency.value=20000;B.FILT.Q.value=.7;B.OUT.connect(B.FILT);
   B.DUCK=ac.createGain();B.DUCK.connect(B.OUT);
   var len=ac.sampleRate*1.1|0,ir=ac.createBuffer(2,len,ac.sampleRate),ch;for(ch=0;ch<2;ch++){var d=ir.getChannelData(ch);for(i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,4);}
   B.REV=ac.createConvolver();B.REV.buffer=ir;var rg=ac.createGain();rg.gain.value=.25;B.REV.connect(rg);rg.connect(B.OUT);
-  B.DLY=ac.createDelay(2);var fb=ac.createGain(),lp=ac.createBiquadFilter(),dg=ac.createGain();lp.type='lowpass';lp.frequency.value=2800;fb.gain.value=.3;dg.gain.value=.25;
+  B.DLY=ac.createDelay(2);var fb=ac.createGain(),lp=ac.createBiquadFilter(),dg=ac.createGain();lp.type='lowpass';lp.frequency.value=2800;fb.gain.value=.38;dg.gain.value=.45;
   B.DLY.connect(lp);lp.connect(fb);fb.connect(B.DLY);lp.connect(dg);dg.connect(B.OUT);
   B.SAT=ac.createWaveShaper();var cv=new Float32Array(1024);for(i=0;i<1024;i++){var x=i/512-1;cv[i]=Math.tanh(x*2.5)/Math.tanh(2.5);}B.SAT.curve=cv;var sg=ac.createGain();sg.gain.value=.8;B.SAT.connect(sg);sg.connect(B.OUT);
   B.NZ=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);var c=B.NZ.getChannelData(0);for(i=0;i<c.length;i++)c[i]=Math.random()*2-1;
+  fxChain();fxApply(true);
   return B;
 }
+
+/* ---------- Zuschaltbare Effekte: Raum, Echo, Filter, Vinyl. Gelten für den ganzen Beat und bleiben gespeichert ----------
+   Raum und Echo sind Sends vom Bus ohne Kick und Sub (sonst wird der Bass matschig), Vinyl und Filter liegen hinter dem Drop-Filter */
+var FXS=[['room','Raum','Großer, langer Hall'],['echo','Echo','Punktierte Achtel im Tempo'],['sweep','Filter','Langsamer Filter, öffnet und schließt über zwei Takte'],['lofi','Vinyl','Dumpfer, etwas körnig, mit Knistern']];
+var FX={};FXS.forEach(function(f){FX[f[0]]=!!(S.fx&&S.fx[f[0]]);});
+function fxChain(){
+  var i,sr=ac.sampleRate;
+  /* Vinyl: trockener und bearbeiteter Weg nebeneinander, umgeschaltet wird über die Lautstärke beider Wege */
+  B.LD=ac.createGain();B.LW=ac.createGain();B.LW.gain.value=0;var sum=ac.createGain();
+  var cr=ac.createWaveShaper(),cv=new Float32Array(4096),q=40;for(i=0;i<4096;i++){var x=i/2048-1;cv[i]=Math.round(x*q)/q;}cr.curve=cv;
+  var lh=ac.createBiquadFilter(),ll=ac.createBiquadFilter();lh.type='highpass';lh.frequency.value=180;ll.type='lowpass';ll.frequency.value=3600;ll.Q.value=.9;
+  B.FILT.connect(B.LD);B.LD.connect(sum);B.FILT.connect(cr);cr.connect(lh);lh.connect(ll);ll.connect(B.LW);B.LW.connect(sum);
+  /* Knistern: vereinzelte Knackser in einer Schleife von drei Sekunden */
+  var kb=ac.createBuffer(1,sr*3,sr),kd=kb.getChannelData(0),seed=11;for(i=0;i<kd.length;i++){seed=(seed*16807)%2147483647;var r=seed/2147483647;if(r<.0004)kd[i]=(r*5000-1)*.9;else kd[i]=(r-.5)*.006;}
+  var ks=ac.createBufferSource(),kf=ac.createBiquadFilter();ks.buffer=kb;ks.loop=true;kf.type='bandpass';kf.frequency.value=2500;kf.Q.value=.6;B.KN=ac.createGain();B.KN.gain.value=0;ks.connect(kf);kf.connect(B.KN);B.KN.connect(sum);ks.start();
+  /* Filter: Tiefpass mit Resonanz, ein langsamer Oszillator im Tempo bewegt die Grenzfrequenz */
+  B.SW=ac.createBiquadFilter();B.SW.type='lowpass';B.SW.frequency.value=20000;B.SW.Q.value=.7;sum.connect(B.SW);B.SW.connect(OUT());
+  B.LFO=ac.createOscillator();B.LFO.type='sine';B.LFD=ac.createGain();B.LFD.gain.value=0;B.LFO.connect(B.LFD);B.LFD.connect(B.SW.frequency);B.LFO.start();
+  /* Raum: eigener, langer Hall; tiefe Frequenzen gehen nicht hinein */
+  var len=sr*2.8|0,ir=ac.createBuffer(2,len,sr),ch;for(ch=0;ch<2;ch++){var d=ir.getChannelData(ch);for(i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);}
+  var rv=ac.createConvolver(),rh=ac.createBiquadFilter(),ro=ac.createGain();rv.buffer=ir;rh.type='highpass';rh.frequency.value=350;ro.gain.value=.55;
+  B.RS=ac.createGain();B.RS.gain.value=0;B.DUCK.connect(B.RS);B.RS.connect(rh);rh.connect(rv);rv.connect(ro);ro.connect(B.OUT);
+  /* Echo: nutzt die Delay-Schleife des Busses */
+  B.ES=ac.createGain();B.ES.gain.value=0;B.DUCK.connect(B.ES);B.ES.connect(B.DLY);
+}
+/* Setzt alle Effekte auf den gespeicherten Stand; tempoabhängige Werte (Echo-Zeit, Filter-Tempo) gleich mit */
+function fxApply(now){
+  if(!B||!B.SW)return;var t=ac.currentTime,k=now?.001:.06;
+  function to(p,v){p.cancelScheduledValues(t);p.setTargetAtTime(v,t,k);}
+  to(B.RS.gain,FX.room?1:0);
+  to(B.ES.gain,FX.echo?.55:0);
+  to(B.LD.gain,FX.lofi?0:1);to(B.LW.gain,FX.lofi?.9:0);to(B.KN.gain,FX.lofi?1:0);
+  to(B.SW.frequency,FX.sweep?1500:20000);to(B.SW.Q,FX.sweep?4:.7);to(B.LFD.gain,FX.sweep?1250:0);
+  fxTempo();
+}
+function fxTempo(){if(!B||!B.SW)return;var t=ac.currentTime;B.DLY.delayTime.setTargetAtTime(st()*3,t,.05);B.LFO.frequency.setTargetAtTime(1/(st()*32),t,.05);}
+function fxSet(id,on){FX[id]=!!on;S.fx={};FXS.forEach(function(f){if(FX[f[0]])S.fx[f[0]]=1;});save();fxApply(false);}
+function fxCount(){return FXS.filter(function(f){return FX[f[0]];}).length;}
 function send(node,dest,amt){var g=ac.createGain();g.gain.value=amt;node.connect(g);g.connect(dest);}
 function vca(t,a,hold,rel,v,dest){var g=ac.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0002,v),t+a);if(hold>0)g.gain.setValueAtTime(Math.max(.0002,v),t+a+hold);g.gain.exponentialRampToValueAtTime(.0001,t+a+hold+rel);g.connect(dest||B.OUT);return g;}
 function nz(t,d,v,type,f,q,rev,dest){var s=ac.createBufferSource();s.buffer=B.NZ;var fl=ac.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q||.8;var g=vca(t,.001,0,d,v,dest);s.connect(fl);fl.connect(g);if(rev)send(g,B.REV,rev);s.start(t,Math.random()*.4);s.stop(t+d+.05);return g;}
@@ -633,7 +684,7 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
     var six=st();
     while(nextT<ac.currentTime+.15){
       var s=step,t=nextT+((s%4===2)?six*sw:0),r;
-      if(s===0){if(drop===1){drop=2;dropBuild(t,N*six);}else if(drop===2){drop=0;dropBoom(t);}}
+      if(s===0){fxTempo();if(drop===1){drop=2;dropBuild(t,N*six);}else if(drop===2){drop=0;dropBoom(t);}}
       /* Drop: ein Takt Anlauf nur mit Hi-Hat und lauter werdendem Wirbel, die letzten zwei Schritte Stille, dann der Knall */
       if(drop===2){if(s<N-2){play('snare',t,[s,'p',2,.2+.8*s/N]);if(audible(0)&&pat[0].charAt(s)!=='0')play('hats',t,[s,pat[0].charAt(s),2,gainOf(0)]);}}
       else for(r=0;r<R;r++)if(audible(r)){var w=pat[r].charAt(s);if(w!=='0')play(TRACKS[r].id,t,[s,w,2,gainOf(r)]);}
@@ -731,6 +782,19 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
   }
   $('tempoBtn').addEventListener('click',tempoSheet);
 
+  /* Effekte: halbes Blatt, der Beat läuft darüber weiter. Jede Zeile schaltet einen Effekt, der Punkt rechts wird Flieder */
+  var fxB=$('fxBtn');
+  function fxUI(){var n=fxCount();fxB.classList.toggle('on',n>0);$('fxN').textContent=n?' '+n:'';fxB.setAttribute('aria-label','Effekte'+(n?', '+n+' an':''));}
+  function fxSheet(){
+    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Effekte</span>'+XB+'</div><div class="fxlist">'+
+      FXS.map(function(f){return '<button type="button" class="fxi" data-fx="'+f[0]+'" aria-pressed="'+(FX[f[0]]?'true':'false')+'"><span><b>'+f[1]+'</b><small>'+f[2]+'</small></span><i aria-hidden="true"></i></button>';}).join('')+'</div>',function(el){
+      el.querySelectorAll('.fxi').forEach(function(b){b.addEventListener('click',function(){var id=b.getAttribute('data-fx'),on=!FX[id];
+        if(on&&!playing)setPlay(true);fxSet(id,on);b.setAttribute('aria-pressed',on?'true':'false');fxUI();});});
+    },'effekte',true);
+  }
+  fxB.addEventListener('click',fxSheet);
+  fxUI();
+
   function trackSheet(r){
     var T=TRACKS[r],id=T.id,mic=r===MIC,busy=false;
     /* Nur die Spur Aufnahme hat das Mikrofon, ganz oben. Die übrigen Spuren klingen immer eingebaut */
@@ -800,7 +864,7 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
   if(window.matchMedia)try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',themeUI);}catch(e){}
 
   build();themeUI();playB.innerHTML=I_PLAY;
-  window.MSTR={setPlay:setPlay,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing};}};
+  window.MSTR={setPlay:setPlay,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,fx:JSON.parse(JSON.stringify(FX))};}};
 })();
 
 })();

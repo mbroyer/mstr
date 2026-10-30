@@ -166,7 +166,7 @@
     var six=st();
     while(nextT<ac.currentTime+.15){
       var s=step,t=nextT+((s%4===2)?six*sw:0),r;
-      if(s===0){if(drop===1){drop=2;dropBuild(t,N*six);}else if(drop===2){drop=0;dropBoom(t);}}
+      if(s===0){fxTempo();if(drop===1){drop=2;dropBuild(t,N*six);}else if(drop===2){drop=0;dropBoom(t);}}
       /* Drop: ein Takt Anlauf nur mit Hi-Hat und lauter werdendem Wirbel, die letzten zwei Schritte Stille, dann der Knall */
       if(drop===2){if(s<N-2){play('snare',t,[s,'p',2,.2+.8*s/N]);if(audible(0)&&pat[0].charAt(s)!=='0')play('hats',t,[s,pat[0].charAt(s),2,gainOf(0)]);}}
       else for(r=0;r<R;r++)if(audible(r)){var w=pat[r].charAt(s);if(w!=='0')play(TRACKS[r].id,t,[s,w,2,gainOf(r)]);}
@@ -264,6 +264,19 @@
   }
   $('tempoBtn').addEventListener('click',tempoSheet);
 
+  /* Effekte: halbes Blatt, der Beat läuft darüber weiter. Jede Zeile schaltet einen Effekt, der Punkt rechts wird Flieder */
+  var fxB=$('fxBtn');
+  function fxUI(){var n=fxCount();fxB.classList.toggle('on',n>0);$('fxN').textContent=n?' '+n:'';fxB.setAttribute('aria-label','Effekte'+(n?', '+n+' an':''));}
+  function fxSheet(){
+    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Effekte</span>'+XB+'</div><div class="fxlist">'+
+      FXS.map(function(f){return '<button type="button" class="fxi" data-fx="'+f[0]+'" aria-pressed="'+(FX[f[0]]?'true':'false')+'"><span><b>'+f[1]+'</b><small>'+f[2]+'</small></span><i aria-hidden="true"></i></button>';}).join('')+'</div>',function(el){
+      el.querySelectorAll('.fxi').forEach(function(b){b.addEventListener('click',function(){var id=b.getAttribute('data-fx'),on=!FX[id];
+        if(on&&!playing)setPlay(true);fxSet(id,on);b.setAttribute('aria-pressed',on?'true':'false');fxUI();});});
+    },'effekte',true);
+  }
+  fxB.addEventListener('click',fxSheet);
+  fxUI();
+
   function trackSheet(r){
     var T=TRACKS[r],id=T.id,mic=r===MIC,busy=false;
     /* Nur die Spur Aufnahme hat das Mikrofon, ganz oben. Die übrigen Spuren klingen immer eingebaut */
@@ -333,5 +346,5 @@
   if(window.matchMedia)try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',themeUI);}catch(e){}
 
   build();themeUI();playB.innerHTML=I_PLAY;
-  window.MSTR={setPlay:setPlay,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing};}};
+  window.MSTR={setPlay:setPlay,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,fx:JSON.parse(JSON.stringify(FX))};}};
 })();

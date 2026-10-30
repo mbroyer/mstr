@@ -83,6 +83,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 #drop{height:44px;padding:0 18px}
 #drop.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .app.building #drop{animation:pulse .25s ease-in-out infinite alternate}
+#fxBtn{height:44px;padding:0 16px;font-variant-numeric:tabular-nums}
+#fxBtn.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .tempo{margin-left:auto;border:0;background:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:4px 0;line-height:1}
 .tv{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .tempo .chev{width:30px;height:30px;padding:6px;border-radius:50%;background:var(--soft);color:var(--ink);flex:none}
@@ -138,6 +140,15 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .opts{display:flex;gap:6px;flex-wrap:wrap}
 .opt{height:34px;border-radius:999px;border:1px solid var(--line);background:transparent;padding:0 14px;font-size:13px;font-weight:600;cursor:pointer}
 .opt[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+/* Effekte: eine Zeile je Effekt, rechts ein Punkt wie im Raster (grau aus, Flieder an) */
+.fxlist{display:flex;flex-direction:column}
+.fxi{display:flex;justify-content:space-between;align-items:center;gap:16px;width:100%;padding:14px 0;border:0;border-top:1px solid var(--line);background:transparent;cursor:pointer;text-align:left}
+.fxi:first-child{border-top:0}
+.fxi span{display:flex;flex-direction:column;gap:2px}
+.fxi b{font-size:17px;font-weight:600;letter-spacing:-.01em}
+.fxi small{font-size:13px;color:var(--mute)}
+.fxi i{width:26px;height:26px;border-radius:50%;background:var(--off);flex:none;transition:background .15s,transform .15s}
+.fxi[aria-pressed="true"] i{background:var(--accent);transform:scale(1.1)}
 .seg2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .seg2 button{height:42px;border-radius:999px;border:1px solid var(--line);background:transparent;font-size:13px;font-weight:600;cursor:pointer;color:var(--mute)}
 .seg2 button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}

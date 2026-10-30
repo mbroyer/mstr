@@ -9,12 +9,13 @@ Herausgelöst aus der Monster-Beatbox in NumNum (Repo `mbroyer/numnum`, Datei `s
 - Je Spur: Klangauswahl, Mute, Solo, Lautstärke, Vorschlag
 - 16 Vorlagen (Lo-Fi als Start, One Drop, Reggaeton, Afrobeats, Funk, Rock, House, Beat It, Minimal, 2-Step, Trap, Techno, Drum'n'Bass, Jungle, Electro, Amapiano) mit Tempo und Swing, Tempo 60–180 BPM mit Tap-Tempo, Swing auf jedem zweiten Achtel
 - Drop: ein Takt Anlauf mit Filter, dann der Knall
+- Effekte (FX, zuschaltbar, gespeichert): Raum (langer Hall), Echo (punktierte Achtel im Tempo), Filter (Tiefpass, der sich über zwei Takte öffnet und schließt), Vinyl (dumpfer, körnig, Knistern). Kick und Sub bleiben ohne Raum und Echo
 - Leertaste startet und stoppt, „Leeren“ lässt sich rückgängig machen
 - Heller und dunkler Modus (folgt dem System oder fest eingestellt)
 - Der Beat liegt in localStorage unter `mstr-v1` (nie umbenennen), die Aufnahme unter `mstr-rec-mic` (ältere Aufnahmen anderer Spuren werden beim Laden dorthin übernommen)
 
 ## Design
-Schwarz, Weiß und ein Signal: Die Akzentfarbe Flieder (`#C7B3FF`) erscheint nur für Takt und Zustände: den laufenden Schritt, die Zählzeiten 1, 5, 9 und 13 (leicht getönt), den Taktzähler und die Fortschrittslinie beim Abspielen, gedrückte Schalter (Mute, Solo, gewählter Klang), die Aufnahme, die gewählte Vorlage und Play während der Wiedergabe. Schriften: Figtree, Instrument Serif (nur Seitentitel), JetBrains Mono (Labels).
+Schwarz, Weiß und ein Signal: Die Akzentfarbe Flieder (`#C7B3FF`) erscheint nur für Takt und Zustände: den laufenden Schritt, die Zählzeiten 1, 5, 9 und 13 (leicht getönt), den Taktzähler und die Fortschrittslinie beim Abspielen, gedrückte Schalter (Mute, Solo, gewählter Klang), die Aufnahme, eingeschaltete Effekte, die gewählte Vorlage und Play während der Wiedergabe. Schriften: Figtree, Instrument Serif (nur Seitentitel), JetBrains Mono (Labels).
 
 ## Bauen und testen
 
@@ -24,13 +25,14 @@ python3 tests/t1.py     # Playwright-Rauchtest bei 390 px (PW_CHROME=Pfad zu Chr
 python3 tests/t2.py     # jeder Klang, alle Vorlagen, Drop
 python3 tests/t3.py     # Spur Aufnahme
 python3 tests/t4.py     # Stopp beim Sperren / Tab verlassen
+python3 tests/t5.py     # Effekte schalten, Pegel, gespeichert
 ```
 
 ## Dateien
 - `src/app.js` – Speicherstand, Farbschema
 - `src/audio.js` – AudioContext, Ton-Freischaltung (iPad), Master-Ausgang mit Limiter
 - `src/beats.js` – die 16 Vorlagen
-- `src/klang.js` – Spuren, Klangerzeugung, Bus mit Hall, Delay, Sättigung und Sidechain, eigene Aufnahmen
+- `src/klang.js` – Spuren, Klangerzeugung, Bus mit Hall, Delay, Sättigung und Sidechain, zuschaltbare Effekte, eigene Aufnahmen
 - `src/mstr.js` – Raster, Sequencer, Drop, Vorlagen, Tempo, Spur-Einstellungen
 - `src/mstr.css` – Styles
 - `src/body.html` – Seitenaufbau
