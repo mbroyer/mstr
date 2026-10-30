@@ -35,6 +35,16 @@ function nz(t,d,v,type,f,q,rev,dest){var s=ac.createBufferSource();s.buffer=B.NZ
 function osc(type,f,t,end,dest){var o=ac.createOscillator();o.type=type;o.frequency.setValueAtTime(f,t);o.connect(dest);o.start(t);o.stop(end);return o;}
 /* Gefiltertes Rauschen, dessen Hüllkurve der Aufrufer selbst setzt (Gain startet bei 0) */
 function band(t,d,type,f,q,dest){var s=ac.createBufferSource(),fl=ac.createBiquadFilter(),g=ac.createGain();s.buffer=B.NZ;fl.type=type;fl.frequency.value=f;fl.Q.value=q;g.gain.value=0;s.connect(fl);fl.connect(g);g.connect(dest);s.start(t,Math.random()*.4);s.stop(t+d+.05);return g;}
+var CYP=null;
+function cymbal(t,v,o){
+  if(!CYP){var x=7;CYP=[];for(var j=0;j<40;j++){x=(x*16807)%2147483647;var r1=x/2147483647;x=(x*16807)%2147483647;CYP.push([r1,x/2147483647]);}}
+  var out=ac.createGain(),lp=ac.createBiquadFilter();out.gain.value=1;lp.type='lowpass';lp.frequency.value=o.lp;out.connect(lp);lp.connect(B.DUCK);if(o.rev)send(lp,B.REV,o.rev);
+  for(var i=0;i<o.n;i++){var q=CYP[i],f=o.lo*Math.pow(o.hi/o.lo,q[0]),d=o.dec*(.35+.65*q[1])*Math.pow(1000/f,.15),
+    g=ac.createGain(),os=ac.createOscillator();os.type=o.trash?'square':'sine';os.frequency.value=f;
+    g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.09*v/Math.sqrt(o.n/10)*(o.trash?.35:1),t+.002);g.gain.exponentialRampToValueAtTime(.0001,t+d);
+    os.connect(g);g.connect(out);os.start(t);os.stop(t+d+.05);}
+  var gs=band(t,.06,'highpass',3000,.7,lp);gs.gain.setValueAtTime(o.stick*v,t);gs.gain.exponentialRampToValueAtTime(.001,t+.03);
+}
 function duck(t){B.DUCK.gain.cancelScheduledValues(t);B.DUCK.gain.setValueAtTime(.5,t);B.DUCK.gain.linearRampToValueAtTime(1,t+st()*2);}
 var dr={
   tom:function(t,f,v){var g=vca(t,.001,0,.25,v);var o=osc('sine',f,t,t+.28,g);o.frequency.exponentialRampToValueAtTime(f*.78,t+.2);send(g,B.REV,.25);}
@@ -69,14 +79,12 @@ function playSynth(id,t,n){
     /* Cowbell: unharmonische Teiltöne einer echten Kuhglocke, jeder mit eigenem Ausklang, dazu der Stockanschlag */
     else{[[587,1,.28],[845,.85,.34],[1245,.35,.12],[1640,.45,.1],[2470,.25,.07],[3330,.15,.05]].forEach(function(m){var gm=vca(t,.0015,0,m[2],.11*m[1]*v,B.DUCK),om=osc('sine',m[0],t,t+m[2]+.05,gm);om.frequency.setValueAtTime(m[0]*1.006,t);om.frequency.exponentialRampToValueAtTime(m[0],t+.02);send(gm,B.REV,.08);});
       nz(t,.008,.25*v,'bandpass',3200,1.5,0,B.DUCK);nz(t,.004,.15*v,'highpass',6000,.7,0,B.DUCK);}}
-  /* Becken: Rauschen für das Waschen, sechs Rechteckoszillatoren mit unharmonischen Frequenzen für den Metallklang */
-  else if(id==='cym'){var MT=[205,304,370,523,540,800];
-    if(w==='r'){var gr=vca(t,.001,0,.9,.05*v,B.DUCK),fr=ac.createBiquadFilter();fr.type='bandpass';fr.frequency.value=5200;fr.Q.value=1.4;fr.connect(gr);MT.forEach(function(f){osc('square',f*2.3,t,t+1,fr);});
-      var gp=vca(t,.001,0,.5,.07*v,B.DUCK);osc('sine',2780,t,t+.6,gp);var gw=band(t,.5,'highpass',7000,.7,B.DUCK);gw.gain.setValueAtTime(.12*v,t);gw.gain.exponentialRampToValueAtTime(.001,t+.45);send(gr,B.REV,.15);}
-    else if(w==='h'){var gh=vca(t,.001,0,.7,.09*v,B.DUCK),fh=ac.createBiquadFilter();fh.type='bandpass';fh.frequency.value=3800;fh.Q.value=.9;fh.connect(gh);MT.forEach(function(f){osc('square',f*1.31,t,t+.8,fh);osc('square',f*1.93,t,t+.8,fh);});
-      var gn=band(t,.8,'bandpass',4500,.7,B.DUCK);gn.gain.setValueAtTime(.3*v,t);gn.gain.exponentialRampToValueAtTime(.001,t+.7);send(gh,B.REV,.2);}
-    else{var gc=band(t,1.6,'highpass',4200,.6,B.DUCK);gc.gain.setValueAtTime(.38*v,t);gc.gain.exponentialRampToValueAtTime(.12*v,t+.08);gc.gain.exponentialRampToValueAtTime(.001,t+1.5);send(gc,B.REV,.25);
-      var gm=vca(t,.001,0,1.1,.06*v,B.DUCK),fm=ac.createBiquadFilter();fm.type='highpass';fm.frequency.value=5000;fm.connect(gm);MT.forEach(function(f){osc('square',f*1.7,t,t+1.2,fm);});}}
+  /* Becken: viele unharmonische Sinus-Teiltöne (fest ausgewürfelt, damit jeder Schlag gleich klingt), jeder mit eigenem Ausklang.
+     Das ergibt den schimmernden Metallklang; Rauschen gibt es nur für den Stockanschlag */
+  else if(id==='cym'){
+    if(w==='r')cymbal(t,v*.5,{lo:2500,hi:9000,n:14,dec:.7,lp:8000,stick:.18,rev:.08});
+    else if(w==='h')cymbal(t,v*.9,{lo:600,hi:7000,n:24,dec:.8,lp:9000,stick:.35,rev:.15,trash:1});
+    else cymbal(t,v,{lo:350,hi:11000,n:32,dec:1.8,lp:12000,stick:.4,rev:.12});}
   else if(id==='toms'){dr.tom(t,w==='b'?100:w==='p'?140:190,.6*v);}
   else if(id==='fx'){
     /* Snap: harter Klick des Fingers, dann die Resonanz der hohlen Hand (schmales Band um 1,8 und 3,2 kHz), ein leiser Körper und etwas Raum.
