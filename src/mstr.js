@@ -166,18 +166,22 @@
   /* ---------- Unterseiten: Spur, Vorlagen, Tempo. Eigener Verlaufseintrag, damit Zurück im Browser funktioniert ---------- */
   var lastFocus=null,pageName='',pushed=false,ignoreHash=false;
   var BACK='<div class="pnav"><button type="button" class="ib" data-close aria-label="Zurück"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="mark"><i aria-hidden="true"></i>MSTR</span><span class="sp"></span></div>';
-  function openSheet(html,init,name){
-    lastFocus=document.activeElement;sheet.innerHTML=BACK+html;sheet.hidden=false;sheet.scrollTop=0;
-    document.body.classList.add('noscroll');
+  /* half: Blatt von unten (Tempo), der Sequencer bleibt darüber sichtbar */
+  var catcher=document.createElement('div');catcher.className='catcher';catcher.hidden=true;document.body.appendChild(catcher);
+  catcher.addEventListener('click',function(){closeSheet();});
+  function openSheet(html,init,name,half){
+    lastFocus=document.activeElement;sheet.innerHTML=(half?'<div class="grab" aria-hidden="true"></div>':BACK)+html;sheet.hidden=false;sheet.scrollTop=0;
+    sheet.classList.toggle('half',!!half);catcher.hidden=!half;
+    if(!half)document.body.classList.add('noscroll');
     sheet.querySelector('[data-close]').addEventListener('click',closeSheet);
     if(init)init(sheet);
     var f=sheet.querySelector('[data-focus]')||sheet.querySelector('button');if(f)f.focus({preventScroll:true});
     pageName=name;if(location.hash!=='#'+name){pushed=true;location.hash=name;}
   }
-  function hideSheet(){sheet.hidden=true;sheet.innerHTML='';document.body.classList.remove('noscroll');if(lastFocus&&lastFocus.focus)lastFocus.focus({preventScroll:true});}
+  function hideSheet(){sheet.hidden=true;catcher.hidden=true;sheet.innerHTML='';document.body.classList.remove('noscroll');if(lastFocus&&lastFocus.focus)lastFocus.focus({preventScroll:true});}
   function closeSheet(){if(sheet.hidden)return;hideSheet();if(pushed){pushed=false;ignoreHash=true;history.back();}}
   window.addEventListener('hashchange',function(){if(ignoreHash){ignoreHash=false;return;}if(!sheet.hidden&&location.hash!=='#'+pageName){pushed=false;hideSheet();}});
-  var X='';
+  var X='',XB='<button type="button" class="ib" data-close aria-label="Schließen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>';
   function presetSheet(){
     var order=BEATS.map(function(b,i){return i;}).sort(function(a,b){return BEATS[a].bpm-BEATS[b].bpm||a-b;});
     openSheet('<div class="sh-top"><h2 class="ed" id="sheetT">'+BEATS.length+' Vorlagen<br><em>nach Tempo</em></h2>'+X+'</div><div class="plist" role="listbox" aria-label="Vorlagen"></div>',function(el){
@@ -192,7 +196,7 @@
 
   function tempoSheet(){
     var taps=[];
-    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Tempo und Swing</span>'+X+'</div>'+
+    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Tempo und Swing</span>'+XB+'</div>'+
       '<div class="bpmrow"><button type="button" class="ib lg" id="tDown" aria-label="Langsamer">−</button><label class="big" for="tBpm"><input id="tBpm" type="number" inputmode="numeric" min="60" max="180" value="'+bpm+'" aria-label="Tempo in BPM"><small>bpm</small></label><button type="button" class="ib lg" id="tUp" aria-label="Schneller">+</button></div>'+
       '<button type="button" class="pill wide" id="tTap">Tippen für Tempo</button>'+
       '<div class="slider"><div class="lb"><span>Swing auf jedem zweiten Achtel</span><b id="tSwV"></b></div><input type="range" id="tSw" min="0" max="60" step="1" value="'+Math.round(sw*100)+'" aria-label="Swing in Prozent"></div>'+
@@ -207,7 +211,7 @@
       sl.addEventListener('input',function(){sw=sl.value/100;swUI();paint();});
       sl.addEventListener('change',persist);
       swUI();
-    },'tempo');
+    },'tempo',true);
   }
   $('tempoBtn').addEventListener('click',tempoSheet);
 

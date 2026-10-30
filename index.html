@@ -98,13 +98,19 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .sheet>*{width:100%;max-width:560px;margin-inline:auto}
 @keyframes in{from{transform:translateX(28px);opacity:0}}
 @keyframes fade{from{opacity:0}}
+.sheet.half{inset:auto 0 0 0;margin-inline:auto;max-width:760px;max-height:72vh;border-radius:28px 28px 0 0;box-shadow:0 -1px 0 var(--line),0 -24px 48px -24px rgba(0,0,0,.25);padding-top:10px;gap:20px;animation:up .25s cubic-bezier(.2,.8,.2,1)}
+@keyframes up{from{transform:translateY(48px);opacity:0}}
+.catcher{position:fixed;inset:0;z-index:20}
+.grab{width:36px;height:4px;border-radius:2px;background:var(--line)}
 .pnav{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:40px}
 .pnav .sp{width:36px}
 .sh-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .ed{font-family:var(--f-ed);font-weight:400;font-size:44px;line-height:.92;letter-spacing:-.01em;margin:0}
 .ed em{font-style:normal;color:var(--mute)}
 .tt{margin:4px 0 0;font-size:32px;font-weight:700;letter-spacing:-.03em;line-height:1}
-.plist{display:flex;flex-direction:column;margin:0 calc(-1 * var(--gutr)) 0 calc(-1 * var(--gut))}
+.plist{display:flex;flex-direction:column}
+@media (max-width:599px){.sheet>.plist{width:auto;max-width:none;margin-inline:calc(-1 * var(--gut)) calc(-1 * var(--gutr))}}
+@media (min-width:600px){.pitem{padding-inline:12px}}
 .pitem{display:flex;justify-content:space-between;align-items:baseline;gap:12px;padding:13px var(--gutr) 13px var(--gut);border:0;border-top:1px solid var(--line);background:transparent;cursor:pointer;text-align:left;width:100%}
 .pitem .n{font-size:17px;font-weight:600;letter-spacing:-.01em}
 .pitem .v{font-size:22px;font-weight:700;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
@@ -522,18 +528,22 @@ function dropRec(id){delete REC[id];delete ownV[id];lsSet('mstr-rec-'+id,null);l
   /* ---------- Unterseiten: Spur, Vorlagen, Tempo. Eigener Verlaufseintrag, damit Zurück im Browser funktioniert ---------- */
   var lastFocus=null,pageName='',pushed=false,ignoreHash=false;
   var BACK='<div class="pnav"><button type="button" class="ib" data-close aria-label="Zurück"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="mark"><i aria-hidden="true"></i>MSTR</span><span class="sp"></span></div>';
-  function openSheet(html,init,name){
-    lastFocus=document.activeElement;sheet.innerHTML=BACK+html;sheet.hidden=false;sheet.scrollTop=0;
-    document.body.classList.add('noscroll');
+  /* half: Blatt von unten (Tempo), der Sequencer bleibt darüber sichtbar */
+  var catcher=document.createElement('div');catcher.className='catcher';catcher.hidden=true;document.body.appendChild(catcher);
+  catcher.addEventListener('click',function(){closeSheet();});
+  function openSheet(html,init,name,half){
+    lastFocus=document.activeElement;sheet.innerHTML=(half?'<div class="grab" aria-hidden="true"></div>':BACK)+html;sheet.hidden=false;sheet.scrollTop=0;
+    sheet.classList.toggle('half',!!half);catcher.hidden=!half;
+    if(!half)document.body.classList.add('noscroll');
     sheet.querySelector('[data-close]').addEventListener('click',closeSheet);
     if(init)init(sheet);
     var f=sheet.querySelector('[data-focus]')||sheet.querySelector('button');if(f)f.focus({preventScroll:true});
     pageName=name;if(location.hash!=='#'+name){pushed=true;location.hash=name;}
   }
-  function hideSheet(){sheet.hidden=true;sheet.innerHTML='';document.body.classList.remove('noscroll');if(lastFocus&&lastFocus.focus)lastFocus.focus({preventScroll:true});}
+  function hideSheet(){sheet.hidden=true;catcher.hidden=true;sheet.innerHTML='';document.body.classList.remove('noscroll');if(lastFocus&&lastFocus.focus)lastFocus.focus({preventScroll:true});}
   function closeSheet(){if(sheet.hidden)return;hideSheet();if(pushed){pushed=false;ignoreHash=true;history.back();}}
   window.addEventListener('hashchange',function(){if(ignoreHash){ignoreHash=false;return;}if(!sheet.hidden&&location.hash!=='#'+pageName){pushed=false;hideSheet();}});
-  var X='';
+  var X='',XB='<button type="button" class="ib" data-close aria-label="Schließen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>';
   function presetSheet(){
     var order=BEATS.map(function(b,i){return i;}).sort(function(a,b){return BEATS[a].bpm-BEATS[b].bpm||a-b;});
     openSheet('<div class="sh-top"><h2 class="ed" id="sheetT">'+BEATS.length+' Vorlagen<br><em>nach Tempo</em></h2>'+X+'</div><div class="plist" role="listbox" aria-label="Vorlagen"></div>',function(el){
@@ -548,7 +558,7 @@ function dropRec(id){delete REC[id];delete ownV[id];lsSet('mstr-rec-'+id,null);l
 
   function tempoSheet(){
     var taps=[];
-    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Tempo und Swing</span>'+X+'</div>'+
+    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Tempo und Swing</span>'+XB+'</div>'+
       '<div class="bpmrow"><button type="button" class="ib lg" id="tDown" aria-label="Langsamer">−</button><label class="big" for="tBpm"><input id="tBpm" type="number" inputmode="numeric" min="60" max="180" value="'+bpm+'" aria-label="Tempo in BPM"><small>bpm</small></label><button type="button" class="ib lg" id="tUp" aria-label="Schneller">+</button></div>'+
       '<button type="button" class="pill wide" id="tTap">Tippen für Tempo</button>'+
       '<div class="slider"><div class="lb"><span>Swing auf jedem zweiten Achtel</span><b id="tSwV"></b></div><input type="range" id="tSw" min="0" max="60" step="1" value="'+Math.round(sw*100)+'" aria-label="Swing in Prozent"></div>'+
@@ -563,7 +573,7 @@ function dropRec(id){delete REC[id];delete ownV[id];lsSet('mstr-rec-'+id,null);l
       sl.addEventListener('input',function(){sw=sl.value/100;swUI();paint();});
       sl.addEventListener('change',persist);
       swUI();
-    },'tempo');
+    },'tempo',true);
   }
   $('tempoBtn').addEventListener('click',tempoSheet);
 
