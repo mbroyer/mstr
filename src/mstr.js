@@ -20,10 +20,19 @@
     minimal:['..............h.','......3.......3.','..............t.','............s...'],
     hardtechno:['..r...r...r...r.','1.1.1.1.1.1.1.1.','................','............z...']};
 
+  /* Spur-Icons: feine Linien, 24er Raster */
+  var ICON={
+    hats:'<path d="M4 8.5h16M6 11h12M12 4v16M9 20h6"/>',
+    beat:'<circle cx="12" cy="12" r="8"/><circle cx="12" cy="12" r="2.2" class="f"/>',
+    snare:'<rect x="4" y="8.5" width="16" height="7" rx="1.5"/><path d="M8 8.5l-1.5 7M12.75 8.5l-1.5 7M17.5 8.5l-1.5 7"/>',
+    click:'<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="4.5" r="1.3" class="f"/><circle cx="19.5" cy="12" r="1.3" class="f"/><circle cx="12" cy="19.5" r="1.3" class="f"/><circle cx="4.5" cy="12" r="1.3" class="f"/>',
+    toms:'<circle cx="4.8" cy="14" r="2.3"/><circle cx="10.8" cy="13" r="3.2"/><circle cx="18.2" cy="12" r="4.2"/>',
+    fx:'<path d="M3 12c2.2-6 4.3-6 6 0s3.8 6 6 0 3.8-6 6 0"/>',
+    cym:'<path d="M3.5 10.5c3-2.4 14-2.4 17 0"/><path d="M12 8.6V20M8.5 20h7"/><circle cx="12" cy="7.4" r="1" class="f"/>'};
   var pat,vol=[],mute=[],solo=[],pre=0,edited=false,brush=TRACKS.map(function(t){return t.s[0][0];}),pk=[],lastDice=[];
   var cells=[],rows=[],playing=false,step=0,nextT=0,timer=0,queue=[],raf=0,shown=-1,drop=0;
   var $=function(id){return document.getElementById(id);};
-  var app=$('app'),tracksEl=$('tracks'),playB=$('play'),dropB=$('drop'),sheet=$('sheet'),scrim=$('scrim');
+  var app=$('app'),tracksEl=$('tracks'),playB=$('play'),dropB=$('drop'),sheet=$('sheet');
 
   function zero(){return new Array(N+1).join('0');}
   function empty(){var a=[],r;for(r=0;r<R;r++)a.push(zero());return a;}
@@ -73,8 +82,10 @@
     TRACKS.forEach(function(T,r){
       var row=document.createElement('div');row.className='trk';
       var tl=document.createElement('div');tl.className='tl';
+      var ic=document.createElement('span');ic.className='ic';ic.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+(ICON[T.id]||'')+'</svg>';tl.appendChild(ic);
       var tn=document.createElement('button');tn.type='button';tn.className='tn';tn.setAttribute('aria-haspopup','dialog');
-      tn.innerHTML='<span class="nm">'+T.n+'</span><span class="tb"></span>';
+      tn.innerHTML='<span class="nm">'+T.n+'</span><span class="tb"></span><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+      tn.setAttribute('aria-label',T.n+': Einstellungen');
       tn.addEventListener('click',function(){trackSheet(r);});
       tl.appendChild(tn);
       ['M','S'].forEach(function(k){var b=document.createElement('button');b.type='button';b.className='ms '+k.toLowerCase();b.textContent=k;
@@ -120,8 +131,10 @@
     var r;
     if(shown>=0)for(r=0;r<R;r++)cells[r][shown].classList.remove('ph');
     shown=s;
-    if(s>=0)for(r=0;r<R;r++)cells[r][s].classList.add('ph');
+    if(s>=0)for(r=0;r<R;r++){cells[r][s].classList.add('ph');if(pat[r].charAt(s)!=='0'&&audible(r)&&!drop)flash(r);}
   }
+  /* Das Spur-Icon blinkt kurz in Flieder, wenn die Spur klingt */
+  function flash(r){var ic=rows[r].querySelector('.ic');ic.classList.remove('hit');void ic.offsetWidth;ic.classList.add('hit');clearTimeout(ic._t);ic._t=setTimeout(function(){ic.classList.remove('hit');},140);}
   function loop(){
     var nw=ac.currentTime;
     while(queue.length&&queue[0].t<=nw){head(queue[0].s);queue.shift();}
@@ -174,19 +187,25 @@
     e.preventDefault();setPlay(!playing);
   });
 
-  /* ---------- Blätter (Bottom Sheets) ---------- */
-  var lastFocus=null;
-  function openSheet(html,init){
-    lastFocus=document.activeElement;sheet.innerHTML='<div class="grab" aria-hidden="true"></div>'+html;sheet.hidden=false;scrim.hidden=false;
-    document.body.classList.add('noscroll');
-    var x=sheet.querySelector('[data-close]');if(x)x.addEventListener('click',closeSheet);
+  /* ---------- Unterseiten: Spur, Vorlagen, Tempo. Eigener Verlaufseintrag, damit Zurück im Browser funktioniert ---------- */
+  var lastFocus=null,pageName='',pushed=false,ignoreHash=false;
+  var BACK='<div class="pnav"><button type="button" class="ib" data-close aria-label="Zurück"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="mark"><i aria-hidden="true"></i>MSTR</span><span class="sp"></span></div>';
+  /* half: Blatt von unten (Tempo), der Sequencer bleibt darüber sichtbar */
+  var catcher=document.createElement('div');catcher.className='catcher';catcher.hidden=true;document.body.appendChild(catcher);
+  catcher.addEventListener('click',function(){closeSheet();});
+  function openSheet(html,init,name,half){
+    lastFocus=document.activeElement;sheet.innerHTML=(half?'<div class="grab" aria-hidden="true"></div>':BACK)+html;sheet.hidden=false;sheet.scrollTop=0;
+    sheet.classList.toggle('half',!!half);catcher.hidden=!half;
+    if(!half)document.body.classList.add('noscroll');
+    sheet.querySelector('[data-close]').addEventListener('click',closeSheet);
     if(init)init(sheet);
     var f=sheet.querySelector('[data-focus]')||sheet.querySelector('button');if(f)f.focus({preventScroll:true});
+    pageName=name;if(location.hash!=='#'+name){pushed=true;location.hash=name;}
   }
-  function closeSheet(){sheet.hidden=true;scrim.hidden=true;sheet.innerHTML='';document.body.classList.remove('noscroll');if(lastFocus&&lastFocus.focus)lastFocus.focus({preventScroll:true});}
-  scrim.addEventListener('click',closeSheet);
-  var X='<button type="button" class="ib" data-close aria-label="Schließen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>';
-
+  function hideSheet(){sheet.hidden=true;catcher.hidden=true;sheet.innerHTML='';document.body.classList.remove('noscroll');if(lastFocus&&lastFocus.focus)lastFocus.focus({preventScroll:true});}
+  function closeSheet(){if(sheet.hidden)return;hideSheet();if(pushed){pushed=false;ignoreHash=true;history.back();}}
+  window.addEventListener('hashchange',function(){if(ignoreHash){ignoreHash=false;return;}if(!sheet.hidden&&location.hash!=='#'+pageName){pushed=false;hideSheet();}});
+  var X='',XB='<button type="button" class="ib" data-close aria-label="Schließen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>';
   function presetSheet(){
     var order=BEATS.map(function(b,i){return i;}).sort(function(a,b){return BEATS[a].bpm-BEATS[b].bpm||a-b;});
     openSheet('<div class="sh-top"><h2 class="ed" id="sheetT">'+BEATS.length+' Vorlagen<br><em>nach Tempo</em></h2>'+X+'</div><div class="plist" role="listbox" aria-label="Vorlagen"></div>',function(el){
@@ -195,13 +214,13 @@
         if(i===pre)b.setAttribute('data-focus','');
         b.innerHTML='<span class="n">'+NM[Bt.n]+'</span><span class="v">'+Bt.bpm+'<small>BPM</small></span>';
         b.addEventListener('click',function(){fromBeat(i);paint();persist();closeSheet();if(!playing)setPlay(true);});list.appendChild(b);});
-    });
+    },'vorlagen');
   }
   $('preBtn').addEventListener('click',presetSheet);
 
   function tempoSheet(){
     var taps=[];
-    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Tempo und Swing</span>'+X+'</div>'+
+    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Tempo und Swing</span>'+XB+'</div>'+
       '<div class="bpmrow"><button type="button" class="ib lg" id="tDown" aria-label="Langsamer">−</button><label class="big" for="tBpm"><input id="tBpm" type="number" inputmode="numeric" min="60" max="180" value="'+bpm+'" aria-label="Tempo in BPM"><small>bpm</small></label><button type="button" class="ib lg" id="tUp" aria-label="Schneller">+</button></div>'+
       '<button type="button" class="pill wide" id="tTap">Tippen für Tempo</button>'+
       '<div class="slider"><div class="lb"><span>Swing auf jedem zweiten Achtel</span><b id="tSwV"></b></div><input type="range" id="tSw" min="0" max="60" step="1" value="'+Math.round(sw*100)+'" aria-label="Swing in Prozent"></div>'+
@@ -216,7 +235,7 @@
       sl.addEventListener('input',function(){sw=sl.value/100;swUI();paint();});
       sl.addEventListener('change',persist);
       swUI();
-    });
+    },'tempo',true);
   }
   $('tempoBtn').addEventListener('click',tempoSheet);
 
@@ -258,7 +277,7 @@
       el.querySelector('#kDice').addEventListener('click',function(){dice(r);if(!playing)setPlay(true);});
       el.querySelector('#kClr').addEventListener('click',function(){pat[r]=zero();changed();});
       ui();
-    });
+    },'spur-'+id);
   }
   function dice(r){
     var id=TRACKS[r].id,ix;

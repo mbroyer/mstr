@@ -11,6 +11,7 @@ with sync_playwright() as p:
     pg.goto(url);pg.wait_for_timeout(300)
     assert pg.locator('.tracks .trk').count()==7,pg.locator('.tracks .trk').count()
     assert pg.locator('.tracks .trk').first.locator('.dot').count()==16
+    assert pg.locator('.tracks .ic svg').count()==7,'Spur-Icons fehlen'
     assert pg.evaluate('document.documentElement.scrollWidth')<=390,'waagerechtes Scrollen'
     assert pg.inner_text('#preName')=='Boom Bap'
     on=pg.locator('.dot.on').count();assert on>0
@@ -35,7 +36,13 @@ with sync_playwright() as p:
     # Spur-Blatt
     pg.locator('.tracks .trk').first.locator('.tn').click()
     assert pg.locator('#sheet .opt').count()==3
-    pg.click('#sheet .opt:has-text("Offen")');pg.keyboard.press('Escape')
+    pg.click('#sheet .opt:has-text("Offen")')
+    pg.screenshot(path=H+'/tests/t1-spur.png')
+    pg.click('#sheet [data-close]');assert pg.locator('#sheet').is_hidden(),'Zurück schließt nicht'
+    # Browser-Zurück schließt die Unterseite
+    pg.click('#preBtn');pg.wait_for_timeout(100);assert pg.evaluate('location.hash')=='#vorlagen'
+    pg.screenshot(path=H+'/tests/t1-vorlagen.png')
+    pg.go_back();pg.wait_for_timeout(200);assert pg.locator('#sheet').is_hidden(),'Browser-Zurück schließt nicht'
     assert 'Offen' in pg.locator('.tracks .trk').first.locator('.tb').inner_text()
     # Tempo
     pg.click('#tempoBtn');pg.click('#tUp');pg.click('#tUp')
