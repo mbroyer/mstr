@@ -173,6 +173,17 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .namef input{height:52px;border-radius:14px;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:0 16px;font-family:var(--f-ed);font-size:26px;outline:none;width:100%}
 .namef input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent)}
 .namef input::placeholder{color:var(--mute)}
+.namer{display:flex;gap:8px;align-items:center}
+.namer .ib{width:44px;height:44px;flex:none}
+/* Karte: Vorschau links, Name und Knopf rechts */
+.cardrow{display:flex;gap:16px;align-items:stretch}
+.cardrow canvas{width:126px;height:224px;border-radius:12px;flex:none;background:#0F0F10}
+.cardct{display:flex;flex-direction:column;gap:10px;flex:1;min-width:0;justify-content:center}
+.byf{display:flex;align-items:center;gap:8px}
+.byf .lbl{flex:none}
+.byf input{flex:1;min-width:0;height:40px;border-radius:12px;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:0 12px;font:500 15px var(--f-ui);outline:none}
+.byf input:focus{border-color:var(--accent)}
+.cardct .pill{height:48px}
 .pill.go{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-size:15px;height:48px}
 .shnote{margin:0;font-size:13px;color:var(--mute);text-align:center}
 .fxi i{width:26px;height:26px;border-radius:50%;background:var(--off);flex:none;transition:background .15s,transform .15s}
