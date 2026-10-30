@@ -727,8 +727,8 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
     while(nextT<ac.currentTime+.15){
       var s=step,t=nextT+((s%4===2)?six*sw:0),r;
       if(s===0){fxTempo();if(drop===1){drop=2;dropBuild(t,N*six);}else if(drop===2){drop=0;dropBoom(t);}}
-      /* Drop: ein Takt Anlauf nur mit Hi-Hat und lauter werdendem Wirbel, die letzten zwei Schritte Stille, dann der Knall */
-      if(drop===2){if(s<N-2){play('snare',t,[s,'p',2,.2+.8*s/N]);if(audible(0)&&pat[0].charAt(s)!=='0')play('hats',t,[s,pat[0].charAt(s),2,gainOf(0)]);}}
+      /* Drop: ein Takt Anlauf mit dem eigenen Beat (siehe dropBuild), die letzten zwei Schritte Pause, dann der Einschlag */
+      if(drop===2)dropStep(s,t,six);
       else{
         /* Stottern: am Ende jedes n-ten Takts spielt statt der letzten Schritte immer wieder der erste davon, in Zweiunddreißigsteln */
         var L=FX.stut&&(bar+1)%FXO.stut===0?fxStutLen():0,src=N-L,k;
@@ -739,18 +739,48 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
       step=(step+1)%N;if(!step)bar++;nextT+=six;
     }
   }
+  /* Drop: je nach Beat anders. Der Beat läuft im Anlauf weiter, nur ohne Kick, Toms, Becken und FX in der zweiten Hälfte.
+     Ein Wirbel mit dem Snare-Klang des Beats (Snare, Clap oder Rim) wird schneller: Viertel, Achtel, Sechzehntel.
+     Tempo ab 150: alles doppelt so schnell. Unter 100 (Lo-Fi, One Drop, Reggaeton): der Filter schließt sich und es wird dunkel,
+     sonst öffnet sich ein Hochpass und der Bass verschwindet. Die letzten zwei Schritte sind still bis auf ein rückwärts laufendes Becken */
+  var dmode='up',droll='p',dcut=8;
+  function dropPlan(){
+    dmode=bpm>=150?'fast':bpm<100?'dark':'up';dcut=dmode==='dark'?12:8;
+    var c={},k,best='p',n=0;for(k=0;k<N;k++){var w=pat[2].charAt(k);if(w==='p'||w==='c'||w==='k')c[w]=(c[w]||0)+1;}
+    for(k in c)if(c[k]>n){n=c[k];best=k;}droll=best;
+  }
+  function dropStep(s,t,six){
+    var r,id,ev,j;
+    if(s===12)play('fx',t,[s,'s',2,.9]);
+    if(s>=N-2)return;
+    for(r=0;r<R;r++)if(audible(r)){var w=pat[r].charAt(s);id=TRACKS[r].id;if(w==='0')continue;
+      if(s>=dcut&&(id==='beat'||id==='toms'||id==='cym'||id==='fx'))continue;play(id,t,[s,w,2,gainOf(r)]);}
+    ev=s<8?4:s<12?2:1;if(dmode==='fast')ev/=2;if(dmode==='dark')ev=s<8?0:s<12?4:2;
+    if(!ev)return;var lv=.2+.6*s/N;
+    if(ev>=1){if(s%ev===0)play('snare',t,[s,droll,2,lv]);}
+    else for(j=0;j<2;j++)play('snare',t+j*six/2,[s,droll,2,lv]);
+  }
   function dropBuild(t,bar){
-    var f=B.FILT.frequency;f.cancelScheduledValues(t);f.setValueAtTime(320,t);f.exponentialRampToValueAtTime(20000,t+bar*.9);
-    var sr=ac.createBufferSource();sr.buffer=B.NZ;sr.loop=true;var bp=ac.createBiquadFilter();bp.type='bandpass';bp.Q.value=3;bp.frequency.setValueAtTime(400,t);bp.frequency.exponentialRampToValueAtTime(7000,t+bar*.85);
-    var g=ac.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.35,t+bar*.85);g.gain.exponentialRampToValueAtTime(.0001,t+bar*.88);sr.connect(bp);bp.connect(g);g.connect(B.OUT);send(g,B.REV,.3);sr.start(t);sr.stop(t+bar);
+    dropPlan();
+    var f=B.FILT,fr=f.frequency;fr.cancelScheduledValues(t);f.Q.cancelScheduledValues(t);
+    if(dmode==='dark'){fr.setValueAtTime(20000,t);fr.exponentialRampToValueAtTime(380,t+bar*.85);f.Q.setValueAtTime(.7,t);f.Q.linearRampToValueAtTime(5,t+bar*.85);}
+    else{fr.setValueAtTime(20,ac.currentTime);f.type='highpass';fr.setValueAtTime(20,t);fr.exponentialRampToValueAtTime(dmode==='fast'?1800:1300,t+bar*.85);f.Q.setValueAtTime(.7,t);f.Q.linearRampToValueAtTime(3,t+bar*.85);
+      /* leiser Riser: Rauschband steigt mit */
+      var sr=ac.createBufferSource();sr.buffer=B.NZ;sr.loop=true;var bp=ac.createBiquadFilter();bp.type='bandpass';bp.Q.value=2;bp.frequency.setValueAtTime(500,t);bp.frequency.exponentialRampToValueAtTime(8000,t+bar*.85);
+      var g=ac.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.16,t+bar*.85);g.gain.exponentialRampToValueAtTime(.0001,t+bar*.87);sr.connect(bp);bp.connect(g);g.connect(B.OUT);send(g,B.REV,.35);sr.start(t);sr.stop(t+bar);}
     at(t,function(){app.classList.add('building');});
   }
+  /* Einschlag: Filter sofort offen, Kick, Crash, ein kurzer, tiefer Sub-Schlag (kein langes Abwärtsheulen) und ein Hauch Luft im Hall */
   function dropBoom(t){
-    play('beat',t,[0,'b',2,1]);play('snare',t,[0,'s',2,1]);
-    var g=vca(t,.005,.15,.9,.9,B.SAT),o=osc('sine',80,t,t+1.1,g);o.frequency.exponentialRampToValueAtTime(30,t+.9);
+    var f=B.FILT,fr=f.frequency;fr.cancelScheduledValues(t);f.Q.cancelScheduledValues(t);
+    if(f.type==='highpass'){fr.setValueAtTime(20,t);at(t+.05,function(){filtOpen();});}else{fr.setValueAtTime(20000,t);f.Q.setValueAtTime(.7,t);}
+    play('beat',t,[0,'b',2,1]);play('cym',t,[0,'c',2,dmode==='dark'?.6:.9]);
+    var g=vca(t,.003,.06,.5,.75,B.SAT),o=osc('sine',110,t,t+.7,g);o.frequency.exponentialRampToValueAtTime(46,t+.06);
+    nz(t,.35,.18,'highpass',5000,.7,.45);
     at(t,function(){app.classList.remove('building');dropB.classList.remove('on');});
   }
-  function dropReset(){drop=0;app.classList.remove('building');dropB.classList.remove('on');if(B&&ac){var f=B.FILT.frequency,t=ac.currentTime;f.cancelScheduledValues(t);f.setValueAtTime(20000,t);}}
+  function filtOpen(){if(!B||!ac)return;var f=B.FILT,t=ac.currentTime;f.frequency.cancelScheduledValues(t);f.Q.cancelScheduledValues(t);f.type='lowpass';f.frequency.setValueAtTime(20000,t);f.Q.setValueAtTime(.7,t);}
+  function dropReset(){drop=0;app.classList.remove('building');dropB.classList.remove('on');filtOpen();}
   dropB.addEventListener('click',function(){if(drop)return;if(!playing)setPlay(true);if(!playing)return;drop=1;dropB.classList.add('on');});
   var I_PLAY='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>',
       I_STOP='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></svg>';

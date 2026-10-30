@@ -1,6 +1,6 @@
 # MSTR
 
-Gesprochen „Muster“. Ein Step-Sequencer im Browser für Erwachsene: sieben eingebaute Spuren und eine für den eigenen Klang, je 16 Schritte, Punkte antippen, Play drücken. Alle Klänge entstehen per Web Audio, es gibt keine Samples. Eine einzelne HTML-Seite ohne Login und ohne Datenbank.
+Gesprochen „Muster“. Ein Step-Sequencer im Browser für Erwachsene: sieben eingebaute Spuren und eine für den eigenen Klang, je 16 Schritte, Punkte antippen, Play drücken. Alle Klänge entstehen per Web Audio, es gibt keine Samples. Die Oberfläche ist auf Englisch. Eine einzelne HTML-Seite ohne Login und ohne Datenbank.
 
 Herausgelöst aus der Monster-Beatbox in NumNum (Repo `mbroyer/numnum`, Datei `src/beatbox.js`).
 
@@ -8,7 +8,7 @@ Herausgelöst aus der Monster-Beatbox in NumNum (Repo `mbroyer/numnum`, Datei `s
 - Spur 8 „Aufnahme“: der eigene Klang (1 Sekunde übers Mikrofon, nur auf diesem Gerät) in drei Tonhöhen (Normal, Tief, Hoch). Nur hier gibt es das Mikrofon; Vorlagen lassen diese Spur unverändert
 - Je Spur: Klangauswahl, Mute, Solo, Lautstärke, Vorschlag
 - 16 Vorlagen (Amapiano als Start, Lo-Fi, One Drop, Reggaeton, Afrobeats, Funk, Rock, House, Beat It, Minimal, 2-Step, Trap, Techno, Drum'n'Bass, Jungle, Electro, Amapiano) mit Tempo und Swing, Tempo 60–180 BPM mit Tap-Tempo, Swing auf jedem zweiten Achtel
-- Drop: ein Takt Anlauf mit Filter, dann der Knall
+- Drop: ein Takt Anlauf mit dem eigenen Beat (ohne Kick in der zweiten Hälfte) und einem schneller werdenden Wirbel mit dem Snare-Klang des Beats; unter 100 BPM schließt sich ein Tiefpass, sonst öffnet sich ein Hochpass, ab 150 BPM alles doppelt so schnell; zwei Schritte Pause mit Reverse-Becken, dann Kick, Crash und Sub
 - Effekte (FX, zuschaltbar, gespeichert), je mit Regler: Raum (langer Hall, Menge), Echo (Menge, Abstand 1/8, 1/8 punktiert oder 1/4 im Tempo), Filter (Tiefpass, der sich öffnet und schließt; Tiefe, 1, 2 oder 4 Takte), Pumpen (alles außer Kick atmet im Takt; Tiefe, Viertel oder Achtel), Stottern (am Taktende wiederholt sich ein Schritt in Zweiunddreißigsteln; Länge 2–8 Schritte, jeder, jeder 2. oder 4. Takt), Vinyl (dumpfer, körnig, Knistern; Stärke). Kick und Sub bleiben ohne Raum und Echo. Beim Stoppen verstummen die Effekte sofort. Gespeichert in `mstr-v1` unter `fx`, `fxa`, `fxo`
 - Leertaste startet und stoppt, „Leeren“ lässt sich rückgängig machen
 - Heller und dunkler Modus (folgt dem System oder fest eingestellt)
@@ -26,6 +26,7 @@ python3 tests/t2.py     # jeder Klang, alle Vorlagen, Drop
 python3 tests/t3.py     # Spur Aufnahme
 python3 tests/t4.py     # Stopp beim Sperren / Tab verlassen
 python3 tests/t5.py     # Effekte schalten, Regler, Pegel, gespeichert
+python3 tests/t6.py     # Drop je Beat-Art
 ```
 
 ## Dateien
