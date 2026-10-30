@@ -92,7 +92,9 @@
   if(P&&Array.isArray(P.br)&&P.br.length===R)brush=brush.map(function(d,r){return sndIx(r,P.br[r])>=0?P.br[r]:d;});
   function persist(){S.pat={v:5,g:pat,bpm:bpm,sw:sw,vol:vol,mute:mute,solo:solo,pre:pre,ed:edited,br:brush,nm:title};save();}
   function anySolo(){return solo.some(Boolean);}
-  function audible(r){return anySolo()?solo[r]:!mute[r];}
+  /* ARR: beim Rechnen der Karte entscheidet das Arrangement je Takt mit, welche Spur klingt */
+  var ARR=null;
+  function audible(r){if(ARR&&r<MIC&&!ARR(r))return false;return anySolo()?solo[r]:!mute[r];}
   function gainOf(r){return Math.pow(vol[r]/.8,1.6);} /* 80 % entspricht dem Originalpegel */
 
   /* ---------- Raster ---------- */
@@ -306,7 +308,7 @@
     var f=sheet.querySelector('[data-focus]')||sheet.querySelector('button');if(f)f.focus({preventScroll:true});
     pageName=name;if(location.hash!=='#'+name){pushed=true;location.hash=name;}
   }
-  function hideSheet(){sheet.hidden=true;catcher.hidden=true;sheet.innerHTML='';document.body.classList.remove('noscroll');if(lastFocus&&lastFocus.focus)lastFocus.focus({preventScroll:true});}
+  function hideSheet(){if(sheet.__stop){sheet.__stop();sheet.__stop=null;}sheet.hidden=true;catcher.hidden=true;sheet.innerHTML='';document.body.classList.remove('noscroll');if(lastFocus&&lastFocus.focus)lastFocus.focus({preventScroll:true});}
   function closeSheet(){if(sheet.hidden)return;hideSheet();if(pushed){pushed=false;ignoreHash=true;history.back();}}
   window.addEventListener('hashchange',function(){if(ignoreHash){ignoreHash=false;return;}if(!sheet.hidden&&location.hash!=='#'+pageName){pushed=false;hideSheet();}});
   var X='',XB='<button type="button" class="ib" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>';
@@ -506,6 +508,24 @@
     var p=off.startRendering(),fin=function(buf){done(wavBlob([buf.getChannelData(0).slice(a,a+n),buf.getChannelData(1).slice(a,a+n)],sr));};
     if(p&&p.then)p.then(fin,function(){done(null);});else off.oncomplete=function(e){fin(e.renderedBuffer);};
   }
+  /* Ton für die Karte: der Bogen über 8 Takte plus Schlussschlag (Kick und Crash) und Nachklang, offline gerechnet wie der WAV-Loop,
+     ohne Vorlauf (der Clip fängt leer an). done(AudioBuffer|null) */
+  function renderClip(done){
+    getAC();var OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!ac||!OAC)return done(null);
+    if(REC.mic&&!REC.mic.buf){decodeRec('mic');var w=0,iv=setInterval(function(){if(!REC.mic||REC.mic.buf||++w>20){clearInterval(iv);renderClip(done);}},100);return;}
+    var six=st(),barT=N*six,sr=ac.sampleRate,n=Math.round(CARD.clipLen(bpm)*sr),off,keep={ac:ac,B:B,bac:_bac,oc:_oc,og:_og,live:FXLIVE},s,k;
+    try{
+      off=new OAC(2,n,sr);
+      ac=off;B=null;_bac=null;_oc=null;bus();FXLIVE=true;fxApply(true);
+      for(k=0;k<CARD.NBAR;k++){(function(k){ARR=function(r){return CARD.active(r,k);};})(k);fxTempo();
+        if(k===CARD.NBAR-1){play('beat',k*barT,[0,'b',2,gainOf(1)]);play('cym',k*barT,[0,'c',2,gainOf(3)]);}
+        else for(s=0;s<N;s++)playStep(s,k*barT+s*six+((s%4===2)?six*sw:0),six,k);}
+    }catch(e){off=null;}
+    ARR=null;ac=keep.ac;B=keep.B;_bac=keep.bac;_oc=keep.oc;_og=keep.og;FXLIVE=keep.live;
+    if(!off)return done(null);
+    var p=off.startRendering();
+    if(p&&p.then)p.then(done,function(){done(null);});else off.oncomplete=function(e){done(e.renderedBuffer);};
+  }
   function wavBlob(ch,sr){
     var n=ch[0].length,C=ch.length,ab=new ArrayBuffer(44+n*C*2),v=new DataView(ab),i,c,o=44;
     function w(at,t){for(var j=0;j<t.length;j++)v.setUint8(at+j,t.charCodeAt(j));}
@@ -513,26 +533,64 @@
     for(i=0;i<n;i++)for(c=0;c<C;c++){var x=Math.max(-1,Math.min(1,ch[c][i]));v.setInt16(o,x*32767,true);o+=2;}
     return new Blob([ab],{type:'audio/wav'});
   }
-  function fileName(){
-    var nm=(title||(pre>=0?NM[BEATS[pre].n]:'MSTR beat')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'MSTR-beat';
-    return nm+'-'+bpm+'bpm.wav';
+  function baseName(){
+    return (title||(pre>=0?NM[BEATS[pre].n]:'MSTR beat')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'MSTR-beat';
   }
+  function fileName(){return baseName()+'-'+bpm+'bpm.wav';}
   function canSendFile(f){try{return !!(navigator.canShare&&navigator.share&&navigator.canShare({files:[f]}));}catch(e){return false;}}
   function saveFile(f){var u=URL.createObjectURL(f),a=document.createElement('a');a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},4000);}
   /* Teilen: halbes Blatt. Erst dem Beat einen Namen geben (bleibt gespeichert und steht oben als Titel), dann den Link schicken */
+  /* Teilen: halbes Blatt. Erst dem Beat einen Namen geben (bleibt gespeichert und steht oben als Titel; der Würfel schlägt
+     einen Titel aus dem Beat vor), dann die Karte als Video schicken, den Link oder den WAV-Loop */
+  var handle=typeof S.by==='string'?S.by.slice(0,24):'';
+  function cardModel(){return CARD.model(pat.slice(0,7),bpm,sw);}
   function shareSheet(){
-    var own=pat[MIC]&&pat[MIC]!==zero();
+    var own=pat[MIC]&&pat[MIC]!==zero(),video=CARD.canVideo(),mob=nativeShare();
     openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Share your beat</span>'+XB+'</div>'+
-      '<label class="namef"><span class="lbl">Name</span><input id="shName" type="text" maxlength="40" autocomplete="off" enterkeyhint="send" data-focus></label>'+
-      '<button type="button" class="pill wide go" id="shSend">'+(nativeShare()?'Send link':'Copy link')+'</button>'+
-      '<p class="shnote" id="shSendT">'+(nativeShare()?'':'Paste it into a chat or mail. ')+'Opens your beat on asimplemanslab.com/mstr'+(own?'. Your recording stays on this device.':'.')+'</p>'+
+      '<label class="namef"><span class="lbl">Name</span><span class="namer"><input id="shName" type="text" maxlength="40" autocomplete="off" enterkeyhint="send" data-focus>'+
+      '<button type="button" class="ib" id="shDice" aria-label="Suggest a title" title="Suggest a title"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></span></label>'+
+      '<div class="cardrow"><canvas id="shCard" width="180" height="320" aria-label="Preview of your card"></canvas>'+
+      '<div class="cardct"><label class="byf"><span class="lbl">By</span><input id="shBy" type="text" maxlength="24" autocomplete="off" placeholder="@you"></label>'+
+      '<button type="button" class="pill wide go" id="shCardBtn">'+(video?(mob?'Send video':'Save video'):(mob?'Send image':'Save image'))+'</button>'+
+      '<p class="shnote" id="shCardT">'+(video?'With sound, 8 bars, '+Math.round(CARD.clipLen(bpm))+' s. For stories, reels and chats.':'As a picture, for stories and chats.')+'</p></div></div>'+
+      '<button type="button" class="pill wide" id="shSend">'+(mob?'Send link':'Copy link')+'</button>'+
+      '<p class="shnote" id="shSendT">'+(mob?'':'Paste it into a chat or mail. ')+'Opens your beat on asimplemanslab.com/mstr'+(own?'. Your recording stays on this device.':'.')+'</p>'+
       '<button type="button" class="pill wide" id="shWav"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Download WAV</span></button>'+
       '<p class="shnote" id="shWavT">'+BARS+' bars that loop seamlessly, for sampling'+(own?', with your recording':'')+'</p>',function(el){
-      var inp=el.querySelector('#shName');
+      var inp=el.querySelector('#shName'),dice=el.querySelector('#shDice'),diceN=0,m=cardModel(),scene=new CARD.Scene(m);
       inp.value=title;inp.placeholder=pre>=0?NM[BEATS[pre].n]:'Your beat';
       function setName(){var v=inp.value.replace(/[\u0000-\u001f]/g,'').trim().slice(0,40);if(v!==title){title=v;paint();persist();}}
       inp.addEventListener('input',setName);
       inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();sb.click();}});
+      dice.addEventListener('click',function(){inp.value=CARD.title(m,diceN++);setName();});
+      var by=el.querySelector('#shBy');by.value=handle;
+      by.addEventListener('input',function(){handle=by.value.replace(/[\u0000-\u001f\s]/g,'').slice(0,24);S.by=handle;save();});
+      /* Vorschau: die Karte ruhig animiert, solange das Blatt offen ist */
+      var cv=el.querySelector('#shCard'),cx=cv.getContext('2d'),cardT=null,cRaf=0,busyC=false,cfile=null,ckey='';
+      function opts(){return {title:title||inp.placeholder,by:handle,preset:pre>=0?NM[BEATS[pre].n]:'',file:baseName()+'-'+bpm+'bpm'};}
+      function pv(){if(sheet.hidden||!cv.isConnected){cancelAnimationFrame(cRaf);return;}if(!busyC)CARD.story(cx,cv.width,cv.height,scene,opts());cRaf=requestAnimationFrame(pv);}
+      pv();
+      var cb=el.querySelector('#shCardBtn'),ct=el.querySelector('#shCardT'),cbLabel=cb.textContent;
+      function giveCard(f){
+        if(navigator.share&&matchMedia('(pointer: coarse)').matches&&canSendFile(f)){
+          navigator.share({files:[f],title:(title||inp.placeholder)+' · MSTR'}).catch(function(e){if(e&&e.name==='NotAllowedError'){cb.textContent='Save '+f.name;}});return;}
+        saveFile(f);ct.textContent='Saved '+f.name;
+      }
+      cb.addEventListener('click',function(){
+        setName();if(busyC)return;var o=opts(),key=shareCode()+'|'+o.title+'|'+o.by;
+        if(cfile&&ckey===key)return giveCard(cfile);
+        if(!video){CARD.image(scene,o,function(f){if(!f){ct.textContent='That did not work in this browser.';return;}cfile=f;ckey=key;giveCard(f);});return;}
+        busyC=true;setPlay(false);cb.disabled=true;ct.textContent='Rendering sound …';
+        renderClip(function(buf){
+          if(!buf){busyC=false;cb.disabled=false;ct.textContent='That did not work in this browser.';return;}
+          o.mirror=cv;
+          cardT=CARD.record(ac,buf,scene,o,function(t,tot){ct.textContent='Recording '+Math.ceil(tot-t)+' s … stay on this screen';},function(f,why){
+            busyC=false;cb.disabled=false;cardT=null;scene.reset();
+            if(why==='abort')return;
+            if(!f){ct.textContent='Recording did not work here. Saving a picture instead.';CARD.image(scene,o,function(f2){if(f2){cfile=f2;ckey=key;giveCard(f2);}});return;}
+            cfile=f;ckey=key;ct.textContent=f.name+', '+Math.round(CARD.clipLen(bpm))+' s';cb.textContent=cbLabel;giveCard(f);});
+        });
+      });
       var sb=el.querySelector('#shSend'),sbT=0;
       sb.addEventListener('click',function(){setName();shareBeat(function(){
         sb.textContent='\u2713 Link copied';clearTimeout(sbT);sbT=setTimeout(function(){sb.textContent='Copy link';},2500);});});
@@ -552,6 +610,8 @@
           if(!blob){wt.textContent='That did not work in this browser.';return;}
           file=new File([blob],fileName(),{type:'audio/wav'});wt.textContent=file.name+', '+(Math.round(BARS*N*st()*10)/10)+' s';give(file);});
       });
+      /* Blatt zu: Aufnahme abbrechen */
+      sheet.__stop=function(){if(cardT)cardT();cancelAnimationFrame(cRaf);};
     },'teilen',true);
   }
   $('share').addEventListener('click',shareSheet);
@@ -571,5 +631,5 @@
 
   build();themeUI();fxUI();playB.innerHTML=I_PLAY;
   if(shared){var before=shared;showToast(title?'“'+title+'” loaded':'Shared beat loaded','Undo',function(){restore(before);});}
-  window.MSTR={setPlay:setPlay,renderLoop:renderLoop,code:shareCode,url:shareUrl,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
+  window.MSTR={setPlay:setPlay,renderLoop:renderLoop,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
 })();

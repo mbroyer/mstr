@@ -2,7 +2,7 @@
 import os
 H=os.path.dirname(os.path.abspath(__file__))+'/'
 def r(n): return open(H+'src/'+n,encoding='utf8').read()
-js='\n'.join(r(n) for n in ['app.js','audio.js','beats.js','klang.js','mstr.js'])
+js='\n'.join(r(n) for n in ['app.js','audio.js','beats.js','klang.js','card.js','mstr.js'])
 out='''<!doctype html>
 <html lang="en">
 <head>
