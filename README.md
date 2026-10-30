@@ -4,7 +4,7 @@ Gesprochen „Muster“. Ein Step-Sequencer im Browser für Erwachsene: sieben S
 
 Herausgelöst aus der Monster-Beatbox in NumNum (Repo `mbroyer/numnum`, Datei `src/beatbox.js`).
 
-- 7 Spuren: Hi-Hat (Zu, Offen, Tick), Kick, Clap, Snare (Snare, Rim, Rauschen), Perc (Shaker, Tamburin, Clave, Conga, Cowbell), Toms (Kick 2, Snare 2, Tom, Becken), FX (Snap, Sub, Crash, Wirbel, Riser)
+- 7 Spuren: Hi-Hat (Zu, Offen, Tick), Kick, Snare (Snare, Rim, Rauschen, Clap), Becken (Crash, Ride, China), Perc (Shaker, Tamburin, Clave, Conga, Cowbell), Toms (Tief, Mittel, Hoch), FX (Snap, Sub, Reverse, Wirbel, Riser)
 - Je Spur: Klangauswahl, Mute, Solo, Lautstärke, Vorschlag, eigene Aufnahme (1 Sekunde, nur auf diesem Gerät)
 - 13 Vorlagen mit Tempo und Swing, Tempo 60–180 BPM mit Tap-Tempo, Swing auf jedem zweiten Achtel
 - Drop: ein Takt Anlauf mit Filter, dann der Knall

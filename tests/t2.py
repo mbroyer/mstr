@@ -9,7 +9,7 @@ with sync_playwright() as p:
     pg.on('pageerror',lambda e:err.append(str(e)))
     pg.on('console',lambda m:m.type=='error' and err.append(m.text))
     pg.goto('file://'+H+'/index.html');pg.wait_for_timeout(300)
-    want=[['Zu','Offen','Tick'],None,None,['Snare','Rim','Rauschen'],['Shaker','Tamburin','Clave','Conga','Cowbell'],['Kick 2','Snare 2','Tom','Becken'],['Snap','Sub','Crash','Wirbel','Riser']]
+    want=[['Zu','Offen','Tick'],None,['Snare','Rim','Rauschen','Clap'],['Crash','Ride','China'],['Shaker','Tamburin','Clave','Conga','Cowbell'],['Tief','Mittel','Hoch'],['Snap','Sub','Reverse','Wirbel','Riser']]
     for r,w in enumerate(want):
         pg.locator('.tracks .trk').nth(r).locator('.tn').click();pg.wait_for_timeout(100)
         if w:
@@ -22,6 +22,12 @@ with sync_playwright() as p:
         pg.click('#preBtn');pg.locator('.pitem').nth(i).click();pg.wait_for_timeout(500)
     pg.click('#drop');pg.wait_for_timeout(4500)
     assert pg.locator('#play.on').count()==1
+    # alter Stand mit Clap-Spur wird umgerechnet
+    old={'pat':{'g':['x'+'0'*15,'b'+'0'*15,'0000c'+'0'*11,'p'+'0'*15,'1'+'0'*15,'b'*1+'0'*11+'c'+'0'*3,'m'+'0'*15],'bpm':100,'sw':0,'pre':-1,'vol':[.8]*7,'mute':[False,False,True,False,False,False,False],'solo':[False]*7}}
+    pg.evaluate("s=>localStorage.setItem('mstr-v1',JSON.stringify(s))",old);pg.reload();pg.wait_for_timeout(300)
+    st=pg.evaluate('MSTR.state()')['pat']
+    assert st[2]=='p000c'+'0'*11 and st[3]=='0'*12+'c000' and st[5]=='b'+'0'*15,st
+    assert pg.locator('.tracks .trk.quiet').count()==0,'Mute der alten Clap-Spur darf nicht auf eine andere Spur rutschen'
     b.close()
 assert not err,err
 print('t2 ok')
