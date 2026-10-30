@@ -1,15 +1,15 @@
 /* ===== Klang: alle Spuren per Web Audio erzeugt, über einen Bus mit Hall, Delay, Sättigung, Sidechain und zuschaltbaren Effekten ===== */
 /* Spuren: id (für die Klangerzeugung), Name, Klänge [Zeichen im Pattern, Name] */
 var TRACKS=[
-  {id:'hats',n:'Hi-Hat',s:[['x','Zu'],['o','Offen'],['k','Tick']]},
+  {id:'hats',n:'Hi-Hat',s:[['x','Closed'],['o','Open'],['k','Tick']]},
   {id:'beat',n:'Kick',s:[['b','Kick']]},
-  {id:'snare',n:'Snare',s:[['p','Snare'],['k','Rim'],['s','Rauschen'],['c','Clap']]},
-  {id:'cym',n:'Becken',s:[['c','Crash'],['r','Ride'],['h','China']]},
-  {id:'click',n:'Perc',s:[['1','Shaker'],['2','Tamburin'],['3','Clave'],['4','Conga'],['5','Cowbell']]},
-  {id:'toms',n:'Toms',s:[['b','Tief'],['p','Mittel'],['t','Hoch']]},
-  {id:'fx',n:'FX',s:[['m','Snap'],['n','Sub'],['s','Reverse'],['l','Wirbel'],['z','Riser']]},
+  {id:'snare',n:'Snare',s:[['p','Snare'],['k','Rim'],['s','Noise'],['c','Clap']]},
+  {id:'cym',n:'Cymbals',s:[['c','Crash'],['r','Ride'],['h','China']]},
+  {id:'click',n:'Perc',s:[['1','Shaker'],['2','Tambourine'],['3','Clave'],['4','Conga'],['5','Cowbell']]},
+  {id:'toms',n:'Toms',s:[['b','Low'],['p','Mid'],['t','High']]},
+  {id:'fx',n:'FX',s:[['m','Snap'],['n','Sub'],['s','Reverse'],['l','Roll'],['z','Riser']]},
   /* Eigene Spur: spielt nur die eigene Aufnahme, in drei Tonhöhen */
-  {id:'mic',n:'Aufnahme',s:[['a','Normal'],['t','Tief'],['h','Hoch']]}];
+  {id:'mic',n:'Mic',s:[['a','Normal'],['t','Low'],['h','High']]}];
 var N=16,R=TRACKS.length;
 var PENT=[0,57,60,62,64,67],RATE=[1,.84,1.19,1.33,1.5];
 var bpm=100,sw=0;
@@ -37,12 +37,12 @@ function bus(){
    Raum und Echo sind Sends vom Bus ohne Kick und Sub (sonst wird der Bass matschig), Vinyl und Filter liegen hinter dem Drop-Filter */
 /* Je Effekt: id, Name, Beschreibung, Name des Reglers, Auswahl [Wert, Name]
    (Echo: Abstand in Sechzehnteln, Filter: Takte je Durchlauf, Pumpen: Sechzehntel je Atemzug, Stottern: jeder wievielte Takt) */
-var FXS=[['room','Raum','Langer Hall','Menge'],
-  ['echo','Echo','Wiederholungen im Tempo','Menge',[[2,'1/8'],[3,'1/8 punktiert'],[4,'1/4']]],
-  ['sweep','Filter','Öffnet und schließt sich im Takt','Tiefe',[[1,'1 Takt'],[2,'2 Takte'],[4,'4 Takte']]],
-  ['pump','Pumpen','Alles atmet im Takt, nur die Kick nicht','Tiefe',[[4,'Viertel'],[2,'Achtel']]],
-  ['stut','Stottern','Am Taktende wiederholt sich ein Stück, ganz schnell','Länge',[[1,'Jeder Takt'],[2,'Jeder 2.'],[4,'Jeder 4.']]],
-  ['lofi','Vinyl','Dumpfer, etwas körnig, mit Knistern','Stärke']];
+var FXS=[['room','Room','Long reverb','Amount'],
+  ['echo','Echo','Repeats in time','Amount',[[2,'1/8'],[3,'1/8 dotted'],[4,'1/4']]],
+  ['sweep','Filter','Opens and closes with the beat','Depth',[[1,'1 bar'],[2,'2 bars'],[4,'4 bars']]],
+  ['pump','Pump','Everything breathes with the beat, except the kick','Depth',[[4,'Quarters'],[2,'Eighths']]],
+  ['stut','Stutter','A slice repeats at the end of the bar, really fast','Length',[[1,'Every bar'],[2,'Every 2nd'],[4,'Every 4th']]],
+  ['lofi','Vinyl','Duller, a bit grainy, with crackle','Strength']];
 /* FX: an oder aus, FXA: Stärke 0–100 (50 ist die Grundeinstellung), FXO: gewählte Auswahl */
 var FXLIVE=false,FX={},FXA={},FXO={echo:3,sweep:2,pump:4,stut:2};
 FXS.forEach(function(f){var id=f[0],a=S.fxa&&S.fxa[id],o=S.fxo&&S.fxo[id];FX[id]=!!(S.fx&&S.fx[id]);FXA[id]=typeof a==='number'&&a>=0&&a<=100?a:50;
@@ -218,9 +218,9 @@ function play(id,t,n){if(!bus())return;if(useOwn(id))return playRec(id,t,n);play
 function now(id,w,v){try{getAC();if(!ac)return;if(ac.state==='suspended')ac.resume();play(id,ac.currentTime+.02,[0,w,2,v==null?1:v]);}catch(e){}}
 /* Aufnahme direkt als Samples über Web Audio statt MediaRecorder: Safari auf dem iPad liefert dort MP4, das sich oft nicht dekodieren lässt */
 function record(id,status,done){
-  getAC();if(!ac){status('Ton ist hier nicht verfügbar.');return done(false);}if(ac.state==='suspended')ac.resume();bus();
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){status('Dieser Browser erlaubt kein Mikrofon.');return done(false);}
-  status('Mikrofon wird geöffnet …');
+  getAC();if(!ac){status('Sound is not available here.');return done(false);}if(ac.state==='suspended')ac.resume();bus();
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){status('This browser does not allow a microphone.');return done(false);}
+  status('Opening microphone …');
   navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:true}}).then(function(stream){
     if(ac.state!=='running')ac.resume();
     var src=ac.createMediaStreamSource(stream),proc=ac.createScriptProcessor(2048,1,1),mute=ac.createGain(),parts=[],on=false;mute.gain.value=0;
@@ -228,13 +228,13 @@ function record(id,status,done){
     src.connect(proc);proc.connect(mute);mute.connect(ac.destination);
     function fin(){on=false;try{src.disconnect();proc.disconnect();mute.disconnect();}catch(e){}stream.getTracks().forEach(function(tr){tr.stop();});
       setTimeout(function(){if(ac.state!=='running')ac.resume();},300);
-      var n=0,k,o=0;parts.forEach(function(x){n+=x.length;});if(!n){status('Die Aufnahme ist leer. Bitte noch einmal versuchen.');return done(false);}
+      var n=0,k,o=0;parts.forEach(function(x){n+=x.length;});if(!n){status('The recording is empty. Please try again.');return done(false);}
       var raw=ac.createBuffer(1,n,ac.sampleRate),d=raw.getChannelData(0);for(k=0;k<parts.length;k++){d.set(parts[k],o);o+=parts[k].length;}
-      var tb=trimBuf(raw);if(!tb){status('Zu leise. Bitte näher ans Mikrofon und noch einmal.');return done(false);}
+      var tb=trimBuf(raw);if(!tb){status('Too quiet. Move closer to the microphone and try again.');return done(false);}
       var b64=wavB64(tb);REC[id]={b64:b64,buf:tb};lsSet('mstr-rec-'+id,b64);
-      status('Gespeichert, nur auf diesem Gerät.');setTimeout(function(){playRec(id,ac.currentTime+.05,[0,TRACKS[trIx(id)].s[0][0],2,1]);},300);done(true);}
+      status('Saved, only on this device.');setTimeout(function(){playRec(id,ac.currentTime+.05,[0,TRACKS[trIx(id)].s[0][0],2,1]);},300);done(true);}
     status('3',1);setTimeout(function(){status('2',1);},500);setTimeout(function(){status('1',1);},1000);
-    setTimeout(function(){status('Aufnahme läuft',2);on=true;setTimeout(fin,1100);},1500);})
-  .catch(function(){status('Kein Zugriff aufs Mikrofon. Bitte in den Browser-Einstellungen erlauben.');done(false);});
+    setTimeout(function(){status('Recording',2);on=true;setTimeout(fin,1100);},1500);})
+  .catch(function(){status('No access to the microphone. Please allow it in your browser settings.');done(false);});
 }
 function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}

@@ -36,14 +36,14 @@ with sync_playwright() as p:
     # Spur-Blatt
     pg.locator('.tracks .trk').first.locator('.tn').click()
     assert pg.locator('#sheet .opt').count()==3
-    pg.click('#sheet .opt:has-text("Offen")')
+    pg.click('#sheet .opt:has-text("Open")')
     pg.screenshot(path=H+'/tests/t1-spur.png')
     pg.click('#sheet [data-close]');assert pg.locator('#sheet').is_hidden(),'Zurück schließt nicht'
     # Browser-Zurück schließt die Unterseite
     pg.click('#preBtn');pg.wait_for_timeout(100);assert pg.evaluate('location.hash')=='#vorlagen'
     pg.screenshot(path=H+'/tests/t1-vorlagen.png')
     pg.go_back();pg.wait_for_timeout(200);assert pg.locator('#sheet').is_hidden(),'Browser-Zurück schließt nicht'
-    assert 'Offen' in pg.locator('.tracks .trk').first.locator('.tb').inner_text()
+    assert 'Open' in pg.locator('.tracks .trk').first.locator('.tb').inner_text()
     # Tempo
     pg.click('#tempoBtn');pg.click('#tUp');pg.click('#tUp')
     pg.screenshot(path=H+'/tests/t1-tempo.png')
@@ -60,7 +60,7 @@ with sync_playwright() as p:
     # Dunkel
     pg.click('#theme');pg.click('#theme')
     assert pg.evaluate('document.documentElement.dataset.theme')=='dark'
-    assert 'Offen' in pg.locator('.tracks .trk').first.locator('.tb').inner_text(),'Klangwahl verloren'
+    assert 'Open' in pg.locator('.tracks .trk').first.locator('.tb').inner_text(),'Klangwahl verloren'
     pg.wait_for_timeout(400)
     pg.screenshot(path=H+'/tests/t1-dark.png',full_page=True)
     b.close()

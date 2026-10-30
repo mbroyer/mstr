@@ -9,7 +9,7 @@ with sync_playwright() as p:
     pg.on('pageerror',lambda e:err.append(str(e)))
     pg.on('console',lambda m:m.type=='error' and err.append(m.text))
     pg.goto('file://'+H+'/index.html');pg.wait_for_timeout(300)
-    want=[['Zu','Offen','Tick'],None,['Snare','Rim','Rauschen','Clap'],['Crash','Ride','China'],['Shaker','Tamburin','Clave','Conga','Cowbell'],['Tief','Mittel','Hoch'],['Snap','Sub','Reverse','Wirbel','Riser']]
+    want=[['Closed','Open','Tick'],None,['Snare','Rim','Noise','Clap'],['Crash','Ride','China'],['Shaker','Tambourine','Clave','Conga','Cowbell'],['Low','Mid','High'],['Snap','Sub','Reverse','Roll','Riser']]
     for r,w in enumerate(want):
         pg.locator('.tracks .trk').nth(r).locator('.tn').click();pg.wait_for_timeout(100)
         if w:

@@ -4,7 +4,7 @@ H=os.path.dirname(os.path.abspath(__file__))+'/'
 def r(n): return open(H+'src/'+n,encoding='utf8').read()
 js='\n'.join(r(n) for n in ['app.js','audio.js','beats.js','klang.js','mstr.js'])
 out='''<!doctype html>
-<html lang="de">
+<html lang="en">
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">

@@ -37,9 +37,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 
 .head{display:flex;flex-direction:column;gap:4px}
 .preset{margin:0;cursor:pointer;font-family:var(--f-ed);font-size:clamp(42px,11vw,60px);font-weight:400;letter-spacing:-.01em;line-height:1}
-/* Beat wählen: deutlicher Knopf unter dem Namen, gefüllt in Schwarz (im Dunkelmodus Weiß) */
-.prow{display:flex;align-items:center;gap:12px;margin-top:8px}
-.pill.pick{background:var(--ink);color:var(--bg);border-color:var(--ink);height:40px;padding:0 16px 0 13px;gap:8px}
+/* Beat wählen: gefüllter runder Knopf direkt neben dem Namen (im Dunkelmodus Weiß) */
+.prow{display:flex;align-items:center;gap:14px}
+.ib.pick{width:44px;height:44px;background:var(--ink);color:var(--bg)}
+.ib.pick svg{width:20px;height:20px}
+.sub:empty{display:none}
 .pill svg{width:17px;height:17px;flex:none}
 .sub{margin:0;font-size:13px;color:var(--mute)}
 

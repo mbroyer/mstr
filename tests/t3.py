@@ -13,7 +13,7 @@ with sync_playwright() as p:
     pg.on('console',lambda m:m.type=='error' and err.append(m.text))
     pg.goto('file://'+H+'/index.html');pg.wait_for_timeout(300)
     mic=pg.locator('.tracks .trk').nth(7)
-    assert 'own' in mic.get_attribute('class') and mic.locator('.nm').text_content()=='Aufnahme'
+    assert 'own' in mic.get_attribute('class') and mic.locator('.nm').text_content()=='Mic'
     # Nur die Spur Aufnahme hat den Aufnahmeknopf
     for r in range(7):
         pg.locator('.tracks .trk').nth(r).locator('.tn').click();assert pg.locator('#kRec').count()==0,r;pg.keyboard.press('Escape')
@@ -29,8 +29,8 @@ with sync_playwright() as p:
     pg.click('#preBtn');pg.click('.pitem:has-text("Techno")');pg.wait_for_timeout(600)
     assert mic.locator('.dot.on').count()==1,'Vorlage hat die eigene Spur überschrieben'
     mic.locator('.tn').click();assert pg.locator('#kMore').is_visible()
-    assert pg.locator('#sheet .opt').all_inner_texts()==['Normal','Tief','Hoch']
-    for t in ['Tief','Hoch','Normal']:pg.click('#sheet .opt:has-text("%s")'%t);pg.wait_for_timeout(80)
+    assert pg.locator('#sheet .opt').all_inner_texts()==['Normal','Low','High']
+    for t in ['Low','High','Normal']:pg.click('#sheet .opt:has-text("%s")'%t);pg.wait_for_timeout(80)
     pg.screenshot(path=H+'/tests/t3-spur.png')
     pg.click('#kDice');pg.wait_for_timeout(1500)
     pg.click('#kDel');assert pg.locator('#kMore').is_hidden()
