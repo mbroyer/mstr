@@ -1,13 +1,13 @@
-/* ===== Klang: Spuren, Drum-Kit-Wiedergabe über einen Bus mit Hall, Sättigung und Sidechain, eigene Aufnahmen ===== */
+/* ===== Klang: Spuren, Wiedergabe des Schlagzeugs über einen Bus mit Hall, Sättigung und Sidechain, eigene Aufnahmen ===== */
 /* Spuren: id (für die Klangerzeugung), Name, Klänge [Zeichen im Pattern, Name]. Die Zeichen nie ändern, gespeicherte Beats hängen daran */
 var TRACKS=[
   {id:'hats',n:'Hi-Hat',s:[['x','Zu'],['o','Offen'],['k','Pedal']]},
   {id:'beat',n:'Kick',s:[['b','Kick']]},
   {id:'clap',n:'Clap',s:[['c','Clap']]},
-  {id:'snare',n:'Snare',s:[['p','Snare'],['k','Rim'],['s','Snare 2']]},
+  {id:'snare',n:'Snare',s:[['p','Snare'],['k','Sidestick'],['s','Rimshot']]},
   {id:'click',n:'Perc',s:[['1','Shaker'],['2','Tamburin'],['3','Clave'],['4','Conga'],['5','Cowbell']]},
   {id:'toms',n:'Toms',s:[['b','Tom tief'],['p','Tom mittel'],['t','Tom hoch'],['c','Crash'],['r','Ride']]},
-  {id:'fx',n:'FX',s:[['m','Snap'],['n','Sub'],['s','Reverse'],['l','Wirbel'],['z','Riser']]}];
+  {id:'fx',n:'Extras',s:[['m','Flam'],['n','Glocke'],['s','Splash'],['l','Wirbel'],['z','Triangel']]}];
 var N=16,R=TRACKS.length;
 var PENT=[0,57,60,62,64,67],RATE=[1,.84,1.19,1.33,1.5];
 var bpm=100,sw=0;
@@ -24,40 +24,37 @@ function bus(){
   B.REV=ac.createConvolver();B.REV.buffer=ir;var rg=ac.createGain();rg.gain.value=.25;B.REV.connect(rg);rg.connect(B.OUT);
   B.SAT=ac.createWaveShaper();var cv=new Float32Array(1024);for(i=0;i<1024;i++){var x=i/512-1;cv[i]=Math.tanh(x*2.5)/Math.tanh(2.5);}B.SAT.curve=cv;var sg=ac.createGain();sg.gain.value=.8;B.SAT.connect(sg);sg.connect(B.OUT);
   B.NZ=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);var c=B.NZ.getChannelData(0);for(i=0;i<c.length;i++)c[i]=Math.random()*2-1;
-  B.K={};setTimeout(warm,0);
+  B.K={};decodeKit(B);
   return B;
 }
 function send(node,dest,amt){var g=ac.createGain();g.gain.value=amt;node.connect(g);g.connect(dest);}
 function vca(t,a,hold,rel,v,dest){var g=ac.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0002,v),t+a);if(hold>0)g.gain.setValueAtTime(Math.max(.0002,v),t+a+hold);g.gain.exponentialRampToValueAtTime(.0001,t+a+hold+rel);g.connect(dest||B.OUT);return g;}
 function osc(type,f,t,end,dest){var o=ac.createOscillator();o.type=type;o.frequency.setValueAtTime(f,t);o.connect(dest);o.start(t);o.stop(end);return o;}
 function duck(t){B.DUCK.gain.cancelScheduledValues(t);B.DUCK.gain.setValueAtTime(.5,t);B.DUCK.gain.linearRampToValueAtTime(1,t+st()*2);}
-/* Drum-Kit aus kit.js: jeder Klang wird beim ersten Gebrauch einmal berechnet und als Puffer gemerkt */
-var LVL={kick:1,kickLong:1,snare:.85,snare2:.9,rim:.7,clap:.9,hatC:.5,hatO:.36,hatP:.5,crash:.38,ride:.32,reverse:.55,tomL:.7,tomM:.7,tomH:.7,shaker:.55,tamb:.45,clave:.4,conga:.6,cowbell:.45,snap:.7,sub:.85};
-function kb(k){if(!B.K[k]){var x=KIT[k](ac.sampleRate),b=ac.createBuffer(1,x.length,ac.sampleRate);b.getChannelData(0).set(x);B.K[k]=b;}return B.K[k];}
-/* Nach dem ersten Ton die übrigen Klänge nach und nach im Hintergrund berechnen */
-function warm(){var ks=Object.keys(LVL),bb=B;(function nx(){if(B!==bb)return;while(ks.length&&bb.K[ks[0]])ks.shift();if(!ks.length)return;kb(ks.shift());setTimeout(nx,30);})();}
-function hit(k,t,v,dest,rev,off){var s=ac.createBufferSource(),g=ac.createGain();s.buffer=kb(k);g.gain.value=LVL[k]*v;s.connect(g);g.connect(dest||B.OUT);if(rev)send(g,B.REV,rev);s.start(t,off||0);return g;}
-/* Offene Hi-Hat wird von der nächsten geschlossenen abgewürgt, wie an der Drum-Machine */
+/* Drum-Kit aus samples.js (echtes Schlagzeug, CC0): beim ersten Ton einmal dekodieren, Stille am Anfang (MP3-Vorlauf) überspringen */
+var LVL={kick:1,snare:.9,stick:.7,rimshot:.85,flam:.85,buzz:.8,hatC:.55,hatO:.5,hatP:.5,splash:.5,crash:.55,ride:.5,bell:.5,tomL:.85,tomH:.85,shaker:.5,tamb:.5,clave:.5,conga:.7,cowbell:.5,triangle:.45,clap:.8};
+function decodeKit(bb){Object.keys(SAMPLES).forEach(function(k){bb.K[k]=[];SAMPLES[k].forEach(function(s64,i){
+  ac.decodeAudioData(b64buf(s64),function(buf){var d=buf.getChannelData(0),pk=0,j;for(j=0;j<d.length;j++)pk=Math.max(pk,Math.abs(d[j]));
+    for(j=0;j<d.length&&Math.abs(d[j])<pk*.01;j++);bb.K[k][i]={b:buf,o:Math.max(0,j/buf.sampleRate-.001)};},function(){});});});}
+var rrN={};
+/* Spielt einen Klang; bei mehreren Aufnahmen (Round Robin) abwechselnd, damit Wiederholungen nicht maschinell klingen */
+function hit(k,t,v,dest,rev,rate){var vs=B.K[k]||[],i=rrN[k]=((rrN[k]|0)+1)%Math.max(1,vs.length),x=vs[i]||vs[0];if(!x)return null;
+  var s=ac.createBufferSource(),g=ac.createGain();s.buffer=x.b;if(rate)s.playbackRate.value=rate;g.gain.value=LVL[k]*v;s.connect(g);g.connect(dest||B.OUT);if(rev)send(g,B.REV,rev);s.start(t,x.o);return g;}
+/* Offene Hi-Hat wird von der nächsten geschlossenen abgewürgt, wie am echten Becken */
 var openHat=null;
-function choke(t){if(openHat){openHat.gain.setTargetAtTime(0,t,.012);openHat=null;}}
-var PERC={'1':'shaker','2':'tamb','3':'clave','4':'conga','5':'cowbell'},TOMS={b:'tomL',p:'tomM',t:'tomH',c:'crash',r:'ride'};
+function choke(t){if(openHat){openHat.gain.setTargetAtTime(0,t,.015);openHat=null;}}
+var PERC={'1':'shaker','2':'tamb','3':'clave','4':'conga','5':'cowbell'},TOMS={b:'tomL',t:'tomH',c:'crash',r:'ride'},XTRA={m:'flam',n:'bell',s:'splash',l:'buzz',z:'triangle'};
 /* n = [Schritt, Klangzeichen, Länge, Lautstärke] */
 function playSynth(id,t,n){
-  var v=n[3],w=n[1],six=st();
-  if(id==='beat'){var lg=bpm>=128;hit(lg?'kickLong':'kick',t,v,lg?B.SAT:B.OUT);duck(t);}
+  var v=n[3],w=n[1];
+  if(id==='beat'){hit('kick',t,v);duck(t);}
   else if(id==='hats'){choke(t);var g=hit(w==='o'?'hatO':w==='k'?'hatP':'hatC',t,v,B.DUCK);if(w==='o')openHat=g;}
-  else if(id==='clap')hit('clap',t,v,B.DUCK,.22);
-  else if(id==='snare')hit(w==='k'?'rim':w==='s'?'snare2':'snare',t,v,B.DUCK,w==='k'?.08:.14);
-  else if(id==='click')hit(PERC[w]||'shaker',t,v,B.DUCK,.1);
-  else if(id==='toms'){var k=TOMS[w]||'tomM';hit(k,t,v,B.DUCK,k==='crash'||k==='ride'?.12:.16);}
-  else if(id==='fx'){
-    if(w==='m')hit('snap',t,v,B.DUCK,.2);
-    else if(w==='n'){hit('sub',t,v,B.SAT);duck(t);}
-    /* Reverse-Becken endet genau vier Schritte später */
-    else if(w==='s'){var d=Math.min(1.4,six*4);hit('reverse',t,v,B.DUCK,.15,1.4-d);}
-    /* Wirbel: vier Schläge in Zweiunddreißigsteln, lauter werdend */
-    else if(w==='l'){for(var i=0;i<4;i++)hit('snare2',t+i*six/2,v*(.45+.18*i),B.DUCK,.12);}
-    else if(w==='z'){var gz=vca(t,.01,six*3,.04,.35*v),bz=ac.createBiquadFilter();bz.type='bandpass';bz.Q.value=4;bz.frequency.setValueAtTime(600,t);bz.frequency.exponentialRampToValueAtTime(6000,t+six*3.6);bz.connect(gz);var sz=ac.createBufferSource();sz.buffer=B.NZ;sz.connect(bz);sz.start(t,Math.random()*.4);sz.stop(t+.5);send(gz,B.REV,.3);}}
+  else if(id==='clap')hit('clap',t,v,B.DUCK,.08);
+  else if(id==='snare')hit(w==='k'?'stick':w==='s'?'rimshot':'snare',t,v,B.DUCK,.06);
+  else if(id==='click')hit(PERC[w]||'shaker',t,v,B.DUCK);
+  /* Der mittlere Tom ist der hohe, eine kleine Terz tiefer gestimmt */
+  else if(id==='toms'){if(w==='p')hit('tomH',t,v,B.DUCK,0,.84);else hit(TOMS[w]||'tomL',t,v,B.DUCK);}
+  else if(id==='fx')hit(XTRA[w]||'flam',t,v,B.DUCK,w==='m'||w==='l'?.06:0);
 }
 
 /* ---------- Eigene Klänge: 1 Sekunde aufnehmen, Stille abschneiden, als WAV auf diesem Gerät speichern ---------- */

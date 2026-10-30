@@ -9,7 +9,7 @@ with sync_playwright() as p:
     pg.on('pageerror',lambda e:err.append(str(e)))
     pg.on('console',lambda m:m.type=='error' and err.append(m.text))
     pg.goto('file://'+H+'/index.html');pg.wait_for_timeout(300)
-    want=[['Zu','Offen','Pedal'],None,None,['Snare','Rim','Snare 2'],['Shaker','Tamburin','Clave','Conga','Cowbell'],['Tom tief','Tom mittel','Tom hoch','Crash','Ride'],['Snap','Sub','Reverse','Wirbel','Riser']]
+    want=[['Zu','Offen','Pedal'],None,None,['Snare','Sidestick','Rimshot'],['Shaker','Tamburin','Clave','Conga','Cowbell'],['Tom tief','Tom mittel','Tom hoch','Crash','Ride'],['Flam','Glocke','Splash','Wirbel','Triangel']]
     for r,w in enumerate(want):
         pg.locator('.tracks .trk').nth(r).locator('.tn').click();pg.wait_for_timeout(100)
         if w:
@@ -17,6 +17,7 @@ with sync_playwright() as p:
             for t in w:pg.click('#sheet .opt:has-text("%s")'%t);pg.wait_for_timeout(80)
         pg.keyboard.press('Escape')
     pg.click('#play')
+    pg.wait_for_timeout(800)
     for i in range(13):
         pg.click('#preBtn');pg.locator('.pitem').nth(i).click();pg.wait_for_timeout(500)
     pg.click('#drop');pg.wait_for_timeout(4500)
