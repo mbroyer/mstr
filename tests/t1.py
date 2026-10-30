@@ -1,29 +1,61 @@
-# Rauchtest: Seite lädt ohne Fehler, Einführung, 7 Monster-Reihen, Play, Vorlage, kurzer Takt, Stand bleibt nach Neuladen
-import os,sys
+# Rauchtest: Seite lädt ohne Fehler, 7 Spuren à 16 Schritte, Play, Vorlage, Mute, Tempo, Leeren mit Rückgängig, Stand bleibt nach Neuladen
+import os
 from playwright.sync_api import sync_playwright
 H=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
-url='file://'+H+'/beatbox.html'
+url='file://'+H+'/index.html'
 err=[]
 with sync_playwright() as p:
     b=p.chromium.launch(**({'executable_path':os.environ['PW_CHROME']} if os.environ.get('PW_CHROME') else {}))
     pg=b.new_page(viewport={'width':390,'height':844})
     pg.on('pageerror',lambda e:err.append(str(e)))
     pg.goto(url);pg.wait_for_timeout(300)
-    assert pg.locator('.dmintro').count()==1,'Einführung fehlt'
-    pg.click('.dmi-skip');pg.wait_for_timeout(200)
-    assert pg.locator('.dmblk').count()==7,pg.locator('.dmblk').count()
-    assert pg.locator('.dmblk.lock').count()==0
-    assert pg.locator('#beatCard.live').count()==1,'spielt nicht'
-    pg.click('#dmPlay');pg.click('#dmPre button:nth-child(5)');pg.wait_for_timeout(200)
-    assert pg.locator('#dmPre button.on').count()==1
-    assert pg.locator('.dmblk').first.locator('.dmc').count()==16
-    pg.click('#dmKurz');pg.wait_for_timeout(100)
-    assert pg.locator('.dmblk').first.locator('.dmc').count()==8
-    on=pg.locator('.dmc.on').count()
-    pg.reload();pg.wait_for_timeout(300)
-    assert pg.locator('.dmintro').count()==0,'Einführung kommt erneut'
-    assert pg.locator('.dmc.on').count()==on,'Stand verloren'
+    assert pg.locator('.tracks .trk').count()==7,pg.locator('.tracks .trk').count()
+    assert pg.locator('.tracks .trk').first.locator('.dot').count()==16
+    assert pg.evaluate('document.documentElement.scrollWidth')<=390,'waagerechtes Scrollen'
+    assert pg.inner_text('#preName')=='Boom Bap'
+    on=pg.locator('.dot.on').count();assert on>0
+    # Schritt setzen
+    pg.locator('.tracks .trk').nth(2).locator('.dot').first.click()
+    assert pg.locator('.dot.on').count()==on+1
+    # Play und Playhead
+    pg.click('#play');pg.wait_for_timeout(400)
+    assert pg.locator('#play.on').count()==1,'spielt nicht'
+    assert pg.locator('.dot.ph').count()==7,'kein Playhead'
+    pg.keyboard.press('Space');pg.wait_for_timeout(100)
+    assert pg.locator('#play.on').count()==0,'Leertaste stoppt nicht'
+    # Vorlage wählen
+    pg.click('#preBtn');assert pg.locator('.pitem').count()==13
+    pg.click('.pitem:has-text("House")');pg.wait_for_timeout(100)
+    assert pg.inner_text('#preName')=='House' and pg.inner_text('#bpm')=='116'
+    assert pg.locator('#sheet').is_hidden()
+    pg.click('#play')
+    # Mute
+    pg.locator('.tracks .trk').nth(1).locator('.ms.m').click()
+    assert pg.locator('.tracks .trk.quiet').count()==1
+    # Spur-Blatt
+    pg.locator('.tracks .trk').first.locator('.tn').click()
+    assert pg.locator('#sheet .opt').count()==3
+    pg.click('#sheet .opt:has-text("Offen")');pg.keyboard.press('Escape')
+    assert 'Offen' in pg.locator('.tracks .trk').first.locator('.tb').inner_text()
+    # Tempo
+    pg.click('#tempoBtn');pg.click('#tUp');pg.click('#tUp')
+    pg.screenshot(path=H+'/tests/t1-tempo.png')
+    pg.keyboard.press('Escape')
+    assert pg.inner_text('#bpm')=='118'
+    # Leeren und Rückgängig
+    on=pg.locator('.dot.on').count()
+    pg.click('#clr');assert pg.locator('.dot.on').count()==0
+    pg.click('.toast button');assert pg.locator('.dot.on').count()==on
     pg.screenshot(path=H+'/tests/t1.png',full_page=True)
+    pg.reload();pg.wait_for_timeout(300)
+    assert pg.locator('.dot.on').count()==on,'Stand verloren'
+    assert pg.inner_text('#bpm')=='118' and pg.locator('.tracks .trk.quiet').count()==1
+    # Dunkel
+    pg.click('#theme');pg.click('#theme')
+    assert pg.evaluate('document.documentElement.dataset.theme')=='dark'
+    assert 'Offen' in pg.locator('.tracks .trk').first.locator('.tb').inner_text(),'Klangwahl verloren'
+    pg.wait_for_timeout(400)
+    pg.screenshot(path=H+'/tests/t1-dark.png',full_page=True)
     b.close()
 assert not err,err
 print('t1 ok')
