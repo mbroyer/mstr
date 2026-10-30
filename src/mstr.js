@@ -34,8 +34,10 @@
     cym:'<path d="M3.5 10.5c3-2.4 14-2.4 17 0"/><path d="M12 8.6V20M8.5 20h7"/><circle cx="12" cy="7.4" r="1" class="f"/>',
     mic:'<rect x="9" y="3.5" width="6" height="10.5" rx="3"/><path d="M6.2 11.2a5.8 5.8 0 0 0 11.6 0M12 17v3.5M9 20.5h6"/>'};
   var MIC=trIx('mic');
+  /* Start-Vorlage für den ersten Besuch: Amapiano */
+  var START=Math.max(0,BEATS.map(function(b){return b.n;}).indexOf('amapiano'));
   var pat,vol=[],mute=[],solo=[],pre=0,edited=false,brush=TRACKS.map(function(t){return t.s[0][0];}),pk=[],lastDice=[];
-  var cells=[],rows=[],playing=false,step=0,nextT=0,timer=0,queue=[],raf=0,shown=-1,drop=0;
+  var cells=[],rows=[],playing=false,step=0,bar=0,nextT=0,timer=0,queue=[],raf=0,shown=-1,drop=0;
   var $=function(id){return document.getElementById(id);};
   var app=$('app'),tracksEl=$('tracks'),playB=$('play'),dropB=$('drop'),sheet=$('sheet');
   var beats=document.querySelectorAll('.beatrow .grp span:first-child');
@@ -83,7 +85,7 @@
   /* Stand v4: Bossa ist durch Beat It ersetzt, Shuffle durch Afrobeats */
   if(P&&P.v===4){if(P.pre===7||P.pre===9)P.pre=-1;P.v=5;}
   if(P&&clean(P.g)){pat=clean(P.g);bpm=Math.round(num(P.bpm,60,180,100));sw=num(P.sw,0,.6,0);pre=P.pre|0;if(pre<-1||pre>=BEATS.length)pre=-1;edited=!!P.ed;}
-  else{pat=empty();fromBeat(0);}
+  else{pat=empty();fromBeat(START);}
   vol=arr(P&&P.vol,function(x){return num(x,0,1,.8);},.8);
   mute=arr(P&&P.mute,function(x){return !!x;},false);
   solo=arr(P&&P.solo,function(x){return !!x;},false);
@@ -106,13 +108,13 @@
       tn.addEventListener('click',function(){trackSheet(r);});
       tl.appendChild(tn);
       ['M','S'].forEach(function(k){var b=document.createElement('button');b.type='button';b.className='ms '+k.toLowerCase();b.textContent=k;
-        b.setAttribute('aria-label',(k==='M'?'Stumm: ':'Solo: ')+T.n);
+        b.setAttribute('aria-label',(k==='M'?'Mute: ':'Solo: ')+T.n);
         b.addEventListener('click',function(){if(k==='M')mute[r]=!mute[r];else solo[r]=!solo[r];paint();persist();});tl.appendChild(b);});
       row.appendChild(tl);
       var steps=document.createElement('div');steps.className='steps';cells.push([]);
       for(var g=0;g<4;g++){var grp=document.createElement('div');grp.className='grp';
         for(var c=0;c<4;c++)(function(s){
-          var b=document.createElement('button');b.type='button';b.className='dot';b.setAttribute('aria-label',T.n+', Schritt '+(s+1));
+          var b=document.createElement('button');b.type='button';b.className='dot';b.setAttribute('aria-label',T.n+', step '+(s+1));
           b.addEventListener('click',function(){
             if(r===MIC&&!REC.mic){trackSheet(r);return;} /* ohne Aufnahme gibt es nichts zu setzen: erst aufnehmen */
             var a=pat[r].split(''),on=a[s]!=='0';a[s]=on?'0':brush[r];pat[r]=a.join('');
@@ -135,12 +137,12 @@
       rows[r].classList.toggle('quiet',!audible(r));
       rows[r].querySelector('.ms.m').setAttribute('aria-pressed',mute[r]?'true':'false');
       rows[r].querySelector('.ms.s').setAttribute('aria-pressed',solo[r]?'true':'false');
-      rows[r].querySelector('.tb').textContent=r===MIC&&!REC.mic?'Eigenen Klang aufnehmen':multi?T.s[sndIx(r,brush[r])][1]:'';
+      rows[r].querySelector('.tb').textContent=r===MIC&&!REC.mic?'Record your own sound':multi?T.s[sndIx(r,brush[r])][1]:'';
     }
     app.classList.toggle('solo',so);
     $('bpm').textContent=bpm;$('swTxt').textContent='Swing '+Math.round(sw*100)+' %';
-    $('preName').textContent=pre>=0?NM[BEATS[pre].n]:'Eigener Beat';
-    $('sub').textContent=pre>=0?(edited?'Vorlage, bearbeitet':'Vorlage'):'Ohne Vorlage';
+    $('preName').textContent=pre>=0?NM[BEATS[pre].n]:'Your beat';
+    $('sub').textContent=pre>=0&&edited?'edited':'';
   }
   function changed(){edited=true;paint();persist();}
 
@@ -166,26 +168,61 @@
     var six=st();
     while(nextT<ac.currentTime+.15){
       var s=step,t=nextT+((s%4===2)?six*sw:0),r;
-      if(s===0){if(drop===1){drop=2;dropBuild(t,N*six);}else if(drop===2){drop=0;dropBoom(t);}}
-      /* Drop: ein Takt Anlauf nur mit Hi-Hat und lauter werdendem Wirbel, die letzten zwei Schritte Stille, dann der Knall */
-      if(drop===2){if(s<N-2){play('snare',t,[s,'p',2,.2+.8*s/N]);if(audible(0)&&pat[0].charAt(s)!=='0')play('hats',t,[s,pat[0].charAt(s),2,gainOf(0)]);}}
-      else for(r=0;r<R;r++)if(audible(r)){var w=pat[r].charAt(s);if(w!=='0')play(TRACKS[r].id,t,[s,w,2,gainOf(r)]);}
+      if(s===0){fxTempo();if(drop===1){drop=2;dropBuild(t,N*six);}else if(drop===2){drop=0;dropBoom(t);}}
+      /* Drop: ein Takt Anlauf mit dem eigenen Beat (siehe dropBuild), die letzten zwei Schritte Pause, dann der Einschlag */
+      if(drop===2)dropStep(s,t,six);
+      else{
+        /* Stottern: am Ende jedes n-ten Takts spielt statt der letzten Schritte immer wieder der erste davon, in Zweiunddreißigsteln */
+        var L=FX.stut&&(bar+1)%FXO.stut===0?fxStutLen():0,src=N-L,k;
+        if(L&&s>=src){for(r=0;r<R;r++)if(audible(r)){var w2=pat[r].charAt(src);if(w2!=='0')for(k=0;k<2;k++)play(TRACKS[r].id,t+k*six/2,[src,w2,2,gainOf(r)*(1-.35*(s-src+k/2)/L)]);}}
+        else for(r=0;r<R;r++)if(audible(r)){var w=pat[r].charAt(s);if(w!=='0')play(TRACKS[r].id,t,[s,w,2,gainOf(r)]);}
+        fxPump(t,s);}
       queue.push({s:s,t:t});
-      step=(step+1)%N;nextT+=six;
+      step=(step+1)%N;if(!step)bar++;nextT+=six;
     }
   }
+  /* Drop: je nach Beat anders. Der Beat läuft im Anlauf weiter, nur ohne Kick, Toms, Becken und FX in der zweiten Hälfte.
+     Ein Wirbel mit dem Snare-Klang des Beats (Snare, Clap oder Rim) wird schneller: Viertel, Achtel, Sechzehntel.
+     Tempo ab 150: alles doppelt so schnell. Unter 100 (Lo-Fi, One Drop, Reggaeton): der Filter schließt sich und es wird dunkel,
+     sonst öffnet sich ein Hochpass und der Bass verschwindet. Die letzten zwei Schritte sind still bis auf ein rückwärts laufendes Becken */
+  var dmode='up',droll='p',dcut=8;
+  function dropPlan(){
+    dmode=bpm>=150?'fast':bpm<100?'dark':'up';dcut=dmode==='dark'?12:8;
+    var c={},k,best='p',n=0;for(k=0;k<N;k++){var w=pat[2].charAt(k);if(w==='p'||w==='c'||w==='k')c[w]=(c[w]||0)+1;}
+    for(k in c)if(c[k]>n){n=c[k];best=k;}droll=best;
+  }
+  function dropStep(s,t,six){
+    var r,id,ev,j;
+    if(s===12)play('fx',t,[s,'s',2,.9]);
+    if(s>=N-2)return;
+    for(r=0;r<R;r++)if(audible(r)){var w=pat[r].charAt(s);id=TRACKS[r].id;if(w==='0')continue;
+      if(s>=dcut&&(id==='beat'||id==='toms'||id==='cym'||id==='fx'))continue;play(id,t,[s,w,2,gainOf(r)]);}
+    ev=s<8?4:s<12?2:1;if(dmode==='fast')ev/=2;if(dmode==='dark')ev=s<8?0:s<12?4:2;
+    if(!ev)return;var lv=.2+.6*s/N;
+    if(ev>=1){if(s%ev===0)play('snare',t,[s,droll,2,lv]);}
+    else for(j=0;j<2;j++)play('snare',t+j*six/2,[s,droll,2,lv]);
+  }
   function dropBuild(t,bar){
-    var f=B.FILT.frequency;f.cancelScheduledValues(t);f.setValueAtTime(320,t);f.exponentialRampToValueAtTime(20000,t+bar*.9);
-    var sr=ac.createBufferSource();sr.buffer=B.NZ;sr.loop=true;var bp=ac.createBiquadFilter();bp.type='bandpass';bp.Q.value=3;bp.frequency.setValueAtTime(400,t);bp.frequency.exponentialRampToValueAtTime(7000,t+bar*.85);
-    var g=ac.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.35,t+bar*.85);g.gain.exponentialRampToValueAtTime(.0001,t+bar*.88);sr.connect(bp);bp.connect(g);g.connect(B.OUT);send(g,B.REV,.3);sr.start(t);sr.stop(t+bar);
+    dropPlan();
+    var f=B.FILT,fr=f.frequency;fr.cancelScheduledValues(t);f.Q.cancelScheduledValues(t);
+    if(dmode==='dark'){fr.setValueAtTime(20000,t);fr.exponentialRampToValueAtTime(380,t+bar*.85);f.Q.setValueAtTime(.7,t);f.Q.linearRampToValueAtTime(5,t+bar*.85);}
+    else{fr.setValueAtTime(20,ac.currentTime);f.type='highpass';fr.setValueAtTime(20,t);fr.exponentialRampToValueAtTime(dmode==='fast'?1800:1300,t+bar*.85);f.Q.setValueAtTime(.7,t);f.Q.linearRampToValueAtTime(3,t+bar*.85);
+      /* leiser Riser: Rauschband steigt mit */
+      var sr=ac.createBufferSource();sr.buffer=B.NZ;sr.loop=true;var bp=ac.createBiquadFilter();bp.type='bandpass';bp.Q.value=2;bp.frequency.setValueAtTime(500,t);bp.frequency.exponentialRampToValueAtTime(8000,t+bar*.85);
+      var g=ac.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(.16,t+bar*.85);g.gain.exponentialRampToValueAtTime(.0001,t+bar*.87);sr.connect(bp);bp.connect(g);g.connect(B.OUT);send(g,B.REV,.35);sr.start(t);sr.stop(t+bar);}
     at(t,function(){app.classList.add('building');});
   }
+  /* Einschlag: Filter sofort offen, Kick, Crash, ein kurzer, tiefer Sub-Schlag (kein langes Abwärtsheulen) und ein Hauch Luft im Hall */
   function dropBoom(t){
-    play('beat',t,[0,'b',2,1]);play('snare',t,[0,'s',2,1]);
-    var g=vca(t,.005,.15,.9,.9,B.SAT),o=osc('sine',80,t,t+1.1,g);o.frequency.exponentialRampToValueAtTime(30,t+.9);
+    var f=B.FILT,fr=f.frequency;fr.cancelScheduledValues(t);f.Q.cancelScheduledValues(t);
+    if(f.type==='highpass'){fr.setValueAtTime(20,t);at(t+.05,function(){filtOpen();});}else{fr.setValueAtTime(20000,t);f.Q.setValueAtTime(.7,t);}
+    play('beat',t,[0,'b',2,1]);play('cym',t,[0,'c',2,dmode==='dark'?.6:.9]);
+    var g=vca(t,.003,.06,.5,.75,B.SAT),o=osc('sine',110,t,t+.7,g);o.frequency.exponentialRampToValueAtTime(46,t+.06);
+    nz(t,.35,.18,'highpass',5000,.7,.45);
     at(t,function(){app.classList.remove('building');dropB.classList.remove('on');});
   }
-  function dropReset(){drop=0;app.classList.remove('building');dropB.classList.remove('on');if(B&&ac){var f=B.FILT.frequency,t=ac.currentTime;f.cancelScheduledValues(t);f.setValueAtTime(20000,t);}}
+  function filtOpen(){if(!B||!ac)return;var f=B.FILT,t=ac.currentTime;f.frequency.cancelScheduledValues(t);f.Q.cancelScheduledValues(t);f.type='lowpass';f.frequency.setValueAtTime(20000,t);f.Q.setValueAtTime(.7,t);}
+  function dropReset(){drop=0;app.classList.remove('building');dropB.classList.remove('on');filtOpen();}
   dropB.addEventListener('click',function(){if(drop)return;if(!playing)setPlay(true);if(!playing)return;drop=1;dropB.classList.add('on');});
   var I_PLAY='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 4.5v15l13-7.5z" fill="currentColor"/></svg>',
       I_STOP='<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="6" y="6" width="12" height="12" rx="1.5" fill="currentColor"/></svg>';
@@ -193,12 +230,12 @@
     if(on===playing)return;
     if(on){
       try{getAC();if(!ac)return;if(ac.state==='suspended')ac.resume();bus();}catch(e){return;}
-      playing=true;step=0;nextT=ac.currentTime+.06;queue=[];sched();timer=setInterval(sched,25);raf=requestAnimationFrame(loop);
+      playing=true;step=0;bar=0;fxStart();nextT=ac.currentTime+.06;queue=[];sched();timer=setInterval(sched,25);raf=requestAnimationFrame(loop);
     }else{
-      playing=false;dropReset();clearInterval(timer);cancelAnimationFrame(raf);queue=[];head(-1);
+      playing=false;dropReset();fxHalt();clearInterval(timer);cancelAnimationFrame(raf);queue=[];head(-1);
     }
     app.classList.toggle('live',on);
-    playB.innerHTML=on?I_STOP:I_PLAY;playB.classList.toggle('on',on);playB.setAttribute('aria-label',on?'Stoppen (Leertaste)':'Abspielen (Leertaste)');
+    playB.innerHTML=on?I_STOP:I_PLAY;playB.classList.toggle('on',on);playB.setAttribute('aria-label',on?'Stop (Space)':'Play (Space)');
   }
   playB.addEventListener('click',function(){setPlay(!playing);});
   /* Handy gesperrt, App oder Tab gewechselt: Beat anhalten und den Ton sofort stumm schalten (auch nachklingende Hallfahnen) */
@@ -214,7 +251,7 @@
 
   /* ---------- Unterseiten: Spur, Vorlagen, Tempo. Eigener Verlaufseintrag, damit Zurück im Browser funktioniert ---------- */
   var lastFocus=null,pageName='',pushed=false,ignoreHash=false;
-  var BACK='<div class="pnav"><button type="button" class="ib" data-close aria-label="Zurück"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="mark"><i aria-hidden="true"></i>MSTR</span><span class="sp"></span></div>';
+  var BACK='<div class="pnav"><button type="button" class="ib" data-close aria-label="Back"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="mark"><i aria-hidden="true"></i>MSTR</span><span class="sp"></span></div>';
   /* half: Blatt von unten (Tempo), der Sequencer bleibt darüber sichtbar */
   var catcher=document.createElement('div');catcher.className='catcher';catcher.hidden=true;document.body.appendChild(catcher);
   catcher.addEventListener('click',function(){closeSheet();});
@@ -230,10 +267,10 @@
   function hideSheet(){sheet.hidden=true;catcher.hidden=true;sheet.innerHTML='';document.body.classList.remove('noscroll');if(lastFocus&&lastFocus.focus)lastFocus.focus({preventScroll:true});}
   function closeSheet(){if(sheet.hidden)return;hideSheet();if(pushed){pushed=false;ignoreHash=true;history.back();}}
   window.addEventListener('hashchange',function(){if(ignoreHash){ignoreHash=false;return;}if(!sheet.hidden&&location.hash!=='#'+pageName){pushed=false;hideSheet();}});
-  var X='',XB='<button type="button" class="ib" data-close aria-label="Schließen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>';
+  var X='',XB='<button type="button" class="ib" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>';
   function presetSheet(){
     var order=BEATS.map(function(b,i){return i;}).sort(function(a,b){return BEATS[a].bpm-BEATS[b].bpm||a-b;});
-    openSheet('<div class="sh-top"><h2 class="ed" id="sheetT">'+BEATS.length+' Vorlagen<br><em>nach Tempo</em></h2>'+X+'</div><div class="plist" role="listbox" aria-label="Vorlagen"></div>',function(el){
+    openSheet('<div class="sh-top"><h2 class="ed" id="sheetT">'+BEATS.length+' beats<br><em>by tempo</em></h2>'+X+'</div><div class="plist" role="listbox" aria-label="Beats"></div>',function(el){
       var list=el.querySelector('.plist');
       order.forEach(function(i){var Bt=BEATS[i],b=document.createElement('button');b.type='button';b.className='pitem'+(i===pre?' sel':'');b.setAttribute('role','option');b.setAttribute('aria-selected',i===pre?'true':'false');
         if(i===pre)b.setAttribute('data-focus','');
@@ -241,14 +278,14 @@
         b.addEventListener('click',function(){fromBeat(i);paint();persist();closeSheet();if(!playing)setPlay(true);});list.appendChild(b);});
     },'vorlagen');
   }
-  $('preBtn').addEventListener('click',presetSheet);
+  $('preBtn').addEventListener('click',presetSheet);$('preName').addEventListener('click',presetSheet);
 
   function tempoSheet(){
     var taps=[];
-    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Tempo und Swing</span>'+XB+'</div>'+
-      '<div class="bpmrow"><button type="button" class="ib lg" id="tDown" aria-label="Langsamer">−</button><label class="big" for="tBpm"><input id="tBpm" type="number" inputmode="numeric" min="60" max="180" value="'+bpm+'" aria-label="Tempo in BPM"><small>bpm</small></label><button type="button" class="ib lg" id="tUp" aria-label="Schneller">+</button></div>'+
-      '<button type="button" class="pill wide" id="tTap">Tippen für Tempo</button>'+
-      '<div class="slider"><div class="lb"><span>Swing auf jedem zweiten Achtel</span><b id="tSwV"></b></div><input type="range" id="tSw" min="0" max="60" step="1" value="'+Math.round(sw*100)+'" aria-label="Swing in Prozent"></div>'+
+    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Tempo and swing</span>'+XB+'</div>'+
+      '<div class="bpmrow"><button type="button" class="ib lg" id="tDown" aria-label="Slower">−</button><label class="big" for="tBpm"><input id="tBpm" type="number" inputmode="numeric" min="60" max="180" value="'+bpm+'" aria-label="Tempo in BPM"><small>bpm</small></label><button type="button" class="ib lg" id="tUp" aria-label="Faster">+</button></div>'+
+      '<button type="button" class="pill wide" id="tTap">Tap tempo</button>'+
+      '<div class="slider"><div class="lb"><span>Swing on every second eighth</span><b id="tSwV"></b></div><input type="range" id="tSw" min="0" max="60" step="1" value="'+Math.round(sw*100)+'" aria-label="Swing in percent"></div>'+
       '<div class="swbar" id="tSwBar" aria-hidden="true"></div>',function(el){
       var inp=el.querySelector('#tBpm'),sl=el.querySelector('#tSw');
       function setB(v){bpm=Math.round(num(v,60,180,bpm));inp.value=bpm;paint();persist();}
@@ -264,24 +301,44 @@
   }
   $('tempoBtn').addEventListener('click',tempoSheet);
 
+  /* Effekte: halbes Blatt, der Beat läuft darüber weiter. Jede Zeile schaltet einen Effekt, der Punkt rechts wird Flieder.
+     Ist ein Effekt an, klappen darunter sein Regler und (bei Echo und Filter) die Auswahl auf */
+  var fxB=$('fxBtn');
+  function fxUI(){var n=fxCount();fxB.classList.toggle('on',n>0);$('fxN').textContent=n?' '+n:'';fxB.setAttribute('aria-label','Effects'+(n?', '+n+' on':''));}
+  function fxSheet(){
+    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Effects</span>'+XB+'</div><div class="fxlist">'+
+      FXS.map(function(f){var id=f[0];return '<div class="fxrow" data-fx="'+id+'"><button type="button" class="fxi" aria-pressed="'+(FX[id]?'true':'false')+'"><span><b>'+f[1]+'</b><small>'+f[2]+'</small></span><i aria-hidden="true"></i></button>'+
+        '<div class="fxctl"><div class="slider"><div class="lb"><span>'+f[3]+'</span><b>'+FXA[id]+' %</b></div><input type="range" min="0" max="100" step="1" value="'+FXA[id]+'" aria-label="'+f[1]+': '+f[3]+'"></div>'+
+        (f[4]?'<div class="opts">'+f[4].map(function(o){return '<button type="button" class="opt" data-v="'+o[0]+'" aria-pressed="'+(FXO[id]===o[0]?'true':'false')+'">'+o[1]+'</button>';}).join('')+'</div>':'')+'</div></div>';}).join('')+'</div>',function(el){
+      el.querySelectorAll('.fxrow').forEach(function(row){var id=row.getAttribute('data-fx'),b=row.querySelector('.fxi'),sl=row.querySelector('input'),v=row.querySelector('.lb b');
+        b.addEventListener('click',function(){var on=!FX[id];if(on&&!playing)setPlay(true);fxSet(id,on);b.setAttribute('aria-pressed',on?'true':'false');fxUI();});
+        sl.addEventListener('input',function(){fxAmt(id,sl.value);v.textContent=sl.value+' %';});
+        sl.addEventListener('change',function(){fxAmt(id,sl.value,true);});
+        row.querySelectorAll('.opt').forEach(function(o){o.addEventListener('click',function(){fxOpt(id,+o.getAttribute('data-v'));
+          row.querySelectorAll('.opt').forEach(function(x){x.setAttribute('aria-pressed',x===o?'true':'false');});});});});
+    },'effekte',true);
+  }
+  fxB.addEventListener('click',fxSheet);
+  fxUI();
+
   function trackSheet(r){
     var T=TRACKS[r],id=T.id,mic=r===MIC,busy=false;
     /* Nur die Spur Aufnahme hat das Mikrofon, ganz oben. Die übrigen Spuren klingen immer eingebaut */
-    var REC_UI=mic?'<div class="recbox"><div class="rings" aria-hidden="true"><i></i><i></i><i></i></div><button type="button" class="rec" id="kRec" aria-label="Eigenen Klang aufnehmen, 1 Sekunde"><i></i></button>'+
+    var REC_UI=mic?'<div class="recbox"><div class="rings" aria-hidden="true"><i></i><i></i><i></i></div><button type="button" class="rec" id="kRec" aria-label="Record your own sound, 1 second"><i></i></button>'+
       '<p class="recst" id="kRecSt" aria-live="polite"></p></div>':'';
-    openSheet('<div class="sh-top"><div><span class="eyebrow">Spur '+(r+1)+' von '+R+'</span><h2 class="tt" id="sheetT">'+T.n+'</h2></div>'+X+'</div>'+REC_UI+
+    openSheet('<div class="sh-top"><div><span class="eyebrow">Track '+(r+1)+' of '+R+'</span><h2 class="tt" id="sheetT">'+T.n+'</h2></div>'+X+'</div>'+REC_UI+
       '<div class="more" id="kMore">'+
-      (T.s.length>1?'<div class="field"><span class="lbl">'+(mic?'Tonhöhe für neue Schritte':'Klang für neue Schritte')+'</span><div class="opts" id="kSnd"></div></div>':'')+
-      '<div class="slider"><div class="lb"><span>Lautstärke</span><b id="kVolV"></b></div><input type="range" id="kVol" min="0" max="100" step="1" value="'+Math.round(vol[r]*100)+'" aria-label="Lautstärke '+T.n+'"></div>'+
-      '<div class="seg2"><button type="button" id="kMute">Stumm</button><button type="button" id="kSolo">Solo</button></div>'+
-      '<div class="acts"><button type="button" class="pill" id="kDice">Vorschlag</button><button type="button" class="pill" id="kClr">Spur leeren</button>'+(mic?'<button type="button" class="pill" id="kDel">Aufnahme löschen</button>':'')+'</div></div>',function(el){
+      (T.s.length>1?'<div class="field"><span class="lbl">'+(mic?'Pitch for new steps':'Sound for new steps')+'</span><div class="opts" id="kSnd"></div></div>':'')+
+      '<div class="slider"><div class="lb"><span>Volume</span><b id="kVolV"></b></div><input type="range" id="kVol" min="0" max="100" step="1" value="'+Math.round(vol[r]*100)+'" aria-label="Volume '+T.n+'"></div>'+
+      '<div class="seg2"><button type="button" id="kMute">Mute</button><button type="button" id="kSolo">Solo</button></div>'+
+      '<div class="acts"><button type="button" class="pill" id="kDice">Suggest</button><button type="button" class="pill" id="kClr">Clear track</button>'+(mic?'<button type="button" class="pill" id="kDel">Delete recording</button>':'')+'</div></div>',function(el){
       var vs=el.querySelector('#kVol');
       function ui(){
         el.querySelector('#kVolV').textContent=vs.value+' %';
         el.querySelector('#kMute').setAttribute('aria-pressed',mute[r]?'true':'false');
         el.querySelector('#kSolo').setAttribute('aria-pressed',solo[r]?'true':'false');
         if(mic){var has=!!REC.mic;el.querySelector('#kMore').hidden=!has;
-          if(!busy)el.querySelector('#kRecSt').textContent=has?'Dein Klang ist gespeichert. Tippen zum Neuaufnehmen.':'Nimm 1 Sekunde auf: klatschen, schnipsen, ein Wort, ein Glas.';}
+          if(!busy)el.querySelector('#kRecSt').textContent=has?'Your sound is saved. Tap to record again.':'Record 1 second: a clap, a snap, a word, a glass.';}
         var o=el.querySelector('#kSnd');if(o)[].forEach.call(o.children,function(b,k){b.setAttribute('aria-pressed',T.s[k][0]===brush[r]?'true':'false');});
       }
       var o=el.querySelector('#kSnd');
@@ -323,15 +380,15 @@
   }
   $('clr').addEventListener('click',function(){
     undo={g:pat.slice(),pre:pre,ed:edited};pat=empty();pre=-1;edited=false;paint();persist();
-    showToast('Alle Spuren geleert','Rückgängig',function(){pat=undo.g;pre=undo.pre;edited=undo.ed;paint();persist();});
+    showToast('All tracks cleared','Undo',function(){pat=undo.g;pre=undo.pre;edited=undo.ed;paint();persist();});
   });
 
   /* ---------- Farbschema ---------- */
-  var TN={system:'wie System',light:'hell',dark:'dunkel'};
-  function themeUI(){var t=applyTheme();$('theme').setAttribute('aria-label','Farbschema: '+TN[t]);$('theme').title='Farbschema: '+TN[t];}
+  var TN={system:'system',light:'light',dark:'dark'};
+  function themeUI(){var t=applyTheme();$('theme').setAttribute('aria-label','Theme: '+TN[t]);$('theme').title='Theme: '+TN[t];}
   $('theme').addEventListener('click',function(){var t=THEMES.indexOf(S.theme);S.theme=THEMES[(t<0?1:t+1)%3];save();themeUI();});
   if(window.matchMedia)try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',themeUI);}catch(e){}
 
   build();themeUI();playB.innerHTML=I_PLAY;
-  window.MSTR={setPlay:setPlay,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing};}};
+  window.MSTR={setPlay:setPlay,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
 })();

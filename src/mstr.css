@@ -36,8 +36,13 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .pill:active,.ib:active{transform:scale(.97)}
 
 .head{display:flex;flex-direction:column;gap:4px}
-.preset{border:0;background:none;padding:0;display:inline-flex;align-items:center;gap:12px;cursor:pointer;font-family:var(--f-ed);font-size:clamp(42px,11vw,60px);font-weight:400;letter-spacing:-.01em;line-height:1;text-align:left;align-self:flex-start}
-.preset svg{width:30px;height:30px;padding:6px;border-radius:50%;background:var(--soft);color:var(--ink);flex:none}
+.preset{margin:0;cursor:pointer;font-family:var(--f-ed);font-size:clamp(42px,11vw,60px);font-weight:400;letter-spacing:-.01em;line-height:1}
+/* Beat wählen: gefüllter runder Knopf direkt neben dem Namen (im Dunkelmodus Weiß) */
+.prow{display:flex;align-items:center;gap:14px}
+.ib.pick{width:44px;height:44px;background:var(--ink);color:var(--bg)}
+.ib.pick svg{width:20px;height:20px}
+.sub:empty{display:none}
+.pill svg{width:17px;height:17px;flex:none}
 .sub{margin:0;font-size:13px;color:var(--mute)}
 
 /* Raster: Name-Zeile über 16 Punkten; ab 640 px Name links */
@@ -73,17 +78,19 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 }
 
 /* Transport unten */
-.transport{position:sticky;bottom:0;margin-top:auto;display:flex;align-items:center;gap:10px;background:var(--bg);border-top:1px solid var(--line);margin-left:calc(-1 * var(--gut));margin-right:calc(-1 * var(--gutr));padding:12px var(--gutr) max(12px,env(safe-area-inset-bottom,0px)) var(--gut);z-index:5;transition:background .25s}
+.transport{position:sticky;bottom:0;margin-top:auto;display:flex;align-items:center;gap:8px;background:var(--bg);border-top:1px solid var(--line);margin-left:calc(-1 * var(--gut));margin-right:calc(-1 * var(--gutr));padding:12px var(--gutr) max(12px,env(safe-area-inset-bottom,0px)) var(--gut);z-index:5;transition:background .25s}
 .play{width:58px;height:58px;border-radius:50%;border:0;background:var(--ink);color:var(--bg);display:grid;place-items:center;cursor:pointer;flex:none;padding:0}
 /* Fortschrittslinie: die Linie über Play läuft beim Abspielen durch den Takt */
 .transport::before{content:"";position:absolute;left:0;top:-1px;height:2px;width:0;background:var(--accent);pointer-events:none}
 .app.live .transport::before{width:calc(var(--prog,0) * 100%);transition:width .06s linear}
 .play svg{width:20px;height:20px}
 .play.on{background:var(--accent);color:var(--on-accent)}
-#drop{height:44px;padding:0 18px}
+#drop{height:44px;padding:0 14px}
 #drop.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .app.building #drop{animation:pulse .25s ease-in-out infinite alternate}
-.tempo{margin-left:auto;border:0;background:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:4px 0;line-height:1}
+#fxBtn{height:44px;padding:0 12px 0 10px;gap:6px;font-variant-numeric:tabular-nums}
+#fxBtn.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.tempo{margin-left:auto;border:0;background:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:4px 0;line-height:1}
 .tv{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .tempo .chev{width:30px;height:30px;padding:6px;border-radius:50%;background:var(--soft);color:var(--ink);flex:none}
 .big{font-weight:700;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums;font-size:32px}
@@ -138,6 +145,18 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .opts{display:flex;gap:6px;flex-wrap:wrap}
 .opt{height:34px;border-radius:999px;border:1px solid var(--line);background:transparent;padding:0 14px;font-size:13px;font-weight:600;cursor:pointer}
 .opt[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+/* Effekte: eine Zeile je Effekt, rechts ein Punkt wie im Raster (grau aus, Flieder an) */
+.fxlist{display:flex;flex-direction:column}
+.fxrow{border-top:1px solid var(--line)}
+.fxrow:first-child{border-top:0}
+.fxi{display:flex;justify-content:space-between;align-items:center;gap:16px;width:100%;padding:14px 0;border:0;background:transparent;cursor:pointer;text-align:left}
+.fxctl{display:none;flex-direction:column;gap:12px;padding:0 0 16px}
+.fxi[aria-pressed="true"]+.fxctl{display:flex}
+.fxi span{display:flex;flex-direction:column;gap:2px}
+.fxi b{font-size:17px;font-weight:600;letter-spacing:-.01em}
+.fxi small{font-size:13px;color:var(--mute)}
+.fxi i{width:26px;height:26px;border-radius:50%;background:var(--off);flex:none;transition:background .15s,transform .15s}
+.fxi[aria-pressed="true"] i{background:var(--accent);transform:scale(1.1)}
 .seg2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
 .seg2 button{height:42px;border-radius:999px;border:1px solid var(--line);background:transparent;font-size:13px;font-weight:600;cursor:pointer;color:var(--mute)}
 .seg2 button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}

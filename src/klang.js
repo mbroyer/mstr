@@ -1,15 +1,15 @@
-/* ===== Klang: alle Spuren per Web Audio erzeugt, über einen Bus mit Hall, Delay, Sättigung und Sidechain ===== */
+/* ===== Klang: alle Spuren per Web Audio erzeugt, über einen Bus mit Hall, Delay, Sättigung, Sidechain und zuschaltbaren Effekten ===== */
 /* Spuren: id (für die Klangerzeugung), Name, Klänge [Zeichen im Pattern, Name] */
 var TRACKS=[
-  {id:'hats',n:'Hi-Hat',s:[['x','Zu'],['o','Offen'],['k','Tick']]},
+  {id:'hats',n:'Hi-Hat',s:[['x','Closed'],['o','Open'],['k','Tick']]},
   {id:'beat',n:'Kick',s:[['b','Kick']]},
-  {id:'snare',n:'Snare',s:[['p','Snare'],['k','Rim'],['s','Rauschen'],['c','Clap']]},
-  {id:'cym',n:'Becken',s:[['c','Crash'],['r','Ride'],['h','China']]},
-  {id:'click',n:'Perc',s:[['1','Shaker'],['2','Tamburin'],['3','Clave'],['4','Conga'],['5','Cowbell']]},
-  {id:'toms',n:'Toms',s:[['b','Tief'],['p','Mittel'],['t','Hoch']]},
-  {id:'fx',n:'FX',s:[['m','Snap'],['n','Sub'],['s','Reverse'],['l','Wirbel'],['z','Riser']]},
+  {id:'snare',n:'Snare',s:[['p','Snare'],['k','Rim'],['s','Noise'],['c','Clap']]},
+  {id:'cym',n:'Cymbals',s:[['c','Crash'],['r','Ride'],['h','China']]},
+  {id:'click',n:'Perc',s:[['1','Shaker'],['2','Tambourine'],['3','Clave'],['4','Conga'],['5','Cowbell']]},
+  {id:'toms',n:'Toms',s:[['b','Low'],['p','Mid'],['t','High']]},
+  {id:'fx',n:'FX',s:[['m','Snap'],['n','Sub'],['s','Reverse'],['l','Roll'],['z','Riser']]},
   /* Eigene Spur: spielt nur die eigene Aufnahme, in drei Tonhöhen */
-  {id:'mic',n:'Aufnahme',s:[['a','Normal'],['t','Tief'],['h','Hoch']]}];
+  {id:'mic',n:'Mic',s:[['a','Normal'],['t','Low'],['h','High']]}];
 var N=16,R=TRACKS.length;
 var PENT=[0,57,60,62,64,67],RATE=[1,.84,1.19,1.33,1.5];
 var bpm=100,sw=0;
@@ -21,16 +21,87 @@ function st(){return 60/bpm/4;}
 var B=null,_bac=null;
 function bus(){
   getAC();if(!ac)return null;if(_bac===ac&&B)return B;_bac=ac;B={};var i;
-  B.OUT=ac.createGain();B.OUT.gain.value=.9;B.FILT=ac.createBiquadFilter();B.FILT.type='lowpass';B.FILT.frequency.value=20000;B.FILT.Q.value=.7;B.OUT.connect(B.FILT);B.FILT.connect(OUT());
-  B.DUCK=ac.createGain();B.DUCK.connect(B.OUT);
+  B.OUT=ac.createGain();B.OUT.gain.value=.9;B.FILT=ac.createBiquadFilter();B.FILT.type='lowpass';B.FILT.frequency.value=20000;B.FILT.Q.value=.7;B.OUT.connect(B.FILT);
+  B.DUCK=ac.createGain();B.PUMP=ac.createGain();B.DUCK.connect(B.PUMP);B.PUMP.connect(B.OUT);
   var len=ac.sampleRate*1.1|0,ir=ac.createBuffer(2,len,ac.sampleRate),ch;for(ch=0;ch<2;ch++){var d=ir.getChannelData(ch);for(i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,4);}
   B.REV=ac.createConvolver();B.REV.buffer=ir;var rg=ac.createGain();rg.gain.value=.25;B.REV.connect(rg);rg.connect(B.OUT);
-  B.DLY=ac.createDelay(2);var fb=ac.createGain(),lp=ac.createBiquadFilter(),dg=ac.createGain();lp.type='lowpass';lp.frequency.value=2800;fb.gain.value=.3;dg.gain.value=.25;
-  B.DLY.connect(lp);lp.connect(fb);fb.connect(B.DLY);lp.connect(dg);dg.connect(B.OUT);
+  B.DLY=ac.createDelay(2);var fb=ac.createGain(),lp=ac.createBiquadFilter(),dg=ac.createGain();lp.type='lowpass';lp.frequency.value=2800;fb.gain.value=.38;dg.gain.value=.45;
+  B.FB=fb;B.DLY.connect(lp);lp.connect(fb);fb.connect(B.DLY);lp.connect(dg);dg.connect(B.OUT);B.DG=dg;
   B.SAT=ac.createWaveShaper();var cv=new Float32Array(1024);for(i=0;i<1024;i++){var x=i/512-1;cv[i]=Math.tanh(x*2.5)/Math.tanh(2.5);}B.SAT.curve=cv;var sg=ac.createGain();sg.gain.value=.8;B.SAT.connect(sg);sg.connect(B.OUT);
   B.NZ=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);var c=B.NZ.getChannelData(0);for(i=0;i<c.length;i++)c[i]=Math.random()*2-1;
+  fxChain();fxApply(true);
   return B;
 }
+
+/* ---------- Zuschaltbare Effekte: Raum, Echo, Filter, Vinyl. Gelten für den ganzen Beat und bleiben gespeichert ----------
+   Raum und Echo sind Sends vom Bus ohne Kick und Sub (sonst wird der Bass matschig), Vinyl und Filter liegen hinter dem Drop-Filter */
+/* Je Effekt: id, Name, Beschreibung, Name des Reglers, Auswahl [Wert, Name]
+   (Echo: Abstand in Sechzehnteln, Filter: Takte je Durchlauf, Pumpen: Sechzehntel je Atemzug, Stottern: jeder wievielte Takt) */
+var FXS=[['room','Room','Long reverb','Amount'],
+  ['echo','Echo','Repeats in time','Amount',[[2,'1/8'],[3,'1/8 dotted'],[4,'1/4']]],
+  ['sweep','Filter','Opens and closes with the beat','Depth',[[1,'1 bar'],[2,'2 bars'],[4,'4 bars']]],
+  ['pump','Pump','Everything breathes with the beat, except the kick','Depth',[[4,'Quarters'],[2,'Eighths']]],
+  ['stut','Stutter','A slice repeats at the end of the bar, really fast','Length',[[1,'Every bar'],[2,'Every 2nd'],[4,'Every 4th']]],
+  ['lofi','Vinyl','Duller, a bit grainy, with crackle','Strength']];
+/* FX: an oder aus, FXA: Stärke 0–100 (50 ist die Grundeinstellung), FXO: gewählte Auswahl */
+var FXLIVE=false,FX={},FXA={},FXO={echo:3,sweep:2,pump:4,stut:2};
+FXS.forEach(function(f){var id=f[0],a=S.fxa&&S.fxa[id],o=S.fxo&&S.fxo[id];FX[id]=!!(S.fx&&S.fx[id]);FXA[id]=typeof a==='number'&&a>=0&&a<=100?a:50;
+  if(f[4]&&f[4].some(function(x){return x[0]===o;}))FXO[id]=o;});
+function fxChain(){
+  var i,sr=ac.sampleRate;
+  /* Vinyl: trockener und bearbeiteter Weg nebeneinander, umgeschaltet wird über die Lautstärke beider Wege */
+  B.LD=ac.createGain();B.LW=ac.createGain();B.LW.gain.value=0;var sum=ac.createGain();
+  var cr=ac.createWaveShaper(),cv=new Float32Array(4096),q=40;for(i=0;i<4096;i++){var x=i/2048-1;cv[i]=Math.round(x*q)/q;}cr.curve=cv;
+  var lh=ac.createBiquadFilter(),ll=ac.createBiquadFilter();lh.type='highpass';lh.frequency.value=180;ll.type='lowpass';ll.frequency.value=3600;B.LL=ll;ll.Q.value=.9;
+  B.FILT.connect(B.LD);B.LD.connect(sum);B.FILT.connect(cr);cr.connect(lh);lh.connect(ll);ll.connect(B.LW);B.LW.connect(sum);
+  /* Knistern: vereinzelte Knackser in einer Schleife von drei Sekunden */
+  var kb=ac.createBuffer(1,sr*3,sr),kd=kb.getChannelData(0),seed=11;for(i=0;i<kd.length;i++){seed=(seed*16807)%2147483647;var r=seed/2147483647;if(r<.0004)kd[i]=(r*5000-1)*.9;else kd[i]=(r-.5)*.006;}
+  var ks=ac.createBufferSource(),kf=ac.createBiquadFilter();ks.buffer=kb;ks.loop=true;kf.type='bandpass';kf.frequency.value=2500;kf.Q.value=.6;B.KN=ac.createGain();B.KN.gain.value=0;ks.connect(kf);kf.connect(B.KN);B.KN.connect(sum);ks.start();
+  /* Filter: Tiefpass mit Resonanz, ein langsamer Oszillator im Tempo bewegt die Grenzfrequenz */
+  B.SW=ac.createBiquadFilter();B.SW.type='lowpass';B.SW.frequency.value=20000;B.SW.Q.value=.7;sum.connect(B.SW);B.SW.connect(OUT());
+  B.LFO=ac.createOscillator();B.LFO.type='sine';B.LFD=ac.createGain();B.LFD.gain.value=0;B.LFO.connect(B.LFD);B.LFD.connect(B.SW.frequency);B.LFO.start();
+  /* Raum: eigener, langer Hall; tiefe Frequenzen gehen nicht hinein */
+  var len=sr*2.8|0,ir=ac.createBuffer(2,len,sr),ch;for(ch=0;ch<2;ch++){var d=ir.getChannelData(ch);for(i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);}
+  var rv=ac.createConvolver(),rh=ac.createBiquadFilter(),ro=ac.createGain();rv.buffer=ir;rh.type='highpass';rh.frequency.value=350;ro.gain.value=.55;
+  B.RS=ac.createGain();B.RS.gain.value=0;B.DUCK.connect(B.RS);B.RS.connect(rh);rh.connect(rv);rv.connect(ro);ro.connect(B.OUT);B.RO=ro;
+  /* Echo: nutzt die Delay-Schleife des Busses */
+  B.ES=ac.createGain();B.ES.gain.value=0;B.DUCK.connect(B.ES);B.ES.connect(B.DLY);
+}
+/* Setzt alle Effekte auf den gespeicherten Stand; tempoabhängige Werte (Echo-Zeit, Filter-Tempo) gleich mit */
+function fxApply(now){
+  if(!B||!B.SW)return;var t=ac.currentTime,k=now?.001:.06;
+  function to(p,v){p.cancelScheduledValues(t);p.setTargetAtTime(v,t,k);}
+  var ar=FXA.room/50,ae=FXA.echo/100,as=FXA.sweep/100,al=FXA.lofi/100;
+  /* Raum: bei 50 wie bisher, bis doppelt so viel */
+  to(B.RS.gain,FX.room?ar:0);
+  /* Echo: mehr Menge heißt lauter und mehr Wiederholungen */
+  to(B.ES.gain,FX.echo?1.1*ae:0);to(B.FB.gain,FX.echo?.2+.4*ae:.38);
+  /* Vinyl: je stärker, desto dumpfer und mehr Knistern; schwach mischt etwas vom sauberen Klang dazu */
+  to(B.LD.gain,FX.lofi?Math.max(0,.6-1.2*al):1);to(B.LW.gain,FX.lofi?.9:0);to(B.KN.gain,FX.lofi&&FXLIVE?2*al:0);to(B.LL.frequency,8000*Math.pow(.2,al));
+  /* Filter: Tiefe senkt die Mitte, weitet den Hub und hebt die Resonanz */
+  var c=4000*Math.pow(.1,as);to(B.SW.frequency,FX.sweep?c:20000);to(B.SW.Q,FX.sweep?2+4*as:.7);to(B.LFD.gain,FX.sweep?c*.85:0);
+  to(B.RO.gain,.55);to(B.DG.gain,.45);if(!FX.pump)to(B.PUMP.gain,1);
+  fxTempo();
+}
+/* Stopp: die Effekte klingen nicht nach. Echo-Schleife, Raum und Knistern schnell stumm; beim Abspielen setzt fxApply alles zurück */
+function fxStart(){FXLIVE=true;fxApply(true);}
+function fxHalt(){
+  FXLIVE=false;if(!B||!B.SW)return;var t=ac.currentTime;
+  [B.RO.gain,B.DG.gain,B.FB.gain,B.ES.gain,B.RS.gain,B.KN.gain].forEach(function(p){p.cancelScheduledValues(t);p.setTargetAtTime(0,t,.03);});
+  B.PUMP.gain.cancelScheduledValues(t);B.PUMP.gain.setTargetAtTime(1,t,.03);
+}
+/* Pumpen: auf jedem Schlag (Viertel oder Achtel) tief absenken, dann wieder einatmen */
+function fxPump(t,s){if(!FX.pump||s%FXO.pump)return;var g=B.PUMP.gain,a=FXA.pump/100,L=st()*FXO.pump;
+  g.cancelScheduledValues(t);g.setTargetAtTime(1-.92*a,t,.004);g.setTargetAtTime(1,t+.02,L*.32);}
+/* Stottern: wie viele Schritte am Taktende (2 bis 8) */
+function fxStutLen(){return 2+Math.round(FXA.stut*6/100);}
+function fxTempo(){if(!B||!B.SW)return;var t=ac.currentTime;B.DLY.delayTime.setTargetAtTime(st()*FXO.echo,t,.05);B.LFO.frequency.setTargetAtTime(1/(st()*16*FXO.sweep),t,.05);}
+function fxSave(){S.fx={};S.fxa={};S.fxo={};FXS.forEach(function(f){var id=f[0];if(FX[id])S.fx[id]=1;if(FXA[id]!==50)S.fxa[id]=FXA[id];if(f[4])S.fxo[id]=FXO[id];});save();}
+function fxSet(id,on){FX[id]=!!on;fxSave();fxApply(false);}
+/* Regler und Auswahl: live anwenden, gespeichert wird beim Loslassen (keep) */
+function fxAmt(id,v,keep){FXA[id]=Math.max(0,Math.min(100,Math.round(v)));fxApply(false);if(keep)fxSave();}
+function fxOpt(id,v){FXO[id]=v;fxSave();fxApply(false);}
+function fxCount(){return FXS.filter(function(f){return FX[f[0]];}).length;}
 function send(node,dest,amt){var g=ac.createGain();g.gain.value=amt;node.connect(g);g.connect(dest);}
 function vca(t,a,hold,rel,v,dest){var g=ac.createGain();g.gain.setValueAtTime(.0001,t);g.gain.exponentialRampToValueAtTime(Math.max(.0002,v),t+a);if(hold>0)g.gain.setValueAtTime(Math.max(.0002,v),t+a+hold);g.gain.exponentialRampToValueAtTime(.0001,t+a+hold+rel);g.connect(dest||B.OUT);return g;}
 function nz(t,d,v,type,f,q,rev,dest){var s=ac.createBufferSource();s.buffer=B.NZ;var fl=ac.createBiquadFilter();fl.type=type;fl.frequency.value=f;fl.Q.value=q||.8;var g=vca(t,.001,0,d,v,dest);s.connect(fl);fl.connect(g);if(rev)send(g,B.REV,rev);s.start(t,Math.random()*.4);s.stop(t+d+.05);return g;}
@@ -147,9 +218,9 @@ function play(id,t,n){if(!bus())return;if(useOwn(id))return playRec(id,t,n);play
 function now(id,w,v){try{getAC();if(!ac)return;if(ac.state==='suspended')ac.resume();play(id,ac.currentTime+.02,[0,w,2,v==null?1:v]);}catch(e){}}
 /* Aufnahme direkt als Samples über Web Audio statt MediaRecorder: Safari auf dem iPad liefert dort MP4, das sich oft nicht dekodieren lässt */
 function record(id,status,done){
-  getAC();if(!ac){status('Ton ist hier nicht verfügbar.');return done(false);}if(ac.state==='suspended')ac.resume();bus();
-  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){status('Dieser Browser erlaubt kein Mikrofon.');return done(false);}
-  status('Mikrofon wird geöffnet …');
+  getAC();if(!ac){status('Sound is not available here.');return done(false);}if(ac.state==='suspended')ac.resume();bus();
+  if(!navigator.mediaDevices||!navigator.mediaDevices.getUserMedia){status('This browser does not allow a microphone.');return done(false);}
+  status('Opening microphone …');
   navigator.mediaDevices.getUserMedia({audio:{echoCancellation:false,noiseSuppression:false,autoGainControl:true}}).then(function(stream){
     if(ac.state!=='running')ac.resume();
     var src=ac.createMediaStreamSource(stream),proc=ac.createScriptProcessor(2048,1,1),mute=ac.createGain(),parts=[],on=false;mute.gain.value=0;
@@ -157,13 +228,13 @@ function record(id,status,done){
     src.connect(proc);proc.connect(mute);mute.connect(ac.destination);
     function fin(){on=false;try{src.disconnect();proc.disconnect();mute.disconnect();}catch(e){}stream.getTracks().forEach(function(tr){tr.stop();});
       setTimeout(function(){if(ac.state!=='running')ac.resume();},300);
-      var n=0,k,o=0;parts.forEach(function(x){n+=x.length;});if(!n){status('Die Aufnahme ist leer. Bitte noch einmal versuchen.');return done(false);}
+      var n=0,k,o=0;parts.forEach(function(x){n+=x.length;});if(!n){status('The recording is empty. Please try again.');return done(false);}
       var raw=ac.createBuffer(1,n,ac.sampleRate),d=raw.getChannelData(0);for(k=0;k<parts.length;k++){d.set(parts[k],o);o+=parts[k].length;}
-      var tb=trimBuf(raw);if(!tb){status('Zu leise. Bitte näher ans Mikrofon und noch einmal.');return done(false);}
+      var tb=trimBuf(raw);if(!tb){status('Too quiet. Move closer to the microphone and try again.');return done(false);}
       var b64=wavB64(tb);REC[id]={b64:b64,buf:tb};lsSet('mstr-rec-'+id,b64);
-      status('Gespeichert, nur auf diesem Gerät.');setTimeout(function(){playRec(id,ac.currentTime+.05,[0,TRACKS[trIx(id)].s[0][0],2,1]);},300);done(true);}
+      status('Saved, only on this device.');setTimeout(function(){playRec(id,ac.currentTime+.05,[0,TRACKS[trIx(id)].s[0][0],2,1]);},300);done(true);}
     status('3',1);setTimeout(function(){status('2',1);},500);setTimeout(function(){status('1',1);},1000);
-    setTimeout(function(){status('Aufnahme läuft',2);on=true;setTimeout(fin,1100);},1500);})
-  .catch(function(){status('Kein Zugriff aufs Mikrofon. Bitte in den Browser-Einstellungen erlauben.');done(false);});
+    setTimeout(function(){status('Recording',2);on=true;setTimeout(fin,1100);},1500);})
+  .catch(function(){status('No access to the microphone. Please allow it in your browser settings.');done(false);});
 }
 function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
