@@ -62,6 +62,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .grp{flex:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(3px,1vw,6px)}
 .dot{aspect-ratio:1;width:100%;max-width:100%;border-radius:50%;border:0;background:var(--off);padding:0;cursor:pointer;display:grid;place-items:center;font-family:var(--f-mono);font-size:clamp(8px,2.2vw,11px);font-weight:500;color:var(--bg);line-height:1;transition:background .1s,transform .1s,box-shadow .1s}
 .dot.on{background:var(--ink)}
+.dot{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none;touch-action:manipulation}
+.dot.vsel{box-shadow:0 0 0 2px var(--accent)}
 /* Zählzeiten 1, 5, 9, 13 leicht flieder, damit man ohne Hinsehen zählt */
 .grp .dot:first-child:not(.on){background:color-mix(in srgb,var(--accent) 30%,var(--off))}
 .dot.ph{box-shadow:0 0 0 2px var(--accent)}
@@ -218,3 +220,9 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .ic.hit svg{stroke:var(--on-accent)}
 .ic.hit svg .f{fill:var(--on-accent)}
 .trk.quiet .ic{opacity:.35}
+/* Variation je Schritt: kleines Feld über dem lange gedrückten Punkt */
+.vpick{position:fixed;z-index:25;display:flex;flex-wrap:wrap;gap:6px;max-width:min(340px,calc(100vw - 16px));padding:8px;border-radius:22px;background:var(--bg);border:1px solid var(--line);box-shadow:0 12px 32px -12px rgba(0,0,0,.28);animation:fade .15s}
+.vpick .opt{display:inline-flex;align-items:center;gap:7px;padding:0 13px 0 10px}
+.vpick .opt i{font-style:normal;font-family:var(--f-mono);font-size:10px;font-weight:500;color:var(--mute)}
+.vpick .opt[aria-pressed="true"] i{color:var(--on-accent);opacity:.6}
+.vpick .opt.off{color:var(--mute);padding:0 13px}

@@ -1,54 +1,59 @@
-# WAV-Loop zum Samplen: Teilen-Knopf unten in der Leiste, Download, Länge genau 4 Takte, Ton ab der ersten Probe,
-# nahtlos (Echo des letzten Takts liegt schon am Anfang), eigene Aufnahme drin, Wiedergabe ungestört, Dateiname mit Name und Tempo
-import os,struct,base64,io,wave,math
+# Variation je Schritt: lange drücken öffnet die Klänge der Spur, Wahl setzt nur diesen Schritt, Off löscht ihn, Link trägt die Variation
+import os
 from playwright.sync_api import sync_playwright
 H=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+url='file://'+H+'/index.html'
 err=[]
-def wav(path):
-    data=open(path,'rb').read()
-    assert data[:4]==b'RIFF' and data[8:12]==b'WAVE'
-    ch,sr=struct.unpack('<HI',data[22:28]);n=struct.unpack('<I',data[40:44])[0]//(2*ch)
-    return ch,sr,n,struct.unpack('<%dh'%(n*ch),data[44:44+n*ch*2])
-def rms(x):return (sum(v*v for v in x)/max(1,len(x)))**.5/32768
-buf=io.BytesIO();w=wave.open(buf,'wb');w.setnchannels(1);w.setsampwidth(2);w.setframerate(44100)
-w.writeframes(b''.join(struct.pack('<h',int(20000*math.sin(i/44100*2*math.pi*600)*(1-i/8820))) for i in range(8820)));w.close()
-REC=base64.b64encode(buf.getvalue()).decode()
+def press(pg,loc,ms=600,touch=False):
+    bb=loc.bounding_box();x=bb['x']+bb['width']/2;y=bb['y']+bb['height']/2
+    pg.mouse.move(x,y);pg.mouse.down();pg.wait_for_timeout(ms);pg.mouse.up();pg.wait_for_timeout(100)
 with sync_playwright() as p:
-    b=p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'],**({'executable_path':os.environ['PW_CHROME']} if os.environ.get('PW_CHROME') else {}))
-    for vw in (360,390):
-        pg=b.new_page(viewport={'width':vw,'height':800});pg.goto('file://'+H+'/index.html');pg.wait_for_timeout(300)
-        assert pg.evaluate('document.documentElement.scrollWidth')<=vw,vw
-        r=pg.locator('#share').bounding_box();assert pg.locator('.transport #share').count()==1 and r['x']+r['width']<=vw
-        assert pg.locator('.top #share').count()==0
-        pg.close()
-    ctx=b.new_context(viewport={'width':390,'height':844},accept_downloads=True);pg=ctx.new_page();pg.on('pageerror',lambda e:err.append(str(e)))
-    pg.goto('file://'+H+'/index.html');pg.wait_for_timeout(300)
-    pg.evaluate("document.querySelector('#tempoBtn').click()");pg.wait_for_timeout(200)
-    pg.fill('#tBpm','120');pg.dispatch_event('#tBpm','change');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
-    pg.click('#play');pg.wait_for_timeout(300)
-    pg.click('#share');pg.wait_for_timeout(200)
-    pg.fill('#shName','Café Loop')
-    with pg.expect_download(timeout=15000) as d:pg.click('#shWav')
-    dl=d.value;print(dl.suggested_filename);assert dl.suggested_filename=='Cafe-Loop-120bpm.wav'
-    assert pg.evaluate('MSTR.state().playing'),'Wiedergabe läuft weiter'
-    pg.wait_for_timeout(200);assert 'Saved Cafe-Loop-120bpm.wav' in pg.inner_text('#shWavT')
-    ch,sr,n,smp=wav(dl.path())
-    print('kanäle',ch,'rate',sr,'sekunden',round(n/sr,4))
-    assert ch==2 and n==round(8*sr),'genau 4 Takte bei 120 BPM = 8 s'
-    r=rms(smp[::5]);peak=max(abs(x) for x in smp)/32768;print('rms',round(r,3),'peak',round(peak,3));assert r>.02 and peak<1
-    on=next(i for i,x in enumerate(smp) if abs(x)>3000)//ch;print('erster Ton bei ms',round(on/sr*1000,2));assert on/sr<.012
-    # Echo an, nur die Spur Mic mit einem Schlag auf der 4 im letzten Viertel: das Echo davon muss am Anfang der Datei klingen
-    pg.keyboard.press('Escape');pg.evaluate('MSTR.setPlay(false)')
-    pg.evaluate("localStorage.setItem('mstr-rec-mic','%s')"%REC)
-    pg.evaluate("(()=>{const s=JSON.parse(localStorage.getItem('mstr-v1'));s.pat.g=s.pat.g.map((x,i)=>i==7?'0'.repeat(14)+'a0':'0'.repeat(16));s.fx={echo:1};s.fxo={echo:4};localStorage.setItem('mstr-v1',JSON.stringify(s));})()")
-    pg.reload();pg.wait_for_timeout(300)
-    pg.click('#share');pg.wait_for_timeout(200)
-    assert 'with your recording' in pg.inner_text('#shWavT')
-    with pg.expect_download(timeout=15000) as d:pg.click('#shWav')
-    ch,sr,n,smp=wav(d.value.path())
-    six=60/120/4;first=rms(smp[:int(sr*.15)*ch]);last=rms(smp[int(14*six*sr)*ch:int((14*six+.15)*sr)*ch]);quiet=rms(smp[int(sr*1.0)*ch:int(sr*1.2)*ch])
-    print('Echo am Anfang',round(first,4),'Mic-Schlag',round(last,4))
-    assert last>.05,'eigene Aufnahme hörbar';assert first>.01,'Echo des letzten Takts liegt am Anfang (nahtlos)'
+    b=p.chromium.launch(**({'executable_path':os.environ['PW_CHROME']} if os.environ.get('PW_CHROME') else {}))
+    pg=b.new_page(viewport={'width':390,'height':844});pg.on('pageerror',lambda e:err.append(str(e)))
+    pg.goto(url);pg.wait_for_timeout(300)
+    pg.click('#clr');pg.wait_for_timeout(100)
+    hats=pg.locator('.tracks .trk').nth(0).locator('.dot')
+    # Kurz antippen schaltet wie bisher, ohne Feld
+    hats.nth(2).click();assert pg.evaluate('MSTR.state()')['pat'][0][2]=='x' and pg.locator('.vpick').count()==0
+    # Lange drücken auf leeren Schritt: Feld mit den drei Hi-Hat-Klängen, ohne Off; der Schritt bleibt aus
+    press(pg,hats.nth(5))
+    vp=pg.locator('.vpick');assert vp.count()==1
+    assert vp.locator('.opt').all_inner_texts()==['1\nClosed','2\nOpen','3\nTick'],vp.locator('.opt').all_inner_texts()
+    assert pg.evaluate('MSTR.state()')['pat'][0][5]=='0','langes Drücken schaltet nicht um'
+    bb=vp.bounding_box();assert bb['x']>=0 and bb['x']+bb['width']<=390,'Feld bleibt im Bild'
+    assert bb['y']+bb['height']<=hats.nth(5).bounding_box()['y'],'Feld über dem Punkt'
+    vp.locator('.opt',has_text='Open').click();pg.wait_for_timeout(100)
+    st=pg.evaluate('MSTR.state()');assert st['pat'][0][5]=='o' and pg.locator('.vpick').count()==0
+    assert hats.nth(5).inner_text()=='2','Punkt zeigt die Variation'
+    # Pinsel für neue Schritte bleibt unverändert
+    hats.nth(7).click();assert pg.evaluate('MSTR.state()')['pat'][0][7]=='x'
+    # Gesetzter Schritt: gewählter Klang ist markiert, Off löscht ihn
+    press(pg,hats.nth(5))
+    assert pg.locator('.vpick .opt[aria-pressed=true]').inner_text()=='2\nOpen'
+    pg.locator('.vpick .opt.off').click();assert pg.evaluate('MSTR.state()')['pat'][0][5]=='0'
+    # Escape und Tippen daneben schließen
+    press(pg,hats.nth(9));pg.keyboard.press('Escape');assert pg.locator('.vpick').count()==0
+    press(pg,hats.nth(9));pg.mouse.click(200,20);pg.wait_for_timeout(50);assert pg.locator('.vpick').count()==0
+    # Nach dem langen Drücken wird der nächste kurze Tipp nicht verschluckt
+    hats.nth(9).click();assert pg.evaluate('MSTR.state()')['pat'][0][9]=='x'
+    # Rechtsklick öffnet das Feld auch (Desktop); Perc zeigt fünf Klänge
+    perc=pg.locator('.tracks .trk').nth(4).locator('.dot')
+    perc.nth(0).click(button='right');assert pg.locator('.vpick .opt').count()==5
+    pg.locator('.vpick .opt',has_text='Cowbell').click();assert pg.evaluate('MSTR.state()')['pat'][4][0]=='5'
+    # Kick: nur ein Klang, langes Drücken schaltet ganz normal
+    kick=pg.locator('.tracks .trk').nth(1).locator('.dot')
+    press(pg,kick.nth(3));assert pg.locator('.vpick').count()==0 and pg.evaluate('MSTR.state()')['pat'][1][3]=='b'
+    # Während der Wiedergabe genauso
+    pg.evaluate('MSTR.setPlay(true)');press(pg,hats.nth(11));pg.locator('.vpick .opt',has_text='Tick').click()
+    assert pg.evaluate('MSTR.state()')['pat'][0][11]=='k';pg.evaluate('MSTR.setPlay(false)')
+    # Link trägt die Variationen
+    code=pg.evaluate('MSTR.code()')
+    q=b.new_page(viewport={'width':390,'height':844});q.on('pageerror',lambda e:err.append(str(e)))
+    q.goto(url+'?b='+code);q.wait_for_timeout(300)
+    assert q.evaluate('MSTR.state()')['pat'][:7]==pg.evaluate('MSTR.state()')['pat'][:7]
+    # Gespeichert
+    pg.reload();pg.wait_for_timeout(300);s=pg.evaluate('MSTR.state()')['pat'];assert s[0][11]=='k' and s[4][0]=='5'
+    assert pg.evaluate('document.documentElement.scrollWidth')<=390
     b.close()
 assert not err,err
 print('ok')

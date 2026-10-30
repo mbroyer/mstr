@@ -6,7 +6,8 @@ Herausgelöst aus der Monster-Beatbox in NumNum (Repo `mbroyer/numnum`, Datei `s
 
 - 7 Spuren: Hi-Hat (Zu, Offen, Tick), Kick, Snare (Snare, Rim, Rauschen, Clap), Becken (Crash, Ride, China), Perc (Shaker, Tamburin, Clave, Conga, Cowbell), Toms (Tief, Mittel, Hoch), FX (Snap, Sub, Reverse, Wirbel, Riser)
 - Spur 8 „Aufnahme“: der eigene Klang (1 Sekunde übers Mikrofon, nur auf diesem Gerät) in drei Tonhöhen (Normal, Tief, Hoch). Nur hier gibt es das Mikrofon; Vorlagen lassen diese Spur unverändert
-- Je Spur: Klangauswahl, Mute, Solo, Lautstärke, Vorschlag
+- Je Spur: Klangauswahl (für neue Schritte), Mute, Solo, Lautstärke, Vorschlag
+- Variation je Schritt: einen Punkt lange drücken (Touch oder Maus, am Rechner auch Rechtsklick) öffnet darüber die Klänge der Spur, nummeriert wie die Ziffer im Punkt; die Wahl gilt nur für diesen Schritt, „Off“ löscht ihn. Kurz antippen schaltet wie bisher. Kick hat nur einen Klang, dort schaltet auch langes Drücken. Die Variationen stecken im Speicherstand und im geteilten Link
 - 16 Vorlagen (Amapiano als Start, Lo-Fi, One Drop, Reggaeton, Afrobeats, Funk, Rock, House, Beat It, Minimal, 2-Step, Trap, Techno, Drum'n'Bass, Jungle, Electro, Amapiano) mit Tempo und Swing, Tempo 60–180 BPM mit Tap-Tempo, Swing auf jedem zweiten Achtel
 - Drop: ein Takt Anlauf mit dem eigenen Beat (ohne Kick in der zweiten Hälfte) und einem schneller werdenden Wirbel mit dem Snare-Klang des Beats; unter 100 BPM schließt sich ein Tiefpass, sonst öffnet sich ein Hochpass, ab 150 BPM alles doppelt so schnell; zwei Schritte Pause mit Reverse-Becken, dann Kick, Crash und Sub
 - Effekte (FX, zuschaltbar, gespeichert), je mit Regler: Raum (langer Hall, Menge), Echo (Menge, Abstand 1/8, 1/8 punktiert oder 1/4 im Tempo), Filter (Tiefpass, der sich öffnet und schließt; Tiefe, 1, 2 oder 4 Takte), Pumpen (alles außer Kick atmet im Takt; Tiefe, Viertel oder Achtel), Stottern (am Taktende wiederholt sich ein Schritt in Zweiunddreißigsteln; Länge 2–8 Schritte, jeder, jeder 2. oder 4. Takt), Vinyl (dumpfer, körnig, Knistern; Stärke). Kick und Sub bleiben ohne Raum und Echo. Beim Stoppen verstummen die Effekte sofort. Gespeichert in `mstr-v1` unter `fx`, `fxa`, `fxo`
@@ -30,7 +31,8 @@ python3 tests/t4.py     # Stopp beim Sperren / Tab verlassen
 python3 tests/t5.py     # Effekte schalten, Regler, Pegel, gespeichert
 python3 tests/t6.py     # Drop je Beat-Art
 python3 tests/t7.py     # Beat teilen per Link
-python3 tests/t8.py     # WAV-Loop zum Samplen
+python3 tests/t8.py     # Variation je Schritt per langem Drücken
+python3 tests/t9.py     # WAV-Loop zum Samplen
 ```
 
 ## Dateien
