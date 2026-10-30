@@ -116,16 +116,53 @@
         for(var c=0;c<4;c++)(function(s){
           var b=document.createElement('button');b.type='button';b.className='dot';b.setAttribute('aria-label',T.n+', step '+(s+1));
           b.addEventListener('click',function(){
+            if(held===b){held=null;return;} /* nach langem Drücken kein Umschalten */
             if(r===MIC&&!REC.mic){trackSheet(r);return;} /* ohne Aufnahme gibt es nichts zu setzen: erst aufnehmen */
             var a=pat[r].split(''),on=a[s]!=='0';a[s]=on?'0':brush[r];pat[r]=a.join('');
             if(!on&&!playing)now(T.id,brush[r],gainOf(r));changed();
           });
-          grp.appendChild(b);cells[r][s]=b;
+          hold(b,r,s);grp.appendChild(b);cells[r][s]=b;
         })(g*4+c);
         steps.appendChild(grp);}
       row.appendChild(steps);tracksEl.appendChild(row);rows.push(row);
     });
     paint();
+  }
+  /* ---------- Variation je Schritt: lange drücken (oder Rechtsklick) öffnet über dem Punkt die Klänge der Spur ---------- */
+  var held=null,vp=null;
+  function hold(b,r,s){
+    if(TRACKS[r].s.length<2)return; /* Kick: nur ein Klang, langes Drücken schaltet wie Antippen */
+    var tm=0,x0=0,y0=0;
+    function stop(){clearTimeout(tm);tm=0;}
+    b.addEventListener('pointerdown',function(e){
+      if(e.button>0)return;stop();held=null;x0=e.clientX;y0=e.clientY;
+      tm=setTimeout(function(){tm=0;held=b;if(navigator.vibrate)try{navigator.vibrate(8);}catch(x){}varPick(b,r,s);},420);});
+    b.addEventListener('pointermove',function(e){if(tm&&Math.abs(e.clientX-x0)+Math.abs(e.clientY-y0)>10)stop();});
+    ['pointerup','pointercancel','pointerleave'].forEach(function(n){b.addEventListener(n,stop);});
+    b.addEventListener('contextmenu',function(e){e.preventDefault();if(!vp||vp._b!==b)varPick(b,r,s);});
+  }
+  function varClose(){if(!vp)return;var b=vp._b;vp.remove();vp=null;document.removeEventListener('pointerdown',varOut,true);window.removeEventListener('scroll',varClose,true);window.removeEventListener('resize',varClose);
+    if(b)b.classList.remove('vsel');}
+  function varOut(e){if(vp&&!vp.contains(e.target)&&e.target!==vp._b)varClose();}
+  function varPick(b,r,s){
+    varClose();
+    if(r===MIC&&!REC.mic){held=null;trackSheet(r);return;}
+    var T=TRACKS[r],w=pat[r].charAt(s);
+    vp=document.createElement('div');vp.className='vpick';vp.setAttribute('role','menu');vp.setAttribute('aria-label',T.n+', step '+(s+1));vp._b=b;
+    T.s.forEach(function(sd,k){var o=document.createElement('button');o.type='button';o.className='opt';o.setAttribute('role','menuitemradio');
+      o.setAttribute('aria-checked',w===sd[0]?'true':'false');o.setAttribute('aria-pressed',w===sd[0]?'true':'false');
+      o.innerHTML='<i>'+(k+1)+'</i>'+sd[1];
+      o.addEventListener('click',function(){var a=pat[r].split('');a[s]=sd[0];pat[r]=a.join('');if(!playing)now(T.id,sd[0],gainOf(r));varClose();changed();});
+      vp.appendChild(o);});
+    if(w!=='0'){var x=document.createElement('button');x.type='button';x.className='opt off';x.setAttribute('role','menuitem');x.textContent='Off';
+      x.addEventListener('click',function(){var a=pat[r].split('');a[s]='0';pat[r]=a.join('');varClose();changed();});vp.appendChild(x);}
+    document.body.appendChild(vp);b.classList.add('vsel');
+    /* Über dem Punkt, sonst darunter; nie über den Rand hinaus */
+    var br=b.getBoundingClientRect(),pr=vp.getBoundingClientRect(),W=document.documentElement.clientWidth,top=br.top-pr.height-10;
+    if(top<8)top=br.bottom+10;
+    vp.style.left=Math.max(8,Math.min(W-pr.width-8,br.left+br.width/2-pr.width/2))+'px';vp.style.top=top+'px';
+    setTimeout(function(){if(!vp)return;document.addEventListener('pointerdown',varOut,true);window.addEventListener('scroll',varClose,true);window.addEventListener('resize',varClose);},0);
+    var f=vp.querySelector('[aria-checked="true"]')||vp.querySelector('button');f.focus({preventScroll:true});
   }
   function paint(){
     var r,s,so=anySolo();
@@ -244,6 +281,7 @@
   document.addEventListener('visibilitychange',function(){if(document.hidden)away();});
   window.addEventListener('pagehide',away);
   document.addEventListener('keydown',function(e){
+    if(e.key==='Escape'&&vp){var vb=vp._b;varClose();vb.focus({preventScroll:true});return;}
     if(e.key==='Escape'&&!sheet.hidden){closeSheet();return;}
     if(e.code!=='Space'||e.repeat)return;var tg=e.target,tn=tg&&tg.tagName;
     if(tn==='INPUT'||tn==='TEXTAREA'||tn==='SELECT'||!sheet.hidden)return;
