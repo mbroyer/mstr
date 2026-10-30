@@ -2,7 +2,7 @@
 (function(){
   /* Vorschläge zum Würfeln für Becken, Perc, Toms, FX und die eigene Aufnahme (16 Schritte) */
   var COMMON={cym:['c...............','r.r.r.r.r.r.r.r.','..r...r...r...r.'],click:['1.1.1.1.1.1.1.1.','....2.......2...','3..3..3...3.3...'],toms:['b...p...b...p...','b.......t.t.....','b..b....p...tt..'],fx:['....m.......m...','n.....n...n.....','............z...'],mic:['....a.......a...','a.......a.a.....','..a...a...a.h.t.']};
-  var NM={lofi:'Lo-Fi',house:'House',funk:'Funk',rock:'Rock',techno:'Techno',trap:'Trap',onedrop:'One Drop',bossa:'Bossa',dnb:"Drum'n'Bass",afrobeats:'Afrobeats',reggaeton:'Reggaeton',minimal:'Minimal',twostep:'2-Step'};
+  var NM={lofi:'Lo-Fi',house:'House',funk:'Funk',rock:'Rock',techno:'Techno',trap:'Trap',onedrop:'One Drop',bossa:'Bossa',dnb:"Drum'n'Bass",afrobeats:'Afrobeats',reggaeton:'Reggaeton',minimal:'Minimal',twostep:'2-Step',jungle:'Jungle',electro:'Electro',amapiano:'Amapiano'};
   /* Je Vorlage eigene Muster für Becken, Perc, Toms und FX. Becken: c Crash, r Ride, h China. Perc: 1 Shaker, 2 Tamburin, 3 Clave, 4 Conga, 5 Cowbell.
      FX: m Snap, n Sub, s Reverse, l Wirbel, z Riser. Riser und Reverse dauern vier Schritte, auf Schritt 13 laufen sie genau in die nächste Eins */
   var EXTRA={
@@ -18,7 +18,10 @@
     afrobeats:['................','4..4..4...4.4...','................','....m.......m...'],
     reggaeton:['c...............','..2...2...2...2.','................','............z...'],
     minimal:['..............h.','......3.......3.','..............t.','............s...'],
-    twostep:['................','1.1.1.1.1.1.1.1.','................','............s...']};
+    twostep:['................','1.1.1.1.1.1.1.1.','................','............s...'],
+    jungle:['c...............','................','..............tp','n.........n.....'],
+    electro:['................','..5.....5.....5.','................','............z...'],
+    amapiano:['................','1111111111111111','......b..b....b.','................']};
 
   /* Spur-Icons: feine Linien, 24er Raster */
   var ICON={

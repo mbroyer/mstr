@@ -25,7 +25,7 @@ with sync_playwright() as p:
     pg.keyboard.press('Space');pg.wait_for_timeout(100)
     assert pg.locator('#play.on').count()==0,'Leertaste stoppt nicht'
     # Vorlage wählen
-    pg.click('#preBtn');assert pg.locator('.pitem').count()==13
+    pg.click('#preBtn');assert pg.locator('.pitem').count()==16
     pg.click('.pitem:has-text("House")');pg.wait_for_timeout(100)
     assert pg.inner_text('#preName')=='House' and pg.inner_text('#bpm')=='116'
     assert pg.locator('#sheet').is_hidden()

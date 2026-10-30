@@ -18,7 +18,7 @@ with sync_playwright() as p:
         pg.keyboard.press('Escape')
     pg.click('#play')
     pg.wait_for_timeout(800)
-    for i in range(13):
+    for i in range(16):
         pg.click('#preBtn');pg.locator('.pitem').nth(i).click();pg.wait_for_timeout(500)
     pg.click('#drop');pg.wait_for_timeout(4500)
     assert pg.locator('#play.on').count()==1
