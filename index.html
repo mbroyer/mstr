@@ -13,7 +13,7 @@
 <style>
 /* MSTR: Schwarz, Weiß und ein Signal (Flieder). Farbe nur für Zustände: Playhead, Aufnahme, gewählte Vorlage, laufende Wiedergabe. */
 :root{
-  --bg:#FFFFFF; --ink:#0F0F10; --mute:#8E8E94; --off:#EDEDEF; --line:#E4E4E7; --soft:#F4F4F5; --scrim:rgba(15,15,16,.32);
+  --bg:#FFFFFF; --ink:#0F0F10; --mute:#8E8E94; --off:#EDEDEF; --line:#E4E4E7; --soft:#F4F4F5;
   --accent:#C7B3FF; --on-accent:#0F0F10;
   --f-ui:"Figtree",ui-sans-serif,system-ui,-apple-system,"Segoe UI",sans-serif;
   --f-ed:"Instrument Serif",ui-serif,Georgia,serif;
@@ -21,8 +21,8 @@
   --gut:max(16px,env(safe-area-inset-left,0px));--gutr:max(16px,env(safe-area-inset-right,0px));
   color-scheme:light;
 }
-@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0E0E0F;--ink:#F3F3F4;--mute:#7A7A81;--off:#232326;--line:#2A2A2E;--soft:#19191B;--scrim:rgba(0,0,0,.55);color-scheme:dark}}
-:root[data-theme="dark"]{--bg:#0E0E0F;--ink:#F3F3F4;--mute:#7A7A81;--off:#232326;--line:#2A2A2E;--soft:#19191B;--scrim:rgba(0,0,0,.55);color-scheme:dark}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){--bg:#0E0E0F;--ink:#F3F3F4;--mute:#7A7A81;--off:#232326;--line:#2A2A2E;--soft:#19191B;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0E0E0F;--ink:#F3F3F4;--mute:#7A7A81;--off:#232326;--line:#2A2A2E;--soft:#19191B;color-scheme:dark}
 
 *{box-sizing:border-box}
 html,body{height:100%}
@@ -92,12 +92,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .swt{font-family:var(--f-mono);font-size:10px;letter-spacing:.06em;color:var(--mute)}
 
 /* Blätter */
-.scrim{position:fixed;inset:0;background:var(--scrim);z-index:20;animation:fade .2s}
-.sheet{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:560px;max-height:88vh;overflow:auto;overscroll-behavior:contain;background:var(--bg);border-radius:28px 28px 0 0;z-index:21;
-  padding:10px var(--gutr) max(22px,env(safe-area-inset-bottom,0px)) var(--gut);display:flex;flex-direction:column;gap:20px;box-shadow:0 -1px 0 var(--line);animation:up .25s cubic-bezier(.2,.8,.2,1)}
-@keyframes up{from{transform:translateY(40px);opacity:0}}
+/* Unterseiten: ganze Seiten, die von rechts hereinschieben */
+.sheet{position:fixed;inset:0;overflow:auto;overscroll-behavior:contain;background:var(--bg);z-index:21;
+  padding:max(14px,env(safe-area-inset-top,0px)) var(--gutr) max(28px,env(safe-area-inset-bottom,0px)) var(--gut);display:flex;flex-direction:column;gap:22px;animation:in .22s cubic-bezier(.2,.8,.2,1)}
+.sheet>*{width:100%;max-width:560px;margin-inline:auto}
+@keyframes in{from{transform:translateX(28px);opacity:0}}
 @keyframes fade{from{opacity:0}}
-.grab{width:36px;height:4px;border-radius:2px;background:var(--line);margin:0 auto}
+.pnav{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:40px}
+.pnav .sp{width:36px}
 .sh-top{display:flex;justify-content:space-between;align-items:flex-start;gap:12px}
 .ed{font-family:var(--f-ed);font-weight:400;font-size:44px;line-height:.92;letter-spacing:-.01em;margin:0}
 .ed em{font-style:normal;color:var(--mute)}
@@ -184,8 +186,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
     <button type="button" class="tempo" id="tempoBtn" aria-haspopup="dialog" aria-label="Tempo und Swing"><span class="big"><span id="bpm">100</span><small>bpm</small></span><span class="swt" id="swTxt">Swing 0 %</span></button>
   </footer>
 </div>
-<div class="scrim" id="scrim" hidden></div>
-<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetT" hidden></section>
+<section class="sheet" id="sheet" aria-labelledby="sheetT" hidden></section>
 <script>
 (function(){
 'use strict';
@@ -377,7 +378,7 @@ function dropRec(id){delete REC[id];delete ownV[id];lsSet('mstr-rec-'+id,null);l
   var pat,vol=[],mute=[],solo=[],pre=0,edited=false,brush=TRACKS.map(function(t){return t.s[0][0];}),pk=[],lastDice=[];
   var cells=[],rows=[],playing=false,step=0,nextT=0,timer=0,queue=[],raf=0,shown=-1,drop=0;
   var $=function(id){return document.getElementById(id);};
-  var app=$('app'),tracksEl=$('tracks'),playB=$('play'),dropB=$('drop'),sheet=$('sheet'),scrim=$('scrim');
+  var app=$('app'),tracksEl=$('tracks'),playB=$('play'),dropB=$('drop'),sheet=$('sheet');
 
   function zero(){return new Array(N+1).join('0');}
   function empty(){var a=[],r;for(r=0;r<R;r++)a.push(zero());return a;}
@@ -518,19 +519,21 @@ function dropRec(id){delete REC[id];delete ownV[id];lsSet('mstr-rec-'+id,null);l
     e.preventDefault();setPlay(!playing);
   });
 
-  /* ---------- Blätter (Bottom Sheets) ---------- */
-  var lastFocus=null;
-  function openSheet(html,init){
-    lastFocus=document.activeElement;sheet.innerHTML='<div class="grab" aria-hidden="true"></div>'+html;sheet.hidden=false;scrim.hidden=false;
+  /* ---------- Unterseiten: Spur, Vorlagen, Tempo. Eigener Verlaufseintrag, damit Zurück im Browser funktioniert ---------- */
+  var lastFocus=null,pageName='',pushed=false,ignoreHash=false;
+  var BACK='<div class="pnav"><button type="button" class="ib" data-close aria-label="Zurück"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="mark"><i aria-hidden="true"></i>MSTR</span><span class="sp"></span></div>';
+  function openSheet(html,init,name){
+    lastFocus=document.activeElement;sheet.innerHTML=BACK+html;sheet.hidden=false;sheet.scrollTop=0;
     document.body.classList.add('noscroll');
-    var x=sheet.querySelector('[data-close]');if(x)x.addEventListener('click',closeSheet);
+    sheet.querySelector('[data-close]').addEventListener('click',closeSheet);
     if(init)init(sheet);
     var f=sheet.querySelector('[data-focus]')||sheet.querySelector('button');if(f)f.focus({preventScroll:true});
+    pageName=name;if(location.hash!=='#'+name){pushed=true;location.hash=name;}
   }
-  function closeSheet(){sheet.hidden=true;scrim.hidden=true;sheet.innerHTML='';document.body.classList.remove('noscroll');if(lastFocus&&lastFocus.focus)lastFocus.focus({preventScroll:true});}
-  scrim.addEventListener('click',closeSheet);
-  var X='<button type="button" class="ib" data-close aria-label="Schließen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>';
-
+  function hideSheet(){sheet.hidden=true;sheet.innerHTML='';document.body.classList.remove('noscroll');if(lastFocus&&lastFocus.focus)lastFocus.focus({preventScroll:true});}
+  function closeSheet(){if(sheet.hidden)return;hideSheet();if(pushed){pushed=false;ignoreHash=true;history.back();}}
+  window.addEventListener('hashchange',function(){if(ignoreHash){ignoreHash=false;return;}if(!sheet.hidden&&location.hash!=='#'+pageName){pushed=false;hideSheet();}});
+  var X='';
   function presetSheet(){
     var order=BEATS.map(function(b,i){return i;}).sort(function(a,b){return BEATS[a].bpm-BEATS[b].bpm||a-b;});
     openSheet('<div class="sh-top"><h2 class="ed" id="sheetT">'+BEATS.length+' Vorlagen<br><em>nach Tempo</em></h2>'+X+'</div><div class="plist" role="listbox" aria-label="Vorlagen"></div>',function(el){
@@ -539,7 +542,7 @@ function dropRec(id){delete REC[id];delete ownV[id];lsSet('mstr-rec-'+id,null);l
         if(i===pre)b.setAttribute('data-focus','');
         b.innerHTML='<span class="n">'+NM[Bt.n]+'</span><span class="v">'+Bt.bpm+'<small>BPM</small></span>';
         b.addEventListener('click',function(){fromBeat(i);paint();persist();closeSheet();if(!playing)setPlay(true);});list.appendChild(b);});
-    });
+    },'vorlagen');
   }
   $('preBtn').addEventListener('click',presetSheet);
 
@@ -560,7 +563,7 @@ function dropRec(id){delete REC[id];delete ownV[id];lsSet('mstr-rec-'+id,null);l
       sl.addEventListener('input',function(){sw=sl.value/100;swUI();paint();});
       sl.addEventListener('change',persist);
       swUI();
-    });
+    },'tempo');
   }
   $('tempoBtn').addEventListener('click',tempoSheet);
 
@@ -602,7 +605,7 @@ function dropRec(id){delete REC[id];delete ownV[id];lsSet('mstr-rec-'+id,null);l
       el.querySelector('#kDice').addEventListener('click',function(){dice(r);if(!playing)setPlay(true);});
       el.querySelector('#kClr').addEventListener('click',function(){pat[r]=zero();changed();});
       ui();
-    });
+    },'spur-'+id);
   }
   function dice(r){
     var id=TRACKS[r].id,ix;

@@ -22,7 +22,7 @@
   var pat,vol=[],mute=[],solo=[],pre=0,edited=false,brush=TRACKS.map(function(t){return t.s[0][0];}),pk=[],lastDice=[];
   var cells=[],rows=[],playing=false,step=0,nextT=0,timer=0,queue=[],raf=0,shown=-1,drop=0;
   var $=function(id){return document.getElementById(id);};
-  var app=$('app'),tracksEl=$('tracks'),playB=$('play'),dropB=$('drop'),sheet=$('sheet'),scrim=$('scrim');
+  var app=$('app'),tracksEl=$('tracks'),playB=$('play'),dropB=$('drop'),sheet=$('sheet');
 
   function zero(){return new Array(N+1).join('0');}
   function empty(){var a=[],r;for(r=0;r<R;r++)a.push(zero());return a;}
@@ -163,19 +163,21 @@
     e.preventDefault();setPlay(!playing);
   });
 
-  /* ---------- Blätter (Bottom Sheets) ---------- */
-  var lastFocus=null;
-  function openSheet(html,init){
-    lastFocus=document.activeElement;sheet.innerHTML='<div class="grab" aria-hidden="true"></div>'+html;sheet.hidden=false;scrim.hidden=false;
+  /* ---------- Unterseiten: Spur, Vorlagen, Tempo. Eigener Verlaufseintrag, damit Zurück im Browser funktioniert ---------- */
+  var lastFocus=null,pageName='',pushed=false,ignoreHash=false;
+  var BACK='<div class="pnav"><button type="button" class="ib" data-close aria-label="Zurück"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button><span class="mark"><i aria-hidden="true"></i>MSTR</span><span class="sp"></span></div>';
+  function openSheet(html,init,name){
+    lastFocus=document.activeElement;sheet.innerHTML=BACK+html;sheet.hidden=false;sheet.scrollTop=0;
     document.body.classList.add('noscroll');
-    var x=sheet.querySelector('[data-close]');if(x)x.addEventListener('click',closeSheet);
+    sheet.querySelector('[data-close]').addEventListener('click',closeSheet);
     if(init)init(sheet);
     var f=sheet.querySelector('[data-focus]')||sheet.querySelector('button');if(f)f.focus({preventScroll:true});
+    pageName=name;if(location.hash!=='#'+name){pushed=true;location.hash=name;}
   }
-  function closeSheet(){sheet.hidden=true;scrim.hidden=true;sheet.innerHTML='';document.body.classList.remove('noscroll');if(lastFocus&&lastFocus.focus)lastFocus.focus({preventScroll:true});}
-  scrim.addEventListener('click',closeSheet);
-  var X='<button type="button" class="ib" data-close aria-label="Schließen"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>';
-
+  function hideSheet(){sheet.hidden=true;sheet.innerHTML='';document.body.classList.remove('noscroll');if(lastFocus&&lastFocus.focus)lastFocus.focus({preventScroll:true});}
+  function closeSheet(){if(sheet.hidden)return;hideSheet();if(pushed){pushed=false;ignoreHash=true;history.back();}}
+  window.addEventListener('hashchange',function(){if(ignoreHash){ignoreHash=false;return;}if(!sheet.hidden&&location.hash!=='#'+pageName){pushed=false;hideSheet();}});
+  var X='';
   function presetSheet(){
     var order=BEATS.map(function(b,i){return i;}).sort(function(a,b){return BEATS[a].bpm-BEATS[b].bpm||a-b;});
     openSheet('<div class="sh-top"><h2 class="ed" id="sheetT">'+BEATS.length+' Vorlagen<br><em>nach Tempo</em></h2>'+X+'</div><div class="plist" role="listbox" aria-label="Vorlagen"></div>',function(el){
@@ -184,7 +186,7 @@
         if(i===pre)b.setAttribute('data-focus','');
         b.innerHTML='<span class="n">'+NM[Bt.n]+'</span><span class="v">'+Bt.bpm+'<small>BPM</small></span>';
         b.addEventListener('click',function(){fromBeat(i);paint();persist();closeSheet();if(!playing)setPlay(true);});list.appendChild(b);});
-    });
+    },'vorlagen');
   }
   $('preBtn').addEventListener('click',presetSheet);
 
@@ -205,7 +207,7 @@
       sl.addEventListener('input',function(){sw=sl.value/100;swUI();paint();});
       sl.addEventListener('change',persist);
       swUI();
-    });
+    },'tempo');
   }
   $('tempoBtn').addEventListener('click',tempoSheet);
 
@@ -247,7 +249,7 @@
       el.querySelector('#kDice').addEventListener('click',function(){dice(r);if(!playing)setPlay(true);});
       el.querySelector('#kClr').addEventListener('click',function(){pat[r]=zero();changed();});
       ui();
-    });
+    },'spur-'+id);
   }
   function dice(r){
     var id=TRACKS[r].id,ix;
