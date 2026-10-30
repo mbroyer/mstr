@@ -1,3 +1,22 @@
-<div class="app">
-  <div class="themecard beatcard" id="beatCard"><div class="dmhead"><span class="dmtitle">Monster-Beatbox</span><span class="dmhr"><button type="button" class="dmsec" id="dmSec" aria-controls="dmSecList"></button><button type="button" class="dmsec dmhelp" id="dmKurz" aria-label="Kurzer Takt mit 8 Feldern" aria-pressed="false">16</button><button type="button" class="dmsec dmhelp" id="dmHelp" aria-label="So geht die Beatbox">?</button></span></div><div class="dmseclist" id="dmSecList" hidden></div><div class="dmpre" id="dmPre"></div><div class="dmgrid" id="dmGrid"></div><div class="dmbar"><button type="button" class="dmplay" id="dmPlay" aria-label="Abspielen"></button><button type="button" class="dmdrop" id="dmDrop" aria-label="Drop">DROP</button><div class="dmtempo"><button type="button" id="dmSlow" aria-label="Langsamer"><svg viewBox="0 0 48 48" aria-hidden="true" style="color:#1d0a14"><circle cx="24" cy="24" r="22" fill="var(--xp)"/><g transform="translate(11 11) scale(1.1)" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><circle cx="9.5" cy="10.5" r="6"/><path d="M9.5 10.5a2.2 2.2 0 112.2 2.2M2.5 20h16.5a3 3 0 003-3v-4M20 13V8.5"/></g></svg></button><b id="dmBpm">100</b><button type="button" id="dmFast" aria-label="Schneller"><svg viewBox="0 0 48 48" aria-hidden="true" style="color:#1d0a14"><circle cx="24" cy="24" r="22" fill="var(--accent)"/><g transform="translate(11 11) scale(1.1)" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><ellipse cx="8.8" cy="6" rx="2.2" ry="4.6"/><ellipse cx="15.2" cy="6" rx="2.2" ry="4.6"/><circle cx="12" cy="15" r="6.3"/><circle cx="9.6" cy="14" r=".9" fill="currentColor"/><circle cx="14.4" cy="14" r=".9" fill="currentColor"/></g></svg></button></div><button type="button" class="dmclr" id="dmClr" aria-label="Leeren"><svg viewBox="0 0 48 48" aria-hidden="true" style="color:#1d0a14"><circle cx="24" cy="24" r="22" fill="var(--ink)"/><g transform="translate(11 11) scale(1.1)" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"><path d="M4 15.5l9-9a2 2 0 012.8 0l3.2 3.2a2 2 0 010 2.8L12 19H8z"/><path d="M9 11.5l5 5M12 19h8"/></g></svg></button></div></div>
+<div class="app" id="app">
+  <header class="top">
+    <span class="mark"><i aria-hidden="true"></i>MSTR</span>
+    <div class="topr">
+      <button type="button" class="pill" id="clr">Leeren</button>
+      <button type="button" class="ib" id="theme" aria-label="Farbschema"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
+    </div>
+  </header>
+  <div class="head">
+    <button type="button" class="preset" id="preBtn" aria-haspopup="dialog"><span id="preName">Boom Bap</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <p class="sub" id="sub">Vorlage</p>
+  </div>
+  <main class="tracks" id="tracks" aria-label="Spuren"></main>
+  <div class="trk beatrow" aria-hidden="true"><div class="tl"></div><div class="steps"><div class="grp"><span>1</span><span></span><span></span><span></span></div><div class="grp"><span>2</span><span></span><span></span><span></span></div><div class="grp"><span>3</span><span></span><span></span><span></span></div><div class="grp"><span>4</span><span></span><span></span><span></span></div></div></div>
+  <footer class="transport">
+    <button type="button" class="play" id="play" aria-label="Abspielen (Leertaste)"></button>
+    <button type="button" class="pill" id="drop">Drop</button>
+    <button type="button" class="tempo" id="tempoBtn" aria-haspopup="dialog" aria-label="Tempo und Swing"><span class="big"><span id="bpm">100</span><small>bpm</small></span><span class="swt" id="swTxt">Swing 0 %</span></button>
+  </footer>
 </div>
+<div class="scrim" id="scrim" hidden></div>
+<section class="sheet" id="sheet" role="dialog" aria-modal="true" aria-labelledby="sheetT" hidden></section>
