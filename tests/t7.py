@@ -23,6 +23,7 @@ with sync_playwright() as p:
     SITE='https://asimplemanslab.com/mstr/app/'
     # Teilen-Blatt: Name vergeben (mit Punkt und Umlaut), steht sofort als Titel oben, Link zeigt auf die Website
     pg.click('#share');pg.wait_for_timeout(300)
+    assert pg.inner_text('#shSend')=='Copy link'
     assert pg.locator('#shName').is_visible() and pg.evaluate('document.activeElement.id')=='shName'
     assert pg.get_attribute('#shName','placeholder')=='Amapiano'
     pg.fill('#shName','Mia\'s Groove 2.0 ü')
@@ -32,8 +33,11 @@ with sync_playwright() as p:
     link=pg.evaluate('MSTR.url()');assert link.startswith(SITE+'?b=') and '#' not in link
     pg.click('#shSend');pg.wait_for_timeout(300)
     assert pg.evaluate('navigator.clipboard.readText()')==link
-    assert 'Link copied' in pg.inner_text('.toast')
-    assert pg.locator('#sheet').is_hidden()
+    # Rechner: der Knopf heißt Copy link und bestätigt das Kopieren, das Blatt bleibt offen (für Download WAV)
+    assert pg.inner_text('#shSend')=='\u2713 Link copied' and 'Paste it' in pg.inner_text('#shSendT')
+    assert pg.locator('#sheet').is_visible()
+    pg.wait_for_timeout(2700);assert pg.inner_text('#shSend')=='Copy link'
+    pg.keyboard.press('Escape')
     pg.reload();pg.wait_for_timeout(300);assert pg.inner_text('#preName')=="Mia's Groove 2.0 ü",'Name bleibt gespeichert'
     link=link.replace(SITE,url)
     # Empfänger: eigener Stand (anderes Tempo, Mic-Zeile) wird ersetzt, die Mic-Zeile bleibt
@@ -65,6 +69,18 @@ with sync_playwright() as p:
     # Undo nach geteiltem Link auf leerem Stand
     q.goto(link);q.wait_for_timeout(300);q.click('.toast button');q.wait_for_timeout(100)
     s4=q.evaluate('MSTR.state()');assert s4['bpm']==70 and s4['fx']['lofi'] is False,s4
+    # Handy mit Teilen-Menü: Send link, das Menü bekommt Titel, Text und Link
+    m=b.new_context(viewport={'width':390,'height':844},has_touch=True,is_mobile=True);mp=m.new_page();mp.on('pageerror',lambda e:err.append(str(e)))
+    mp.add_init_script("navigator.share=d=>{window.__shared=d;return Promise.resolve();}")
+    mp.goto(url);mp.wait_for_timeout(300);mp.click('#share');mp.wait_for_timeout(300)
+    assert mp.inner_text('#shSend')=='Send link' and 'Paste' not in mp.inner_text('#shSendT')
+    mp.fill('#shName','Test');mp.click('#shSend');mp.wait_for_timeout(300)
+    d=mp.evaluate('window.__shared');assert d['url'].startswith(SITE+'?b=') and 'Test' in d['text'],d
+    # Leiste am Handy: Effects nur als Symbol, alles passt ohne Scrollen
+    for vw in (360,390):
+        q2=b.new_page(viewport={'width':vw,'height':800});q2.goto(url);q2.wait_for_timeout(200)
+        assert q2.locator('#fxBtn .fxl').is_hidden() and q2.evaluate('document.documentElement.scrollWidth')<=vw
+        r=q2.locator('#tempoBtn').bounding_box();assert r['x']+r['width']<=vw-12,(vw,r)
     b.close()
 assert not err,err
 print('ok')
