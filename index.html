@@ -200,7 +200,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
     </div>
   </header>
   <div class="head">
-    <button type="button" class="preset" id="preBtn" aria-haspopup="dialog"><span id="preName">Boom Bap</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button type="button" class="preset" id="preBtn" aria-haspopup="dialog"><span id="preName">Lo-Fi</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <p class="sub" id="sub">Vorlage</p>
   </div>
   <main class="tracks" id="tracks" aria-label="Spuren"></main>
@@ -254,21 +254,21 @@ function getAC(){
 var _oc=null,_og=null;
 function OUT(){if(_oc!==ac){_oc=ac;var g=ac.createGain();g.gain.value=2.8;var c=ac.createDynamicsCompressor();c.threshold.value=-14;c.knee.value=12;c.ratio.value=10;c.attack.value=.003;c.release.value=.15;g.connect(c);c.connect(ac.destination);_og=g;}return _og;}
 
-/* 13 Vorlagen (Stil, Tempo, Swing, Kick/Snare/Hat über 32 Schritte) */
+/* 13 Vorlagen (Stil, Tempo, Swing, Kick/Snare/Hat; genutzt werden die ersten 16 Schritte). Die erste ist die Start-Vorlage */
 var BEATS=[
-  {n:'boombap',bpm:90,sw:.30,K:'x.....x..x......x.....x..x.x....',S:'....x.......x.......x.......x...',H:'x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.',hv:[.16,.09],fill:'snare'},
+  {n:'lofi',bpm:82,sw:.36,K:'x......xx.....x.x......xx.....x.',S:'....o.......o.......o.......o...',H:'x.xox.x.x.xox.x.x.xox.x.x.xox.x.',hv:[.12,.07],fill:'tom'},
   {n:'house',bpm:116,sw:0,K:'x...x...x...x...x...x...x...x...',S:'....c.......c.......c.......c...',H:'..O...O...O...O...O...O...O...O.',hv:[.2,.2],fill:'tom',clap:true},
   {n:'funk',bpm:102,sw:.16,K:'x..x..x...x..x..x..x.x....x..x..',S:'....x..o....x..o....x..o....x...',H:'xoxoxoxoxoxoxoxoxoxoxoxoxoxoxoxo',hv:[.14,.07],fill:'snare'},
   {n:'rock',bpm:108,sw:.05,K:'x.x...x.x..x....x.x...x.x..x....',S:'....x.......x.......x.......x...',H:'x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.',hv:[.2,.12],fill:'tom'},
   {n:'techno',bpm:138,sw:0,K:'x...x...x...x...x...x...x...x.x.',S:'....c.......c.......c.......c...',H:'xxOxxxOxxxOxxxOxxxOxxxOxxxOxxxOx',hv:[.15,.09],fill:'snare'},
   {n:'trap',bpm:136,sw:0,K:'x.....x...x.....x.......x.x.....',S:'........x.......c.......x.......',H:'x.x.x.x.xxxx.x.xx.x.x.x.xxxxx.x.',hv:[.16,.1],fill:'snare'},
-  {n:'disco',bpm:120,sw:0,K:'x...x...x...x...x...x...x...x...',S:'....c.......c.......c.......c...',H:'x.O.x.O.x.O.x.O.x.O.x.O.x.O.x.O.',hv:[.13,.17],fill:'snare'},
+  {n:'onedrop',bpm:76,sw:.3,K:'........x...............x.......',S:'........o...............o.......',H:'x.x.x.x.x.x.x.O.x.x.x.x.x.x.x.O.',hv:[.12,.07],fill:'tom'},
   {n:'bossa',bpm:126,sw:0,K:'x..x..x.x..x..x.x..x..x.x..x..x.',S:'..o..o..o..o..o...o..o..o..o..o.',H:'x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.',hv:[.12,.08],fill:'tom'},
   {n:'dnb',bpm:168,sw:0,K:'x.........x.....x...........x...',S:'....x.......x.......x.......x...',H:'x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.',hv:[.14,.09],fill:'snare'},
-  {n:'shuffle',bpm:100,sw:.5,K:'x.......x.......x.......x.......',S:'....x.......x.......x.......x...',H:'x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.',hv:[.17,.1],fill:'tom'},
-  {n:'afro',bpm:108,sw:.1,K:'x..x..x...x.x...x..x..x...x.x...',S:'....x..o....x..o....x..o....x...',H:'xoxoxoxoxoxoxoxoxoxoxoxoxoxoxoxo',hv:[.13,.07],fill:'tom'},
+  {n:'shuffle',bpm:100,sw:.5,K:'x.....x.x.....x.x.....x.x.....x.',S:'....x..o....x.......x..o....x...',H:'x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.',hv:[.17,.1],fill:'tom'},
+  {n:'reggaeton',bpm:95,sw:0,K:'x...x...x...x...x...x...x...x...',S:'...x..x....x..x....x..x....x..x.',H:'x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.x.',hv:[.14,.08],fill:'snare'},
   {n:'minimal',bpm:126,sw:.08,K:'x...x...x...x...x...x...x...x...',S:'................c.......c.......',H:'..O...O.o.O...O...O...O.o.O...Oo',hv:[.14,.08],fill:'tom'},
-  {n:'hardtechno',bpm:148,sw:0,K:'x...x...x...x.x.x...x...x...x.xx',S:'....c.......c.......c.....c.c...',H:'x.x.O.x.x.x.O.x.x.x.O.x.x.x.O.xx',hv:[.17,.1],fill:'snare'}
+  {n:'twostep',bpm:132,sw:.3,K:'x.........x..x..x.........x..x..',S:'....c.......c.......c.......c...',H:'..x.x.O...x.x.Ox..x.x.O...x.x.Ox',hv:[.14,.08],fill:'snare'}
 ];
 
 /* ===== Klang: alle Spuren per Web Audio erzeugt, über einen Bus mit Hall, Delay, Sättigung und Sidechain ===== */
@@ -441,23 +441,23 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
 (function(){
   /* Vorschläge zum Würfeln für Becken, Perc, Toms, FX und die eigene Aufnahme (16 Schritte) */
   var COMMON={cym:['c...............','r.r.r.r.r.r.r.r.','..r...r...r...r.'],click:['1.1.1.1.1.1.1.1.','....2.......2...','3..3..3...3.3...'],toms:['b...p...b...p...','b.......t.t.....','b..b....p...tt..'],fx:['....m.......m...','n.....n...n.....','............z...'],mic:['....a.......a...','a.......a.a.....','..a...a...a.h.t.']};
-  var NM={boombap:'Boom Bap',house:'House',funk:'Funk',rock:'Rock',techno:'Techno',trap:'Trap',disco:'Disco',bossa:'Bossa',dnb:"Drum'n'Bass",shuffle:'Shuffle',afro:'Afro',minimal:'Minimal',hardtechno:'Hardtechno'};
+  var NM={lofi:'Lo-Fi',house:'House',funk:'Funk',rock:'Rock',techno:'Techno',trap:'Trap',onedrop:'One Drop',bossa:'Bossa',dnb:"Drum'n'Bass",shuffle:'Shuffle',reggaeton:'Reggaeton',minimal:'Minimal',twostep:'2-Step'};
   /* Je Vorlage eigene Muster für Becken, Perc, Toms und FX. Becken: c Crash, r Ride, h China. Perc: 1 Shaker, 2 Tamburin, 3 Clave, 4 Conga, 5 Cowbell.
      FX: m Snap, n Sub, s Reverse, l Wirbel, z Riser. Riser und Reverse dauern vier Schritte, auf Schritt 13 laufen sie genau in die nächste Eins */
   var EXTRA={
-    boombap:['c...............','....2.......2...','........t.t.....','............l...'],
+    lofi:['................','..1...1...1...1.','................','..............n.'],
     house:['r.r.r.r.r.r.r.r.','1.11.11.1.11.11.','................','............z...'],
     funk:['c...............','....2..4....2.4.','......t.......p.','....m.......m...'],
     rock:['c...............','....2.......2...','..........t.t...','............s...'],
     techno:['..r...r...r...r.','1.1.1.1.1.1.1.1.','............tt..','............z...'],
     trap:['c...............','..........3.....','......t.......tt','n.....n...n.....'],
-    disco:['c...............','2.2.2.2.2.2.2.2.','................','............s...'],
+    onedrop:['................','..3...3...3...3.','.............ttp','................'],
     bossa:['r.r.r.r.r.r.r.r.','3..3..3...3.3...','..t..t..t..t..t.','................'],
     dnb:['c...............','1.1.1.1.1.1.1.1.','..........p...tt','............z...'],
     shuffle:['r.r.r.r.r.r.r.r.','....2.......2...','..........t..t..','............l...'],
-    afro:['c...............','5.5.4.5.5.5.4.5.','t..t..t.t..t..t.','....m.......m...'],
+    reggaeton:['c...............','..2...2...2...2.','................','............z...'],
     minimal:['..............h.','......3.......3.','..............t.','............s...'],
-    hardtechno:['..r...r...r...r.','1.1.1.1.1.1.1.1.','................','............z...']};
+    twostep:['................','1.1.1.1.1.1.1.1.','................','............s...']};
 
   /* Spur-Icons: feine Linien, 24er Raster */
   var ICON={
@@ -512,13 +512,16 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
     var add=function(a,d){if(Array.isArray(a)&&a.length===7)a.push(d);};
     add(P.g,zero());add(P.vol,.8);add(P.mute,false);add(P.solo,false);add(P.br,'a');P.v=3;
   }
+  /* Stand v3: Boom Bap, Disco, Afro und Hardtechno sind ersetzt (durch Lo-Fi, One Drop, Reggaeton, 2-Step).
+     Wer eine davon geladen hatte, behält das Muster, es heißt dann Eigener Beat */
+  if(P&&P.v===3){if([0,6,10,12].indexOf(P.pre)>=0)P.pre=-1;P.v=4;}
   if(P&&clean(P.g)){pat=clean(P.g);bpm=Math.round(num(P.bpm,60,180,100));sw=num(P.sw,0,.6,0);pre=P.pre|0;if(pre<-1||pre>=BEATS.length)pre=-1;edited=!!P.ed;}
   else{pat=empty();fromBeat(0);}
   vol=arr(P&&P.vol,function(x){return num(x,0,1,.8);},.8);
   mute=arr(P&&P.mute,function(x){return !!x;},false);
   solo=arr(P&&P.solo,function(x){return !!x;},false);
   if(P&&Array.isArray(P.br)&&P.br.length===R)brush=brush.map(function(d,r){return sndIx(r,P.br[r])>=0?P.br[r]:d;});
-  function persist(){S.pat={v:3,g:pat,bpm:bpm,sw:sw,vol:vol,mute:mute,solo:solo,pre:pre,ed:edited,br:brush};save();}
+  function persist(){S.pat={v:4,g:pat,bpm:bpm,sw:sw,vol:vol,mute:mute,solo:solo,pre:pre,ed:edited,br:brush};save();}
   function anySolo(){return solo.some(Boolean);}
   function audible(r){return anySolo()?solo[r]:!mute[r];}
   function gainOf(r){return Math.pow(vol[r]/.8,1.6);} /* 80 % entspricht dem Originalpegel */
