@@ -34,6 +34,8 @@
     cym:'<path d="M3.5 10.5c3-2.4 14-2.4 17 0"/><path d="M12 8.6V20M8.5 20h7"/><circle cx="12" cy="7.4" r="1" class="f"/>',
     mic:'<rect x="9" y="3.5" width="6" height="10.5" rx="3"/><path d="M6.2 11.2a5.8 5.8 0 0 0 11.6 0M12 17v3.5M9 20.5h6"/>'};
   var MIC=trIx('mic');
+  /* Start-Vorlage für den ersten Besuch: Amapiano */
+  var START=Math.max(0,BEATS.map(function(b){return b.n;}).indexOf('amapiano'));
   var pat,vol=[],mute=[],solo=[],pre=0,edited=false,brush=TRACKS.map(function(t){return t.s[0][0];}),pk=[],lastDice=[];
   var cells=[],rows=[],playing=false,step=0,bar=0,nextT=0,timer=0,queue=[],raf=0,shown=-1,drop=0;
   var $=function(id){return document.getElementById(id);};
@@ -83,7 +85,7 @@
   /* Stand v4: Bossa ist durch Beat It ersetzt, Shuffle durch Afrobeats */
   if(P&&P.v===4){if(P.pre===7||P.pre===9)P.pre=-1;P.v=5;}
   if(P&&clean(P.g)){pat=clean(P.g);bpm=Math.round(num(P.bpm,60,180,100));sw=num(P.sw,0,.6,0);pre=P.pre|0;if(pre<-1||pre>=BEATS.length)pre=-1;edited=!!P.ed;}
-  else{pat=empty();fromBeat(0);}
+  else{pat=empty();fromBeat(START);}
   vol=arr(P&&P.vol,function(x){return num(x,0,1,.8);},.8);
   mute=arr(P&&P.mute,function(x){return !!x;},false);
   solo=arr(P&&P.solo,function(x){return !!x;},false);
@@ -140,7 +142,7 @@
     app.classList.toggle('solo',so);
     $('bpm').textContent=bpm;$('swTxt').textContent='Swing '+Math.round(sw*100)+' %';
     $('preName').textContent=pre>=0?NM[BEATS[pre].n]:'Eigener Beat';
-    $('sub').textContent=pre>=0?(edited?'Vorlage, bearbeitet':'Vorlage'):'Ohne Vorlage';
+    $('sub').textContent=pre>=0?(edited?'bearbeitet':''):'ohne Vorlage';
   }
   function changed(){edited=true;paint();persist();}
 
@@ -246,7 +248,7 @@
         b.addEventListener('click',function(){fromBeat(i);paint();persist();closeSheet();if(!playing)setPlay(true);});list.appendChild(b);});
     },'vorlagen');
   }
-  $('preBtn').addEventListener('click',presetSheet);
+  $('preBtn').addEventListener('click',presetSheet);$('preName').addEventListener('click',presetSheet);
 
   function tempoSheet(){
     var taps=[];

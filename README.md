@@ -7,7 +7,7 @@ Herausgelöst aus der Monster-Beatbox in NumNum (Repo `mbroyer/numnum`, Datei `s
 - 7 Spuren: Hi-Hat (Zu, Offen, Tick), Kick, Snare (Snare, Rim, Rauschen, Clap), Becken (Crash, Ride, China), Perc (Shaker, Tamburin, Clave, Conga, Cowbell), Toms (Tief, Mittel, Hoch), FX (Snap, Sub, Reverse, Wirbel, Riser)
 - Spur 8 „Aufnahme“: der eigene Klang (1 Sekunde übers Mikrofon, nur auf diesem Gerät) in drei Tonhöhen (Normal, Tief, Hoch). Nur hier gibt es das Mikrofon; Vorlagen lassen diese Spur unverändert
 - Je Spur: Klangauswahl, Mute, Solo, Lautstärke, Vorschlag
-- 16 Vorlagen (Lo-Fi als Start, One Drop, Reggaeton, Afrobeats, Funk, Rock, House, Beat It, Minimal, 2-Step, Trap, Techno, Drum'n'Bass, Jungle, Electro, Amapiano) mit Tempo und Swing, Tempo 60–180 BPM mit Tap-Tempo, Swing auf jedem zweiten Achtel
+- 16 Vorlagen (Amapiano als Start, Lo-Fi, One Drop, Reggaeton, Afrobeats, Funk, Rock, House, Beat It, Minimal, 2-Step, Trap, Techno, Drum'n'Bass, Jungle, Electro, Amapiano) mit Tempo und Swing, Tempo 60–180 BPM mit Tap-Tempo, Swing auf jedem zweiten Achtel
 - Drop: ein Takt Anlauf mit Filter, dann der Knall
 - Effekte (FX, zuschaltbar, gespeichert), je mit Regler: Raum (langer Hall, Menge), Echo (Menge, Abstand 1/8, 1/8 punktiert oder 1/4 im Tempo), Filter (Tiefpass, der sich öffnet und schließt; Tiefe, 1, 2 oder 4 Takte), Pumpen (alles außer Kick atmet im Takt; Tiefe, Viertel oder Achtel), Stottern (am Taktende wiederholt sich ein Schritt in Zweiunddreißigsteln; Länge 2–8 Schritte, jeder, jeder 2. oder 4. Takt), Vinyl (dumpfer, körnig, Knistern; Stärke). Kick und Sub bleiben ohne Raum und Echo. Beim Stoppen verstummen die Effekte sofort. Gespeichert in `mstr-v1` unter `fx`, `fxa`, `fxo`
 - Leertaste startet und stoppt, „Leeren“ lässt sich rückgängig machen

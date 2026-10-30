@@ -13,7 +13,7 @@ with sync_playwright() as p:
     assert pg.locator('.tracks .trk').first.locator('.dot').count()==16
     assert pg.locator('.tracks .ic svg').count()==8,'Spur-Icons fehlen'
     assert pg.evaluate('document.documentElement.scrollWidth')<=390,'waagerechtes Scrollen'
-    assert pg.inner_text('#preName')=='Lo-Fi'
+    assert pg.inner_text('#preName')=='Amapiano'
     on=pg.locator('.dot.on').count();assert on>0
     # Schritt setzen
     pg.locator('.tracks .trk').nth(2).locator('.dot').first.click()

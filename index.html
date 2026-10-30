@@ -49,8 +49,11 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .pill:active,.ib:active{transform:scale(.97)}
 
 .head{display:flex;flex-direction:column;gap:4px}
-.preset{border:0;background:none;padding:0;display:inline-flex;align-items:center;gap:12px;cursor:pointer;font-family:var(--f-ed);font-size:clamp(42px,11vw,60px);font-weight:400;letter-spacing:-.01em;line-height:1;text-align:left;align-self:flex-start}
-.preset svg{width:30px;height:30px;padding:6px;border-radius:50%;background:var(--soft);color:var(--ink);flex:none}
+.preset{margin:0;cursor:pointer;font-family:var(--f-ed);font-size:clamp(42px,11vw,60px);font-weight:400;letter-spacing:-.01em;line-height:1}
+/* Beat wählen: deutlicher Knopf unter dem Namen, gefüllt in Schwarz (im Dunkelmodus Weiß) */
+.prow{display:flex;align-items:center;gap:12px;margin-top:8px}
+.pill.pick{background:var(--ink);color:var(--bg);border-color:var(--ink);height:40px;padding:0 16px 0 13px;gap:8px}
+.pill svg{width:17px;height:17px;flex:none}
 .sub{margin:0;font-size:13px;color:var(--mute)}
 
 /* Raster: Name-Zeile über 16 Punkten; ab 640 px Name links */
@@ -86,19 +89,19 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 }
 
 /* Transport unten */
-.transport{position:sticky;bottom:0;margin-top:auto;display:flex;align-items:center;gap:10px;background:var(--bg);border-top:1px solid var(--line);margin-left:calc(-1 * var(--gut));margin-right:calc(-1 * var(--gutr));padding:12px var(--gutr) max(12px,env(safe-area-inset-bottom,0px)) var(--gut);z-index:5;transition:background .25s}
+.transport{position:sticky;bottom:0;margin-top:auto;display:flex;align-items:center;gap:8px;background:var(--bg);border-top:1px solid var(--line);margin-left:calc(-1 * var(--gut));margin-right:calc(-1 * var(--gutr));padding:12px var(--gutr) max(12px,env(safe-area-inset-bottom,0px)) var(--gut);z-index:5;transition:background .25s}
 .play{width:58px;height:58px;border-radius:50%;border:0;background:var(--ink);color:var(--bg);display:grid;place-items:center;cursor:pointer;flex:none;padding:0}
 /* Fortschrittslinie: die Linie über Play läuft beim Abspielen durch den Takt */
 .transport::before{content:"";position:absolute;left:0;top:-1px;height:2px;width:0;background:var(--accent);pointer-events:none}
 .app.live .transport::before{width:calc(var(--prog,0) * 100%);transition:width .06s linear}
 .play svg{width:20px;height:20px}
 .play.on{background:var(--accent);color:var(--on-accent)}
-#drop{height:44px;padding:0 18px}
+#drop{height:44px;padding:0 14px}
 #drop.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .app.building #drop{animation:pulse .25s ease-in-out infinite alternate}
-#fxBtn{height:44px;padding:0 16px;font-variant-numeric:tabular-nums}
+#fxBtn{height:44px;padding:0 12px 0 10px;gap:6px;font-variant-numeric:tabular-nums}
 #fxBtn.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
-.tempo{margin-left:auto;border:0;background:none;cursor:pointer;display:flex;align-items:center;gap:12px;padding:4px 0;line-height:1}
+.tempo{margin-left:auto;border:0;background:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:4px 0;line-height:1}
 .tv{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
 .tempo .chev{width:30px;height:30px;padding:6px;border-radius:50%;background:var(--soft);color:var(--ink);flex:none}
 .big{font-weight:700;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums;font-size:32px}
@@ -222,15 +225,15 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
     </div>
   </header>
   <div class="head">
-    <button type="button" class="preset" id="preBtn" aria-haspopup="dialog"><span id="preName">Lo-Fi</span><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 9l6 6 6-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
-    <p class="sub" id="sub">Vorlage</p>
+    <h1 class="preset" id="preName">Amapiano</h1>
+    <div class="prow"><button type="button" class="pill pick" id="preBtn" aria-haspopup="dialog"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg>Beat wählen</button><p class="sub" id="sub">Vorlage</p></div>
   </div>
   <main class="tracks" id="tracks" aria-label="Spuren"></main>
   <div class="trk beatrow" aria-hidden="true"><div class="tl"></div><div class="steps"><div class="grp"><span>1</span><span></span><span></span><span></span></div><div class="grp"><span>2</span><span></span><span></span><span></span></div><div class="grp"><span>3</span><span></span><span></span><span></span></div><div class="grp"><span>4</span><span></span><span></span><span></span></div></div></div>
   <footer class="transport">
     <button type="button" class="play" id="play" aria-label="Abspielen (Leertaste)"></button>
     <button type="button" class="pill" id="drop">Drop</button>
-    <button type="button" class="pill" id="fxBtn" aria-haspopup="dialog" aria-label="Effekte">FX<span class="fxn" id="fxN"></span></button>
+    <button type="button" class="pill" id="fxBtn" aria-haspopup="dialog" aria-label="Effekte"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="15" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="17" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/></svg>Effekte<span class="fxn" id="fxN"></span></button>
     <button type="button" class="tempo" id="tempoBtn" aria-haspopup="dialog" aria-label="Tempo und Swing"><span class="tv"><span class="swt" id="swTxt">Swing 0 %</span><span class="big"><span id="bpm">100</span><small>bpm</small></span></span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
   </footer>
 </div>
@@ -290,7 +293,7 @@ function OUT(){if(_oc!==ac){_oc=ac;
   g.connect(c);c.connect(mk);mk.connect(lim);lim.connect(ac.destination);_og=g;}
   return _og;}
 
-/* 16 Vorlagen (Stil, Tempo, Swing, Kick/Snare/Hat; genutzt werden die ersten 16 Schritte). Die erste ist die Start-Vorlage */
+/* 16 Vorlagen (Stil, Tempo, Swing, Kick/Snare/Hat; genutzt werden die ersten 16 Schritte). Start-Vorlage ist Amapiano (START in mstr.js) */
 var BEATS=[
   {n:'lofi',bpm:82,sw:.36,K:'x......xx.....x.x......xx.....x.',S:'....o.......o.......o.......o...',H:'x.xox.x.x.xox.x.x.xox.x.x.xox.x.',hv:[.12,.07],fill:'tom'},
   {n:'house',bpm:116,sw:0,K:'x...x...x...x...x...x...x...x...',S:'....c.......c.......c.......c...',H:'..O...O...O...O...O...O...O...O.',hv:[.2,.2],fill:'tom',clap:true},
@@ -587,6 +590,8 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
     cym:'<path d="M3.5 10.5c3-2.4 14-2.4 17 0"/><path d="M12 8.6V20M8.5 20h7"/><circle cx="12" cy="7.4" r="1" class="f"/>',
     mic:'<rect x="9" y="3.5" width="6" height="10.5" rx="3"/><path d="M6.2 11.2a5.8 5.8 0 0 0 11.6 0M12 17v3.5M9 20.5h6"/>'};
   var MIC=trIx('mic');
+  /* Start-Vorlage für den ersten Besuch: Amapiano */
+  var START=Math.max(0,BEATS.map(function(b){return b.n;}).indexOf('amapiano'));
   var pat,vol=[],mute=[],solo=[],pre=0,edited=false,brush=TRACKS.map(function(t){return t.s[0][0];}),pk=[],lastDice=[];
   var cells=[],rows=[],playing=false,step=0,bar=0,nextT=0,timer=0,queue=[],raf=0,shown=-1,drop=0;
   var $=function(id){return document.getElementById(id);};
@@ -636,7 +641,7 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
   /* Stand v4: Bossa ist durch Beat It ersetzt, Shuffle durch Afrobeats */
   if(P&&P.v===4){if(P.pre===7||P.pre===9)P.pre=-1;P.v=5;}
   if(P&&clean(P.g)){pat=clean(P.g);bpm=Math.round(num(P.bpm,60,180,100));sw=num(P.sw,0,.6,0);pre=P.pre|0;if(pre<-1||pre>=BEATS.length)pre=-1;edited=!!P.ed;}
-  else{pat=empty();fromBeat(0);}
+  else{pat=empty();fromBeat(START);}
   vol=arr(P&&P.vol,function(x){return num(x,0,1,.8);},.8);
   mute=arr(P&&P.mute,function(x){return !!x;},false);
   solo=arr(P&&P.solo,function(x){return !!x;},false);
@@ -693,7 +698,7 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
     app.classList.toggle('solo',so);
     $('bpm').textContent=bpm;$('swTxt').textContent='Swing '+Math.round(sw*100)+' %';
     $('preName').textContent=pre>=0?NM[BEATS[pre].n]:'Eigener Beat';
-    $('sub').textContent=pre>=0?(edited?'Vorlage, bearbeitet':'Vorlage'):'Ohne Vorlage';
+    $('sub').textContent=pre>=0?(edited?'bearbeitet':''):'ohne Vorlage';
   }
   function changed(){edited=true;paint();persist();}
 
@@ -799,7 +804,7 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
         b.addEventListener('click',function(){fromBeat(i);paint();persist();closeSheet();if(!playing)setPlay(true);});list.appendChild(b);});
     },'vorlagen');
   }
-  $('preBtn').addEventListener('click',presetSheet);
+  $('preBtn').addEventListener('click',presetSheet);$('preName').addEventListener('click',presetSheet);
 
   function tempoSheet(){
     var taps=[];
