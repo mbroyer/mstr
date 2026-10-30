@@ -543,7 +543,10 @@
   /* Teilen: halbes Blatt. Erst dem Beat einen Namen geben (bleibt gespeichert und steht oben als Titel; der Würfel schlägt
      einen Titel aus dem Beat vor), dann die Karte als Video schicken, den Link oder den WAV-Loop */
   var handle=typeof S.by==='string'?S.by.slice(0,24):'';
-  function cardModel(){return CARD.model(pat.slice(0,7),bpm,sw);}
+  /* Karte: die eingeschalteten Effekte wandern mit ins Bild (Stärke 0–1 und Auswahl), GLASS ist die Durchsichtigkeit der Atome */
+  var GLASS=0;
+  function cardFx(){var o={};FXS.forEach(function(f){var id=f[0];if(FX[id])o[id]={a:FXA[id]/100,o:FXO[id]};});return o;}
+  function cardModel(){return CARD.model(pat.slice(0,7),bpm,sw,cardFx());}
   function shareSheet(){
     var own=pat[MIC]&&pat[MIC]!==zero(),video=CARD.canVideo(),mob=nativeShare();
     openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Share your beat</span>'+XB+'</div>'+
@@ -567,7 +570,7 @@
       by.addEventListener('input',function(){handle=by.value.replace(/[\u0000-\u001f\s]/g,'').slice(0,24);S.by=handle;save();});
       /* Vorschau: die Karte ruhig animiert, solange das Blatt offen ist */
       var cv=el.querySelector('#shCard'),cx=cv.getContext('2d'),cardT=null,cRaf=0,busyC=false,cfile=null,ckey='';
-      function opts(){return {title:title||inp.placeholder,by:handle,preset:pre>=0?NM[BEATS[pre].n]:'',file:baseName()+'-'+bpm+'bpm'};}
+      function opts(){return {title:title||inp.placeholder,by:handle,preset:pre>=0?NM[BEATS[pre].n]:'',glass:GLASS,file:baseName()+'-'+bpm+'bpm'};}
       function pv(){if(sheet.hidden||!cv.isConnected){cancelAnimationFrame(cRaf);return;}if(!busyC)CARD.story(cx,cv.width,cv.height,scene,opts());cRaf=requestAnimationFrame(pv);}
       pv();
       var cb=el.querySelector('#shCardBtn'),ct=el.querySelector('#shCardT'),cbLabel=cb.textContent;

@@ -27,6 +27,11 @@ with sync_playwright() as p:
       const rms=(a,z)=>{let s=0,n=0;for(let i=Math.floor(a*sr);i<Math.floor(z*sr);i++){s+=c[i]*c[i];n++;}return Math.sqrt(s/n);};
       r({dur:b.duration,first:rms(0,.1),fin:rms(8*bar,8*bar+.1),late:rms(8*bar+1.6,8*bar+2.0)});}))""")
     print('clip',d);assert d and abs(d['dur']-(9*240/160+2.4))<.01 and d['first']>.02 and d['fin']>.02 and d['late']<d['fin']/3
+    # Effekte wandern in die Karte: normiert je id {a,o}; Stutter verdoppelt die Ereignisse am Taktende; Zeichnen mit allen Effekten und Glas läuft fehlerfrei
+    fxm=pg.evaluate("""(()=>{const C=MSTR.card,m=C.model(MSTR.state().pat,160,0,{room:.5,echo:{a:1,o:4},sweep:{a:.5},pump:{a:.5,o:2},stut:{a:1,o:1},lofi:1}),S=new C.Scene(m),cv=document.createElement('canvas');cv.width=540;cv.height=960;
+      const x=cv.getContext('2d');C.story(x,540,960,S,{title:'T',glass:1});S.seek(0.01);for(let t=0;t<6;t+=.05){S.seek(t);C.story(x,540,960,S,{title:'T',glass:1,live:true});}
+      return {room:m.fx.room.a,echoO:m.fx.echo.o,sweepO:m.fx.sweep.o,ev:S.ev.length,ghost:S.ghosts.length>=0,plain:C.model(MSTR.state().pat,160,0).fx};})()""")
+    print('fx',fxm);assert fxm['room']==.5 and fxm['echoO']==4 and fxm['sweepO']==2 and fxm['ev']>9*16 and fxm['plain']=={}
     # Video: Aufnahme in Echtzeit, Datei kommt als Download (am Rechner), Name mit Titel und Tempo
     assert pg.evaluate('MSTR.card.canVideo()')
     with pg.expect_download(timeout=60000) as dl:pg.click('#shCardBtn')
