@@ -51,6 +51,8 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .ms{width:26px;height:22px;border-radius:6px;border:1px solid var(--line);background:transparent;font-family:var(--f-mono);font-size:10px;font-weight:500;cursor:pointer;color:var(--mute);padding:0;flex:none}
 .ms[aria-pressed="true"]{background:var(--ink);color:var(--bg);border-color:var(--ink)}
 .trk.quiet .steps{opacity:.28}
+/* Die eigene Spur Aufnahme steht etwas abgesetzt unter den eingebauten */
+.trk.own{border-top:1px solid var(--line);padding-top:clamp(12px,2.6vh,24px)}
 .steps{display:flex;gap:clamp(6px,2.4vw,14px)}
 .grp{flex:1;display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:clamp(3px,1vw,6px)}
 .dot{aspect-ratio:1;width:100%;max-width:100%;border-radius:50%;border:0;background:var(--off);padding:0;cursor:pointer;display:grid;place-items:center;font-family:var(--f-mono);font-size:clamp(8px,2.2vw,11px);font-weight:500;color:var(--bg);line-height:1;transition:background .1s,transform .1s,box-shadow .1s}
@@ -150,7 +152,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .recst{margin:0;font-size:13px;color:var(--mute);text-align:center;min-height:1.45em}
 .recbox.count .recst{font-size:28px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums}
 .recbox.on .recst{color:var(--ink);font-weight:600}
-.recrow{display:flex;gap:8px;align-items:center;width:100%}
+.more{display:flex;flex-direction:column;gap:22px}
 .acts{display:flex;gap:8px;flex-wrap:wrap}
 .acts .pill{flex:1}
 

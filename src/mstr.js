@@ -1,7 +1,7 @@
 /* ===== MSTR: Raster, Transport, Vorlagen, Spur-Einstellungen ===== */
 (function(){
-  /* Vorschläge zum Würfeln für Becken, Perc, Toms und FX (16 Schritte) */
-  var COMMON={cym:['c...............','r.r.r.r.r.r.r.r.','..r...r...r...r.'],click:['1.1.1.1.1.1.1.1.','....2.......2...','3..3..3...3.3...'],toms:['b...p...b...p...','b.......t.t.....','b..b....p...tt..'],fx:['....m.......m...','n.....n...n.....','............z...']};
+  /* Vorschläge zum Würfeln für Becken, Perc, Toms, FX und die eigene Aufnahme (16 Schritte) */
+  var COMMON={cym:['c...............','r.r.r.r.r.r.r.r.','..r...r...r...r.'],click:['1.1.1.1.1.1.1.1.','....2.......2...','3..3..3...3.3...'],toms:['b...p...b...p...','b.......t.t.....','b..b....p...tt..'],fx:['....m.......m...','n.....n...n.....','............z...'],mic:['....a.......a...','a.......a.a.....','..a...a...a.h.t.']};
   var NM={boombap:'Boom Bap',house:'House',funk:'Funk',rock:'Rock',techno:'Techno',trap:'Trap',disco:'Disco',bossa:'Bossa',dnb:"Drum'n'Bass",shuffle:'Shuffle',afro:'Afro',minimal:'Minimal',hardtechno:'Hardtechno'};
   /* Je Vorlage eigene Muster für Becken, Perc, Toms und FX. Becken: c Crash, r Ride, h China. Perc: 1 Shaker, 2 Tamburin, 3 Clave, 4 Conga, 5 Cowbell.
      FX: m Snap, n Sub, s Reverse, l Wirbel, z Riser. Riser und Reverse dauern vier Schritte, auf Schritt 13 laufen sie genau in die nächste Eins */
@@ -28,7 +28,9 @@
     click:'<circle cx="12" cy="12" r="7.5"/><circle cx="12" cy="4.5" r="1.3" class="f"/><circle cx="19.5" cy="12" r="1.3" class="f"/><circle cx="12" cy="19.5" r="1.3" class="f"/><circle cx="4.5" cy="12" r="1.3" class="f"/>',
     toms:'<circle cx="4.8" cy="14" r="2.3"/><circle cx="10.8" cy="13" r="3.2"/><circle cx="18.2" cy="12" r="4.2"/>',
     fx:'<path d="M3 12c2.2-6 4.3-6 6 0s3.8 6 6 0 3.8-6 6 0"/>',
-    cym:'<path d="M3.5 10.5c3-2.4 14-2.4 17 0"/><path d="M12 8.6V20M8.5 20h7"/><circle cx="12" cy="7.4" r="1" class="f"/>'};
+    cym:'<path d="M3.5 10.5c3-2.4 14-2.4 17 0"/><path d="M12 8.6V20M8.5 20h7"/><circle cx="12" cy="7.4" r="1" class="f"/>',
+    mic:'<rect x="9" y="3.5" width="6" height="10.5" rx="3"/><path d="M6.2 11.2a5.8 5.8 0 0 0 11.6 0M12 17v3.5M9 20.5h6"/>'};
+  var MIC=trIx('mic');
   var pat,vol=[],mute=[],solo=[],pre=0,edited=false,brush=TRACKS.map(function(t){return t.s[0][0];}),pk=[],lastDice=[];
   var cells=[],rows=[],playing=false,step=0,nextT=0,timer=0,queue=[],raf=0,shown=-1,drop=0;
   var $=function(id){return document.getElementById(id);};
@@ -51,19 +53,25 @@
   /* Für die Umrechnung alter Stände: Crashes (c) aus der Toms-Zeile in die Becken-Zeile */
   function onlyC(x){return x.replace(/[^c]/g,'0');}
   function noC(x){return x.replace(/c/g,'0');}
+  /* Die Spur Aufnahme gehört dir: eine Vorlage lässt sie, wie sie ist */
   function fromBeat(i){var Bt=BEATS[i],X=EXTRA[Bt.n],r;for(r=0;r<3;r++)pat[r]=rowFromBeat(Bt,TRACKS[r].id);
-    for(r=3;r<R;r++)pat[r]=dots(X?X[r-3]:COMMON[TRACKS[r].id][0]);bpm=Bt.bpm;sw=Bt.sw;pre=i;edited=false;}
+    for(r=3;r<R;r++)if(r!==MIC)pat[r]=dots(X?X[r-3]:COMMON[TRACKS[r].id][0]);bpm=Bt.bpm;sw=Bt.sw;pre=i;edited=false;}
   function num(x,lo,hi,d){x=+x;return isFinite(x)?Math.max(lo,Math.min(hi,x)):d;}
   function arr(a,f,d){var o=[],r;for(r=0;r<R;r++)o.push(Array.isArray(a)&&a.length===R?f(a[r]):d);return o;}
 
   var P=S.pat;
   /* Alter Stand (vor v2): Spuren hats, beat, clap, snare, click, toms, fx. Die Clap wandert in die Snare,
      die Becken aus der Toms-Spur in die neue Becken-Spur an Stelle 3 */
-  if(P&&P.v!==2&&Array.isArray(P.g)&&P.g.length===R){
+  if(P&&!P.v&&Array.isArray(P.g)&&P.g.length===7){
     var g=P.g.map(function(x){return typeof x==='string'&&x.length===N?x:zero();}),sn='',k;
     for(k=0;k<N;k++)sn+=g[3].charAt(k)!=='0'?g[3].charAt(k):g[2].charAt(k)==='c'?'c':'0';
-    var mv=function(a,d){return Array.isArray(a)&&a.length===R?[a[0],a[1],a[3],d,a[4],a[5],a[6]]:a;};
+    var mv=function(a,d){return Array.isArray(a)&&a.length===7?[a[0],a[1],a[3],d,a[4],a[5],a[6]]:a;};
     P.g=[g[0],g[1],sn,onlyC(g[5]),g[4],noC(g[5]),g[6]];P.vol=mv(P.vol,.8);P.mute=mv(P.mute,false);P.solo=mv(P.solo,false);P.br=mv(P.br,'c');P.v=2;
+  }
+  /* Stand v2: sieben Spuren, die Spur Aufnahme kommt leer dazu */
+  if(P&&P.v===2&&Array.isArray(P.g)&&P.g.length===7){
+    var add=function(a,d){if(Array.isArray(a)&&a.length===7)a.push(d);};
+    add(P.g,zero());add(P.vol,.8);add(P.mute,false);add(P.solo,false);add(P.br,'a');P.v=3;
   }
   if(P&&clean(P.g)){pat=clean(P.g);bpm=Math.round(num(P.bpm,60,180,100));sw=num(P.sw,0,.6,0);pre=P.pre|0;if(pre<-1||pre>=BEATS.length)pre=-1;edited=!!P.ed;}
   else{pat=empty();fromBeat(0);}
@@ -71,7 +79,7 @@
   mute=arr(P&&P.mute,function(x){return !!x;},false);
   solo=arr(P&&P.solo,function(x){return !!x;},false);
   if(P&&Array.isArray(P.br)&&P.br.length===R)brush=brush.map(function(d,r){return sndIx(r,P.br[r])>=0?P.br[r]:d;});
-  function persist(){S.pat={v:2,g:pat,bpm:bpm,sw:sw,vol:vol,mute:mute,solo:solo,pre:pre,ed:edited,br:brush};save();}
+  function persist(){S.pat={v:3,g:pat,bpm:bpm,sw:sw,vol:vol,mute:mute,solo:solo,pre:pre,ed:edited,br:brush};save();}
   function anySolo(){return solo.some(Boolean);}
   function audible(r){return anySolo()?solo[r]:!mute[r];}
   function gainOf(r){return Math.pow(vol[r]/.8,1.6);} /* 80 % entspricht dem Originalpegel */
@@ -80,7 +88,7 @@
   function build(){
     tracksEl.innerHTML='';cells=[];rows=[];
     TRACKS.forEach(function(T,r){
-      var row=document.createElement('div');row.className='trk';
+      var row=document.createElement('div');row.className='trk'+(r===MIC?' own':'');
       var tl=document.createElement('div');tl.className='tl';
       var ic=document.createElement('span');ic.className='ic';ic.innerHTML='<svg viewBox="0 0 24 24" aria-hidden="true">'+(ICON[T.id]||'')+'</svg>';tl.appendChild(ic);
       var tn=document.createElement('button');tn.type='button';tn.className='tn';tn.setAttribute('aria-haspopup','dialog');
@@ -97,6 +105,7 @@
         for(var c=0;c<4;c++)(function(s){
           var b=document.createElement('button');b.type='button';b.className='dot';b.setAttribute('aria-label',T.n+', Schritt '+(s+1));
           b.addEventListener('click',function(){
+            if(r===MIC&&!REC.mic){trackSheet(r);return;} /* ohne Aufnahme gibt es nichts zu setzen: erst aufnehmen */
             var a=pat[r].split(''),on=a[s]!=='0';a[s]=on?'0':brush[r];pat[r]=a.join('');
             if(!on&&!playing)now(T.id,brush[r],gainOf(r));changed();
           });
@@ -117,7 +126,7 @@
       rows[r].classList.toggle('quiet',!audible(r));
       rows[r].querySelector('.ms.m').setAttribute('aria-pressed',mute[r]?'true':'false');
       rows[r].querySelector('.ms.s').setAttribute('aria-pressed',solo[r]?'true':'false');
-      rows[r].querySelector('.tb').textContent=(multi?T.s[sndIx(r,brush[r])][1]:'')+(useOwn(T.id)?(multi?' · ':'')+'Aufnahme':'');
+      rows[r].querySelector('.tb').textContent=r===MIC&&!REC.mic?'Eigenen Klang aufnehmen':multi?T.s[sndIx(r,brush[r])][1]:'';
     }
     app.classList.toggle('solo',so);
     $('bpm').textContent=bpm;$('swTxt').textContent='Swing '+Math.round(sw*100)+' %';
@@ -240,24 +249,23 @@
   $('tempoBtn').addEventListener('click',tempoSheet);
 
   function trackSheet(r){
-    var T=TRACKS[r],id=T.id,busy=false;
-    openSheet('<div class="sh-top"><div><span class="eyebrow">Spur '+(r+1)+' von '+R+'</span><h2 class="tt" id="sheetT">'+T.n+'</h2></div>'+X+'</div>'+
-      (T.s.length>1?'<div class="field"><span class="lbl">Klang für neue Schritte</span><div class="opts" id="kSnd"></div></div>':'')+
+    var T=TRACKS[r],id=T.id,mic=r===MIC,busy=false;
+    /* Nur die Spur Aufnahme hat das Mikrofon, ganz oben. Die übrigen Spuren klingen immer eingebaut */
+    var REC_UI=mic?'<div class="recbox"><div class="rings" aria-hidden="true"><i></i><i></i><i></i></div><button type="button" class="rec" id="kRec" aria-label="Eigenen Klang aufnehmen, 1 Sekunde"><i></i></button>'+
+      '<p class="recst" id="kRecSt" aria-live="polite"></p></div>':'';
+    openSheet('<div class="sh-top"><div><span class="eyebrow">Spur '+(r+1)+' von '+R+'</span><h2 class="tt" id="sheetT">'+T.n+'</h2></div>'+X+'</div>'+REC_UI+
+      '<div class="more" id="kMore">'+
+      (T.s.length>1?'<div class="field"><span class="lbl">'+(mic?'Tonhöhe für neue Schritte':'Klang für neue Schritte')+'</span><div class="opts" id="kSnd"></div></div>':'')+
       '<div class="slider"><div class="lb"><span>Lautstärke</span><b id="kVolV"></b></div><input type="range" id="kVol" min="0" max="100" step="1" value="'+Math.round(vol[r]*100)+'" aria-label="Lautstärke '+T.n+'"></div>'+
       '<div class="seg2"><button type="button" id="kMute">Stumm</button><button type="button" id="kSolo">Solo</button></div>'+
-      '<div class="recbox"><div class="rings" aria-hidden="true"><i></i><i></i><i></i></div><button type="button" class="rec" id="kRec" aria-label="Eigenen Klang aufnehmen, 1 Sekunde"><i></i></button>'+
-      '<p class="recst" id="kRecSt" aria-live="polite"></p>'+
-      '<div class="recrow" id="kRecRow"><div class="seg2 sm"><button type="button" id="kSyn">Eingebaut</button><button type="button" id="kOwn">Aufnahme</button></div><button type="button" class="pill sm" id="kDel">Löschen</button></div></div>'+
-      '<div class="acts"><button type="button" class="pill" id="kDice">Vorschlag</button><button type="button" class="pill" id="kClr">Spur leeren</button></div>',function(el){
+      '<div class="acts"><button type="button" class="pill" id="kDice">Vorschlag</button><button type="button" class="pill" id="kClr">Spur leeren</button>'+(mic?'<button type="button" class="pill" id="kDel">Aufnahme löschen</button>':'')+'</div></div>',function(el){
       var vs=el.querySelector('#kVol');
       function ui(){
         el.querySelector('#kVolV').textContent=vs.value+' %';
         el.querySelector('#kMute').setAttribute('aria-pressed',mute[r]?'true':'false');
         el.querySelector('#kSolo').setAttribute('aria-pressed',solo[r]?'true':'false');
-        var has=!!REC[id];el.querySelector('#kRecRow').hidden=!has;
-        el.querySelector('#kSyn').setAttribute('aria-pressed',useOwn(id)?'false':'true');
-        el.querySelector('#kOwn').setAttribute('aria-pressed',useOwn(id)?'true':'false');
-        if(!busy)el.querySelector('#kRecSt').textContent=has?'Eigener Klang gespeichert. Tippen zum Neuaufnehmen.':'Eigenen Klang aufnehmen: 1 Sekunde';
+        if(mic){var has=!!REC.mic;el.querySelector('#kMore').hidden=!has;
+          if(!busy)el.querySelector('#kRecSt').textContent=has?'Dein Klang ist gespeichert. Tippen zum Neuaufnehmen.':'Nimm 1 Sekunde auf: klatschen, schnipsen, ein Wort, ein Glas.';}
         var o=el.querySelector('#kSnd');if(o)[].forEach.call(o.children,function(b,k){b.setAttribute('aria-pressed',T.s[k][0]===brush[r]?'true':'false');});
       }
       var o=el.querySelector('#kSnd');
@@ -267,15 +275,18 @@
       vs.addEventListener('change',function(){persist();now(id,brush[r],gainOf(r));});
       el.querySelector('#kMute').addEventListener('click',function(){mute[r]=!mute[r];ui();paint();persist();});
       el.querySelector('#kSolo').addEventListener('click',function(){solo[r]=!solo[r];ui();paint();persist();});
-      el.querySelector('#kSyn').addEventListener('click',function(){ownV[id]=false;lsSet('mstr-own-'+id,'0');ui();paint();now(id,brush[r],gainOf(r));});
-      el.querySelector('#kOwn').addEventListener('click',function(){ownV[id]=true;lsSet('mstr-own-'+id,'1');ui();paint();now(id,brush[r],gainOf(r));});
-      el.querySelector('#kDel').addEventListener('click',function(){dropRec(id);ui();paint();});
-      var rb=el.querySelector('#kRec'),stE=el.querySelector('#kRecSt'),box=el.querySelector('.recbox');
-      rb.addEventListener('click',function(){if(busy)return;busy=true;rb.disabled=true;
-        record(id,function(msg,lv){stE.textContent=msg;box.classList.toggle('count',lv===1);box.classList.toggle('on',lv===2);},
-          function(){busy=false;rb.disabled=false;box.classList.remove('on','count');ui();paint();});});
       el.querySelector('#kDice').addEventListener('click',function(){dice(r);if(!playing)setPlay(true);});
       el.querySelector('#kClr').addEventListener('click',function(){pat[r]=zero();changed();});
+      if(mic){
+        el.querySelector('#kDel').addEventListener('click',function(){dropRec(id);pat[r]=zero();changed();ui();});
+        var rb=el.querySelector('#kRec'),stE=el.querySelector('#kRecSt'),box=el.querySelector('.recbox');
+        rb.addEventListener('click',function(){if(busy)return;busy=true;rb.disabled=true;
+          record(id,function(msg,lv){stE.textContent=msg;box.classList.toggle('count',lv===1);box.classList.toggle('on',lv===2);},
+            function(ok){busy=false;rb.disabled=false;box.classList.remove('on','count');
+              /* Erste Aufnahme in eine leere Spur: gleich auf 2 und 4 legen, damit man sie im Beat hört */
+              if(ok&&pat[r]===zero()){pat[r]=dots(COMMON.mic[0]);changed();}
+              ui();paint();});});
+      }
       ui();
     },'spur-'+id);
   }
