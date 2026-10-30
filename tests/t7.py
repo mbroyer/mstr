@@ -10,7 +10,7 @@ with sync_playwright() as p:
     ctx=b.new_context(viewport={'width':390,'height':844},permissions=['clipboard-read','clipboard-write'])
     pg=ctx.new_page();pg.on('pageerror',lambda e:err.append(str(e)))
     pg.goto(url);pg.wait_for_timeout(300)
-    assert pg.locator('#share').is_visible()
+    assert pg.locator('#vCard').is_visible() and pg.locator('#share').count()==0,'kein Teilen-Knopf mehr in der Leiste'
     assert pg.evaluate('document.documentElement.scrollWidth')<=390,'waagerechtes Scrollen'
     pg.locator('.tracks .trk').nth(5).locator('.dot').nth(3).click()
     pg.locator('.tracks .trk').nth(4).locator('.ms.m').click()
@@ -21,9 +21,8 @@ with sync_playwright() as p:
     pg.keyboard.press('Escape');pg.wait_for_timeout(200)
     pg.evaluate("MSTR.setPlay(false)")
     SITE='https://asimplemanslab.com/mstr/app/'
-    # Teilen-Blatt: Name vergeben (mit Punkt und Umlaut), steht sofort als Titel oben, Link zeigt auf die Website
-    pg.click('#share');pg.wait_for_timeout(300)
-    assert pg.inner_text('#shSend')=='Copy link'
+    # Titel antippen: Namens-Blatt, Name vergeben (mit Punkt und Umlaut), steht sofort als Titel oben
+    pg.click('#preName');pg.wait_for_timeout(300)
     assert pg.locator('#shName').is_visible() and pg.evaluate('document.activeElement.id')=='shName'
     assert pg.get_attribute('#shName','placeholder')=='Amapiano'
     pg.fill('#shName','Mia\'s Groove 2.0 ü')
@@ -31,6 +30,9 @@ with sync_playwright() as p:
     st=pg.evaluate('MSTR.state()')
     code=pg.evaluate('MSTR.code()');print('code',len(code),code)
     link=pg.evaluate('MSTR.url()');assert link.startswith(SITE+'?b=') and '#' not in link
+    # Link: in der Karten-Ansicht hinter dem Mehr-Knopf
+    pg.keyboard.press('Escape');pg.wait_for_timeout(200);pg.click('#vCard');pg.click('#more');pg.wait_for_timeout(300)
+    assert pg.inner_text('#shSend')=='Copy link'
     pg.click('#shSend');pg.wait_for_timeout(300)
     assert pg.evaluate('navigator.clipboard.readText()')==link
     # Rechner: der Knopf heißt Copy link und bestätigt das Kopieren, das Blatt bleibt offen (für Download WAV)
@@ -72,9 +74,10 @@ with sync_playwright() as p:
     # Handy mit Teilen-Menü: Send link, das Menü bekommt Titel, Text und Link
     m=b.new_context(viewport={'width':390,'height':844},has_touch=True,is_mobile=True);mp=m.new_page();mp.on('pageerror',lambda e:err.append(str(e)))
     mp.add_init_script("navigator.share=d=>{window.__shared=d;return Promise.resolve();}")
-    mp.goto(url);mp.wait_for_timeout(300);mp.click('#share');mp.wait_for_timeout(300)
+    mp.goto(url);mp.wait_for_timeout(300);mp.click('#preName');mp.wait_for_timeout(300);mp.fill('#shName','Test');mp.keyboard.press('Escape');mp.wait_for_timeout(200)
+    mp.click('#vCard');mp.click('#more');mp.wait_for_timeout(300)
     assert mp.inner_text('#shSend')=='Send link' and 'Paste' not in mp.inner_text('#shSendT')
-    mp.fill('#shName','Test');mp.click('#shSend');mp.wait_for_timeout(300)
+    mp.click('#shSend');mp.wait_for_timeout(300)
     d=mp.evaluate('window.__shared');assert d['url'].startswith(SITE+'?b=') and 'Test' in d['text'],d
     # Leiste am Handy: Effects nur als Symbol, alles passt ohne Scrollen
     for vw in (360,390):

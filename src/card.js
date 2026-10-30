@@ -200,9 +200,13 @@ var CARD=(function(){
     x.fillStyle=bg;for(var k=1;k<NBAR;k++)x.fillRect(32*sc+(W-64*sc)*k*(240/S.m.bpm)/tot-sc,799*sc,2*sc,6*sc);
     mono(x,'TAP TO PLAY · ASIMPLEMANSLAB.COM/MSTR',32*sc,H-40*sc,GRY,'left',sc);}
 
-  /* Molekül im Sequencer: füllt eine Fläche W×H in den Farben der App; o = {fg, bg, dark}. Läuft der Beat nicht, steht das Bild */
-  function view(x,W,H,S,o){var sc=Math.min(W,H)/560,live=S.live();x.setTransform(1,0,0,1,0,0);x.fillStyle=o.bg;x.fillRect(0,0,W,H);
-    ring(x,S,W/2,H/2,sc,o.fg,o.dark?INK:o.bg,live,0);if(S.m.fx.lofi&&o.dark)vinyl(x,W,H,S,S.m.fx.lofi.a,live,sc);}
+  /* Karte im Sequencer: füllt eine Fläche W×H in den Farben der App; o = {fg, bg, dark, title, by, preset}.
+     Unten stehen Titel und Zeile wie auf der fertigen Karte, oben rechts „by @name“. Läuft der Beat nicht, steht das Bild */
+  function view(x,W,H,S,o){var sc=Math.min(W/540,H/760),live=S.live(),txt=o.title?130*sc:0;x.setTransform(1,0,0,1,0,0);x.fillStyle=o.bg;x.fillRect(0,0,W,H);
+    var rs=Math.min(sc,(H-txt-40*sc)/560);ring(x,S,W/2,(H-txt)/2,rs,o.fg,o.dark?INK:o.bg,live,0);if(S.m.fx.lofi&&o.dark)vinyl(x,W,H,S,S.m.fx.lofi.a,live,sc);
+    if(o.by){x.fillStyle=o.fg;x.font='600 '+(14*sc)+'px Figtree,sans-serif';x.textAlign='right';x.fillText('by '+(o.by.charAt(0)==='@'?o.by:'@'+o.by),W-24*sc,34*sc);x.textAlign='left';}
+    if(o.title){x.fillStyle=o.fg;fit(x,o.title,W-48*sc,56*sc,'"Instrument Serif",ui-serif,Georgia,serif');x.fillText(o.title,24*sc,H-66*sc);
+      mono(x,((o.preset?o.preset+' · ':'')+S.m.bpm+' BPM · SWING '+Math.round(S.m.sw*100)+'% · '+S.m.tot+' HITS').toUpperCase(),24*sc,H-36*sc,GRY,'left',sc);}}
   /* Video aufnehmen: Canvas plus Ton aus dem fertig gerechneten Puffer, in Echtzeit (so lang wie der Clip).
      buf: AudioBuffer des Clips, ac: AudioContext. onTick(sek, gesamt). done(File|null, Grund) */
   function mime(){var L=['video/mp4;codecs="avc1.42E01E,mp4a.40.2"','video/mp4;codecs=avc1,mp4a.40.2','video/mp4;codecs=avc1','video/mp4','video/webm;codecs=vp9,opus','video/webm;codecs=vp8,opus','video/webm'],i;
@@ -221,7 +225,7 @@ var CARD=(function(){
       if(!b.size)return done(null,'empty');done(new File([b],o.file+'.'+ext,{type:b.type}),null);};
     S.reset();story(x,1080,1920,S,o);
     function frame(){if(stopped)return;var ct=ac.currentTime-t0;if(ct<0)ct=0;S.seek(ct);story(x,1080,1920,S,{title:o.title,by:o.by,preset:o.preset,glass:o.glass,live:true});
-      if(o.mirror){var mx=o.mirror.getContext('2d');mx.drawImage(cv,0,0,o.mirror.width,o.mirror.height);}
+      if(o.mirror){var mc=o.mirror,mx=mc.getContext('2d'),ms=Math.min(mc.width/1080,mc.height/1920),mw=1080*ms,mh=1920*ms;mx.setTransform(1,0,0,1,0,0);mx.fillStyle=o.mirrorBg||INK;mx.fillRect(0,0,mc.width,mc.height);mx.drawImage(cv,(mc.width-mw)/2,(mc.height-mh)/2,mw,mh);}
       onTick(ct,tot);if(ct>=tot){stopped=true;rec.stop();return;}raf=requestAnimationFrame(frame);}
     rec.start(250);t0=ac.currentTime+.1;src.start(t0);frame();
     return function(){if(stopped)return;stopped=true;aborted=true;cancelAnimationFrame(raf);try{rec.stop();}catch(e){}};

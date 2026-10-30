@@ -288,6 +288,7 @@
   document.addEventListener('keydown',function(e){
     if(e.key==='Escape'&&vp){var vb=vp._b;varClose();vb.focus({preventScroll:true});return;}
     if(e.key==='Escape'&&!sheet.hidden){closeSheet();return;}
+    if(e.key==='Escape'&&cardT){cardStop();return;}
     if(e.code!=='Space'||e.repeat)return;var tg=e.target,tn=tg&&tg.tagName;
     if(tn==='INPUT'||tn==='TEXTAREA'||tn==='SELECT'||!sheet.hidden)return;
     e.preventDefault();setPlay(!playing);
@@ -315,14 +316,15 @@
   function presetSheet(){
     var order=BEATS.map(function(b,i){return i;}).sort(function(a,b){return BEATS[a].bpm-BEATS[b].bpm||a-b;});
     openSheet('<div class="sh-top"><h2 class="ed" id="sheetT">'+BEATS.length+' beats<br><em>by tempo</em></h2>'+X+'</div><div class="plist" role="listbox" aria-label="Beats"></div><a class="lab" href="https://asimplemanslab.com/" aria-label="Made with love by A Simple Man\u2019s Lab"><span>Made with love by</span><i aria-hidden="true"></i></a>',function(el){
-      var list=el.querySelector('.plist');
+      var list=el.querySelector('.plist'),e=document.createElement('button');e.type='button';e.id='clr';e.className='pitem'+(pre<0&&pat.slice(0,7).join('')===empty().slice(0,7).join('')?' sel':'');e.setAttribute('role','option');
+      e.innerHTML='<span class="n">Empty grid</span><span class="v">'+bpm+'<small>BPM</small></span>';e.addEventListener('click',function(){clearAll();closeSheet();});list.appendChild(e);
       order.forEach(function(i){var Bt=BEATS[i],b=document.createElement('button');b.type='button';b.className='pitem'+(i===pre?' sel':'');b.setAttribute('role','option');b.setAttribute('aria-selected',i===pre?'true':'false');
         if(i===pre)b.setAttribute('data-focus','');
         b.innerHTML='<span class="n">'+NM[Bt.n]+'</span><span class="v">'+Bt.bpm+'<small>BPM</small></span>';
         b.addEventListener('click',function(){fromBeat(i);paint();persist();closeSheet();if(!playing)setPlay(true);});list.appendChild(b);});
     },'vorlagen');
   }
-  $('preBtn').addEventListener('click',presetSheet);$('preName').addEventListener('click',presetSheet);
+  $('preBtn').addEventListener('click',presetSheet);$('preName').addEventListener('click',function(){nameSheet();});
 
   function tempoSheet(){
     var taps=[];
@@ -422,10 +424,11 @@
     var t=toast;if(act)t.querySelector('button').addEventListener('click',function(){fn();t.remove();});
     setTimeout(function(){if(t.parentNode)t.remove();},5000);
   }
-  $('clr').addEventListener('click',function(){
+  /* Leeres Raster: erster Eintrag der Beat-Liste */
+  function clearAll(){
     undo={g:pat.slice(),pre:pre,ed:edited,nm:title};pat=empty();pre=-1;edited=false;title='';paint();persist();
     showToast('All tracks cleared','Undo',function(){pat=undo.g;pre=undo.pre;edited=undo.ed;title=undo.nm;paint();persist();});
-  });
+  }
 
   /* ---------- Beat teilen: der ganze Beat steckt im Link (?b=…), es gibt keinen Server.
      Aufbau: 1.<bpm>.<swing %>.<vorlage>.<raster>.<lautstärke>.<mute/solo>.<effekte>
@@ -539,64 +542,40 @@
   function fileName(){return baseName()+'-'+bpm+'bpm.wav';}
   function canSendFile(f){try{return !!(navigator.canShare&&navigator.share&&navigator.canShare({files:[f]}));}catch(e){return false;}}
   function saveFile(f){var u=URL.createObjectURL(f),a=document.createElement('a');a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},4000);}
-  /* Teilen: halbes Blatt. Erst dem Beat einen Namen geben (bleibt gespeichert und steht oben als Titel), dann den Link schicken */
-  /* Teilen: halbes Blatt. Erst dem Beat einen Namen geben (bleibt gespeichert und steht oben als Titel; der Würfel schlägt
-     einen Titel aus dem Beat vor), dann die Karte als Video schicken, den Link oder den WAV-Loop */
+  /* Teilen in drei Stücken: Name und „By“ im Namens-Blatt (Titel antippen; der Würfel schlägt einen Titel aus dem Beat vor),
+     „Share“ in der Karten-Ansicht macht das Video, „⋯“ daneben hat Link und WAV-Loop */
   var handle=typeof S.by==='string'?S.by.slice(0,24):'';
   /* Karte: die eingeschalteten Effekte wandern mit ins Bild (Stärke 0–1 und Auswahl), GLASS ist die Durchsichtigkeit der Atome */
   var GLASS=0;
   function cardFx(){var o={};FXS.forEach(function(f){var id=f[0];if(FX[id])o[id]={a:FXA[id]/100,o:FXO[id]};});return o;}
   function cardModel(){return CARD.model(pat.slice(0,7),bpm,sw,cardFx());}
-  function shareSheet(){
-    var own=pat[MIC]&&pat[MIC]!==zero(),video=CARD.canVideo(),mob=nativeShare();
-    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Share your beat</span>'+XB+'</div>'+
-      '<label class="namef"><span class="lbl">Name</span><span class="namer"><input id="shName" type="text" maxlength="40" autocomplete="off" enterkeyhint="send" data-focus>'+
+  function setTitle(v){v=v.replace(/[\u0000-\u001f]/g,'').trim().slice(0,40);if(v!==title){title=v;paint();persist();}}
+  function nameSheet(){
+    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Name your beat</span>'+XB+'</div>'+
+      '<label class="namef"><span class="lbl">Name</span><span class="namer"><input id="shName" type="text" maxlength="40" autocomplete="off" enterkeyhint="done" data-focus>'+
       '<button type="button" class="ib" id="shDice" aria-label="Suggest a title" title="Suggest a title"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></span></label>'+
-      '<div class="cardrow"><canvas id="shCard" width="180" height="320" aria-label="Preview of your card"></canvas>'+
-      '<div class="cardct"><label class="byf"><span class="lbl">By</span><input id="shBy" type="text" maxlength="24" autocomplete="off" placeholder="@you"></label>'+
-      '<button type="button" class="pill wide go" id="shCardBtn">'+(video?(mob?'Send video':'Save video'):(mob?'Send image':'Save image'))+'</button>'+
-      '<p class="shnote" id="shCardT">'+(video?'With sound, 8 bars, '+Math.round(CARD.clipLen(bpm))+' s. For stories, reels and chats.':'As a picture, for stories and chats.')+'</p></div></div>'+
+      '<label class="byf"><span class="lbl">By</span><input id="shBy" type="text" maxlength="24" autocomplete="off" placeholder="@you"></label>'+
+      '<p class="shnote">Both appear on your card. The name also travels with the link.</p>',function(el){
+      var inp=el.querySelector('#shName'),dice=el.querySelector('#shDice'),diceN=0,m=cardModel();
+      inp.value=title;inp.placeholder=pre>=0?NM[BEATS[pre].n]:'Your beat';
+      inp.addEventListener('input',function(){setTitle(inp.value);});
+      inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();closeSheet();}});
+      dice.addEventListener('click',function(){inp.value=CARD.title(m,diceN++);setTitle(inp.value);});
+      var by=el.querySelector('#shBy');by.value=handle;
+      by.addEventListener('input',function(){handle=by.value.replace(/[\u0000-\u001f\s]/g,'').slice(0,24);S.by=handle;save();});
+      by.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();closeSheet();}});
+    },'name',true);
+  }
+  function moreSheet(){
+    var own=pat[MIC]&&pat[MIC]!==zero(),mob=nativeShare();
+    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Link and loop</span>'+XB+'</div>'+
       '<button type="button" class="pill wide" id="shSend">'+(mob?'Send link':'Copy link')+'</button>'+
       '<p class="shnote" id="shSendT">'+(mob?'':'Paste it into a chat or mail. ')+'Opens your beat on asimplemanslab.com/mstr'+(own?'. Your recording stays on this device.':'.')+'</p>'+
       '<button type="button" class="pill wide" id="shWav"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Download WAV</span></button>'+
       '<p class="shnote" id="shWavT">'+BARS+' bars that loop seamlessly, for sampling'+(own?', with your recording':'')+'</p>',function(el){
-      var inp=el.querySelector('#shName'),dice=el.querySelector('#shDice'),diceN=0,m=cardModel(),scene=new CARD.Scene(m);
-      inp.value=title;inp.placeholder=pre>=0?NM[BEATS[pre].n]:'Your beat';
-      function setName(){var v=inp.value.replace(/[\u0000-\u001f]/g,'').trim().slice(0,40);if(v!==title){title=v;paint();persist();}}
-      inp.addEventListener('input',setName);
-      inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();sb.click();}});
-      dice.addEventListener('click',function(){inp.value=CARD.title(m,diceN++);setName();});
-      var by=el.querySelector('#shBy');by.value=handle;
-      by.addEventListener('input',function(){handle=by.value.replace(/[\u0000-\u001f\s]/g,'').slice(0,24);S.by=handle;save();});
-      /* Vorschau: die Karte ruhig animiert, solange das Blatt offen ist */
-      var cv=el.querySelector('#shCard'),cx=cv.getContext('2d'),cardT=null,cRaf=0,busyC=false,cfile=null,ckey='';
-      function opts(){return {title:title||inp.placeholder,by:handle,preset:pre>=0?NM[BEATS[pre].n]:'',glass:GLASS,file:baseName()+'-'+bpm+'bpm'};}
-      function pv(){if(sheet.hidden||!cv.isConnected){cancelAnimationFrame(cRaf);return;}if(!busyC)CARD.story(cx,cv.width,cv.height,scene,opts());cRaf=requestAnimationFrame(pv);}
-      pv();
-      var cb=el.querySelector('#shCardBtn'),ct=el.querySelector('#shCardT'),cbLabel=cb.textContent;
-      function giveCard(f){
-        if(navigator.share&&matchMedia('(pointer: coarse)').matches&&canSendFile(f)){
-          navigator.share({files:[f],title:(title||inp.placeholder)+' · MSTR'}).catch(function(e){if(e&&e.name==='NotAllowedError'){cb.textContent='Save '+f.name;}});return;}
-        saveFile(f);ct.textContent='Saved '+f.name;
-      }
-      cb.addEventListener('click',function(){
-        setName();if(busyC)return;var o=opts(),key=shareCode()+'|'+o.title+'|'+o.by;
-        if(cfile&&ckey===key)return giveCard(cfile);
-        if(!video){CARD.image(scene,o,function(f){if(!f){ct.textContent='That did not work in this browser.';return;}cfile=f;ckey=key;giveCard(f);});return;}
-        busyC=true;setPlay(false);cb.disabled=true;ct.textContent='Rendering sound …';
-        renderClip(function(buf){
-          if(!buf){busyC=false;cb.disabled=false;ct.textContent='That did not work in this browser.';return;}
-          o.mirror=cv;
-          cardT=CARD.record(ac,buf,scene,o,function(t,tot){ct.textContent='Recording '+Math.ceil(tot-t)+' s … stay on this screen';},function(f,why){
-            busyC=false;cb.disabled=false;cardT=null;scene.reset();
-            if(why==='abort')return;
-            if(!f){ct.textContent='Recording did not work here. Saving a picture instead.';CARD.image(scene,o,function(f2){if(f2){cfile=f2;ckey=key;giveCard(f2);}});return;}
-            cfile=f;ckey=key;ct.textContent=f.name+', '+Math.round(CARD.clipLen(bpm))+' s';cb.textContent=cbLabel;giveCard(f);});
-        });
-      });
       var sb=el.querySelector('#shSend'),sbT=0;
-      sb.addEventListener('click',function(){setName();shareBeat(function(){
-        sb.textContent='\u2713 Link copied';clearTimeout(sbT);sbT=setTimeout(function(){sb.textContent='Copy link';},2500);});});
+      sb.addEventListener('click',function(){shareBeat(function(){
+        sb.textContent='✓ Link copied';clearTimeout(sbT);sbT=setTimeout(function(){sb.textContent='Copy link';},2500);});});
       /* Download: am Handy übers Teilen-Menü (dort „In Dateien sichern“), sonst direkt. Lässt der Browser das Teilen
          nach dem Rechnen nicht mehr zu, braucht es einen zweiten Tipp */
       var wb=el.querySelector('#shWav'),wt=el.querySelector('#shWavT'),file=null,busy=false;
@@ -606,18 +585,45 @@
         saveFile(f);wt.textContent='Saved '+f.name;
       }
       wb.addEventListener('click',function(){
-        setName();if(busy)return;
+        if(busy)return;
         if(file&&file.name===fileName())return give(file);
         busy=true;wt.textContent='Rendering …';
         renderLoop(function(blob){busy=false;
           if(!blob){wt.textContent='That did not work in this browser.';return;}
           file=new File([blob],fileName(),{type:'audio/wav'});wt.textContent=file.name+', '+(Math.round(BARS*N*st()*10)/10)+' s';give(file);});
       });
-      /* Blatt zu: Aufnahme abbrechen */
-      sheet.__stop=function(){if(cardT)cardT();cancelAnimationFrame(cRaf);};
-    },'teilen',true);
+    },'mehr',true);
   }
-  $('share').addEventListener('click',shareSheet);
+  $('more').addEventListener('click',moreSheet);
+  /* „Share“ in der Karten-Ansicht: Ton offline rechnen, Video in Echtzeit aufnehmen (die Karten-Ansicht zeigt derweil die Aufnahme),
+     dann teilen (Handy) oder sichern (Rechner). Ohne Video gibt es ein Bild. Dieselbe Datei wird beim zweiten Tipp sofort gegeben */
+  var cb=$('shCardBtn'),ct=$('shCardT'),cardT=null,cfile=null,ckey='',busyC=false,cardGen=0,video=CARD.canVideo();
+  function cardOpts(){return {title:title||(pre>=0?NM[BEATS[pre].n]:'Your beat'),by:handle,preset:pre>=0?NM[BEATS[pre].n]:'',glass:GLASS,file:baseName()+'-'+bpm+'bpm'};}
+  function cardLabel(){cb.textContent=video?(nativeShare()?'Share video':'Save video'):(nativeShare()?'Share image':'Save image');}
+  function giveCard(f){
+    if(navigator.share&&matchMedia('(pointer: coarse)').matches&&canSendFile(f)){
+      navigator.share({files:[f],title:cardOpts().title+' · MSTR'}).catch(function(e){if(e&&e.name==='NotAllowedError'){cb.textContent='Save '+f.name;}});return;}
+    saveFile(f);ct.textContent='Saved '+f.name;ct.hidden=false;
+  }
+  /* Abbruch: auch während der Ton noch gerechnet wird (dann verfällt das Ergebnis) */
+  function cardStop(){cardGen++;if(cardT){cardT();cardT=null;}if(busyC){busyC=false;cb.disabled=false;ct.hidden=true;cardLabel();}}
+  cb.addEventListener('click',function(){
+    if(busyC)return;var o=cardOpts(),key=shareCode()+'|'+o.title+'|'+o.by,scene=new CARD.Scene(cardModel());
+    if(cfile&&ckey===key)return giveCard(cfile);
+    if(!video){CARD.image(scene,o,function(f){if(!f){ct.textContent='That did not work in this browser.';ct.hidden=false;return;}cfile=f;ckey=key;giveCard(f);});return;}
+    busyC=true;setPlay(false);cb.disabled=true;ct.hidden=false;ct.textContent='Rendering sound …';var gen=++cardGen;
+    renderClip(function(buf){
+      if(gen!==cardGen)return;
+      if(!buf){busyC=false;cb.disabled=false;ct.textContent='That did not work in this browser.';return;}
+      o.mirror=molC;o.mirrorBg=molDark()?'#0E0E0F':'#FFFFFF';
+      cardT=CARD.record(ac,buf,scene,o,function(t,tot){ct.textContent='Recording '+Math.ceil(tot-t)+' s … stay on this screen';},function(f,why){
+        busyC=false;cb.disabled=false;cardT=null;cardLabel();
+        if(why==='abort'){ct.hidden=true;return;}
+        if(!f){ct.textContent='Recording did not work here. Saving a picture instead.';CARD.image(scene,o,function(f2){if(f2){cfile=f2;ckey=key;giveCard(f2);}});return;}
+        cfile=f;ckey=key;ct.textContent=f.name+', '+Math.round(CARD.clipLen(bpm))+' s';giveCard(f);});
+    });
+  });
+  cardLabel();
   /* Geteilter Link geöffnet: Beat übernehmen, Adresse aufräumen, mit Rückgängig */
   var shared=null;
   (function(){
@@ -637,7 +643,7 @@
   /* ---------- Molekül-Ansicht: das Raster gegen das Ring-Molekül der Karte tauschen, live mit dem Beat.
      Schläge kommen aus head() (Schritt, Takt), Mute, Solo und Drop entscheiden mit; steht der Beat, steht das Bild.
      Ein Tipp aufs Molekül bringt das Raster zurück, bearbeitet wird nur dort ---------- */
-  var molC=$('mol'),molX=molC.getContext('2d'),viewB=$('view'),molS=null,molKey='',molRaf=0,molOn=false,molTick=0,molLast=0;
+  var molC=$('mol'),molX=molC.getContext('2d'),vGrid=$('vGrid'),vCard=$('vCard'),foot=$('cardfoot'),molS=null,molKey='',molRaf=0,molOn=false,molTick=0,molLast=0;
   function molDark(){var t=document.documentElement.getAttribute('data-theme');return t==='dark'||(!t&&!!window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);}
   function molModel(){var k=shareCode();if(k===molKey&&molS)return;molKey=k;var m=cardModel();
     if(molS)molS.m=m;else{molS=new CARD.Scene(m);molS.clip=false;molS.act=function(r){return audible(r)&&!drop;};}}
@@ -648,7 +654,7 @@
   function molDraw(){molRaf=0;if(!molOn)return;molLast=performance.now();
     try{if(!(molTick++%12))molModel();molSize();
       if(playing)molS.time(ac.currentTime-playT0,performance.now());else if(molS.ct>=0)molS.reset();
-      var d=molDark();CARD.view(molX,molC.width,molC.height,molS,{fg:d?'#F3F3F4':'#0F0F10',bg:d?'#0E0E0F':'#FFFFFF',dark:d});
+      var d=molDark(),o=cardOpts();if(!busyC)CARD.view(molX,molC.width,molC.height,molS,{fg:d?'#F3F3F4':'#0F0F10',bg:d?'#0E0E0F':'#FFFFFF',dark:d,title:o.title,by:o.by,preset:o.preset});
     }catch(e){}
     molRaf=requestAnimationFrame(molDraw);}
   function molGo(){if(!molOn)return;if(molRaf)cancelAnimationFrame(molRaf);molRaf=requestAnimationFrame(molDraw);}
@@ -656,12 +662,12 @@
     if(!drop)for(r=0;r<7;r++)if(pat[r].charAt(q)!=='0'&&audible(r))h.push(r);
     molS.fire({s:q,b:b,h:h,st:stu?1:0},performance.now());
     if(stu)setTimeout(function(){if(molOn&&playing)molS.fire({s:q,b:b,h:h,st:1},performance.now());},st()*500);}
-  function molSet(on){molOn=!!on;app.classList.toggle('molecule',molOn);molC.hidden=!molOn;
-    viewB.setAttribute('aria-pressed',molOn?'true':'false');viewB.setAttribute('aria-label',molOn?'Show the grid':'Show as molecule');viewB.title=viewB.getAttribute('aria-label');
+  function molSet(on){molOn=!!on;if(!molOn)cardStop();app.classList.toggle('molecule',molOn);molC.hidden=!molOn;foot.hidden=!molOn;if(!molOn)ct.hidden=true;
+    vGrid.setAttribute('aria-pressed',molOn?'false':'true');vCard.setAttribute('aria-pressed',molOn?'true':'false');
     S.view=molOn?'mol':'';save();if(molOn){molModel();molSize();molGo();}}
-  viewB.addEventListener('click',function(){molSet(!molOn);});
-  molC.addEventListener('click',function(){molSet(false);});
-  molC.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();molSet(false);viewB.focus();}});
+  vGrid.addEventListener('click',function(){molSet(false);});vCard.addEventListener('click',function(){molSet(true);});
+  molC.addEventListener('click',function(){if(!busyC)nameSheet();});
+  molC.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();if(!busyC)nameSheet();}});
   document.addEventListener('visibilitychange',function(){if(!document.hidden)molGo();});window.addEventListener('pageshow',molGo);
   if(S.view==='mol')molSet(true);
 

@@ -25,7 +25,7 @@ with sync_playwright() as p:
     pg.keyboard.press('Space');pg.wait_for_timeout(100)
     assert pg.locator('#play.on').count()==0,'Leertaste stoppt nicht'
     # Vorlage wählen
-    pg.click('#preBtn');assert pg.locator('.pitem').count()==16
+    pg.click('#preBtn');assert pg.locator('.pitem').count()==17
     pg.click('.pitem:has-text("House")');pg.wait_for_timeout(100)
     assert pg.inner_text('#preName')=='House' and pg.inner_text('#bpm')=='116'
     assert pg.locator('#sheet').is_hidden()
@@ -51,7 +51,7 @@ with sync_playwright() as p:
     assert pg.inner_text('#bpm')=='118'
     # Leeren und Rückgängig
     on=pg.locator('.dot.on').count()
-    pg.click('#clr');assert pg.locator('.dot.on').count()==0
+    pg.click('#preBtn');pg.wait_for_timeout(200);assert pg.locator('.pitem').first.inner_text().startswith('Empty grid');pg.click('#clr');pg.wait_for_timeout(200);assert pg.locator('.dot.on').count()==0
     pg.click('.toast button');assert pg.locator('.dot.on').count()==on
     pg.screenshot(path=H+'/tests/t1.png',full_page=True)
     pg.reload();pg.wait_for_timeout(300)

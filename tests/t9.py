@@ -18,16 +18,16 @@ with sync_playwright() as p:
     for vw in (360,390):
         pg=b.new_page(viewport={'width':vw,'height':800});pg.goto('file://'+H+'/index.html');pg.wait_for_timeout(300)
         assert pg.evaluate('document.documentElement.scrollWidth')<=vw,vw
-        r=pg.locator('#share').bounding_box();assert pg.locator('.transport #share').count()==1 and r['x']+r['width']<=vw
-        assert pg.locator('.top #share').count()==0
+        assert pg.locator('#share').count()==0;pg.click('#vCard');pg.wait_for_timeout(100)
+        r=pg.locator('#more').bounding_box();assert r['x']+r['width']<=vw and pg.locator('#shCardBtn').is_visible()
         pg.close()
     ctx=b.new_context(viewport={'width':390,'height':844},accept_downloads=True);pg=ctx.new_page();pg.on('pageerror',lambda e:err.append(str(e)))
     pg.goto('file://'+H+'/index.html');pg.wait_for_timeout(300)
     pg.evaluate("document.querySelector('#tempoBtn').click()");pg.wait_for_timeout(200)
     pg.fill('#tBpm','120');pg.dispatch_event('#tBpm','change');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
     pg.click('#play');pg.wait_for_timeout(300)
-    pg.click('#share');pg.wait_for_timeout(200)
-    pg.fill('#shName','Café Loop')
+    pg.click('#preName');pg.wait_for_timeout(200);pg.fill('#shName','Café Loop');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
+    pg.click('#vCard');pg.click('#more');pg.wait_for_timeout(200)
     with pg.expect_download(timeout=15000) as d:pg.click('#shWav')
     dl=d.value;print(dl.suggested_filename);assert dl.suggested_filename=='Cafe-Loop-120bpm.wav'
     assert pg.evaluate('MSTR.state().playing'),'Wiedergabe läuft weiter'
@@ -42,7 +42,7 @@ with sync_playwright() as p:
     pg.evaluate("localStorage.setItem('mstr-rec-mic','%s')"%REC)
     pg.evaluate("(()=>{const s=JSON.parse(localStorage.getItem('mstr-v1'));s.pat.g=s.pat.g.map((x,i)=>i==7?'0'.repeat(14)+'a0':'0'.repeat(16));s.fx={echo:1};s.fxo={echo:4};localStorage.setItem('mstr-v1',JSON.stringify(s));})()")
     pg.reload();pg.wait_for_timeout(300)
-    pg.click('#share');pg.wait_for_timeout(200)
+    pg.click('#more');pg.wait_for_timeout(200)
     assert 'with your recording' in pg.inner_text('#shWavT')
     with pg.expect_download(timeout=15000) as d:pg.click('#shWav')
     ch,sr,n,smp=wav(d.value.path())
