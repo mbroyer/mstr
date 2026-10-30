@@ -25,6 +25,9 @@ with sync_playwright() as p:
     pg.reload();pg.wait_for_timeout(400);assert pg.locator('#mol').is_visible()
     pg.click('#mol');pg.wait_for_timeout(200);assert pg.locator('#tracks').is_visible() and pg.locator('#mol').is_hidden()
     assert pg.evaluate("JSON.parse(localStorage.getItem('mstr-v1')).view")==''
+    # Zweites Umschalten, auch schnell hin und her: die Ansicht läuft weiter (iPhone blieb stehen)
+    pg.click('#view');pg.click('#mol');pg.click('#view');pg.wait_for_timeout(100);pg.click('#play');pg.wait_for_timeout(1200)
+    c1=pg.evaluate(snap);pg.wait_for_timeout(300);c2=pg.evaluate(snap);assert c1!=c2,'läuft nach dem zweiten Umschalten'
     b.close()
 assert not err,err
 print('t11 ok')
