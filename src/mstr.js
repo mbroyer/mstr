@@ -1,23 +1,24 @@
 /* ===== MSTR: Raster, Transport, Vorlagen, Spur-Einstellungen ===== */
 (function(){
-  /* Vorschläge für Perc, Toms und FX (16 Schritte) */
-  var COMMON={click:['1..3..5...4.3...','1.3.5.3.1.3.5.4.','5..4..3.1..3..5.'],toms:['b...p...b...p...','b.......t.t.c...','b..b....p...tt..'],fx:['s.......m.m.n.n.','s...m...s.n.lll.','z.......s...m.n.']};
+  /* Vorschläge zum Würfeln für Becken, Perc, Toms und FX (16 Schritte) */
+  var COMMON={cym:['c...............','r.r.r.r.r.r.r.r.','..r...r...r...r.'],click:['1.1.1.1.1.1.1.1.','....2.......2...','3..3..3...3.3...'],toms:['b...p...b...p...','b.......t.t.....','b..b....p...tt..'],fx:['....m.......m...','n.....n...n.....','............z...']};
   var NM={boombap:'Boom Bap',house:'House',funk:'Funk',rock:'Rock',techno:'Techno',trap:'Trap',disco:'Disco',bossa:'Bossa',dnb:"Drum'n'Bass",shuffle:'Shuffle',afro:'Afro',minimal:'Minimal',hardtechno:'Hardtechno'};
-  /* Je Vorlage eigene Muster für Perc, Toms und FX */
+  /* Je Vorlage eigene Muster für Becken, Perc, Toms und FX. Becken: c Crash, r Ride, h China. Perc: 1 Shaker, 2 Tamburin, 3 Clave, 4 Conga, 5 Cowbell.
+     FX: m Snap, n Sub, s Reverse, l Wirbel, z Riser. Riser und Reverse dauern vier Schritte, auf Schritt 13 laufen sie genau in die nächste Eins */
   var EXTRA={
-    boombap:['1..3..5...4.3...','........t.t.....','............l...'],
-    house:['..3...5...3...1.','............c...','z...............'],
-    funk:['1.3.5.3.1.3.5.4.','......t.......p.','..............s.'],
-    rock:['5...3...5...3.1.','..........t.t.c.','s...............'],
-    techno:['1...1...1...1...','............tt..','z.......s.......'],
-    trap:['5..4..3.1..3..5.','......t.......tt','........s.....l.'],
-    disco:['..5...3...5...1.','....c.......c...','..............z.'],
-    bossa:['1..3..5.1..3..4.','..t..t..t..t..t.','........m...n...'],
-    dnb:['1.3.5.4.3.1.5.3.','..........p...tt','s.......s.......'],
-    shuffle:['1..1..3..3..5..5','..........t..t..','............l...'],
-    afro:['1.3.4.3.5.3.4.3.','t..t..t.t..t..t.','..............s.'],
-    minimal:['......3.......1.','..............t.','z...............'],
-    hardtechno:['1...1...1...1.1.','............c.c.','s.......s...l...']};
+    boombap:['c...............','....2.......2...','........t.t.....','............l...'],
+    house:['r.r.r.r.r.r.r.r.','1.11.11.1.11.11.','................','............z...'],
+    funk:['c...............','....2..4....2.4.','......t.......p.','....m.......m...'],
+    rock:['c...............','....2.......2...','..........t.t...','............s...'],
+    techno:['..r...r...r...r.','1.1.1.1.1.1.1.1.','............tt..','............z...'],
+    trap:['c...............','..........3.....','......t.......tt','n.....n...n.....'],
+    disco:['c...............','2.2.2.2.2.2.2.2.','................','............s...'],
+    bossa:['r.r.r.r.r.r.r.r.','3..3..3...3.3...','..t..t..t..t..t.','................'],
+    dnb:['c...............','1.1.1.1.1.1.1.1.','..........p...tt','............z...'],
+    shuffle:['r.r.r.r.r.r.r.r.','....2.......2...','..........t..t..','............l...'],
+    afro:['c...............','5.5.4.5.5.5.4.5.','t..t..t.t..t..t.','....m.......m...'],
+    minimal:['..............h.','......3.......3.','..............t.','............s...'],
+    hardtechno:['..r...r...r...r.','1.1.1.1.1.1.1.1.','................','............z...']};
 
   var pat,vol=[],mute=[],solo=[],pre=0,edited=false,brush=TRACKS.map(function(t){return t.s[0][0];}),pk=[],lastDice=[];
   var cells=[],rows=[],playing=false,step=0,nextT=0,timer=0,queue=[],raf=0,shown=-1,drop=0;
@@ -35,22 +36,33 @@
   function rowFromBeat(Bt,id){
     var o='',k;
     for(k=0;k<N;k++){var K=Bt.K.charAt(k),Sn=Bt.S.charAt(k),H=Bt.H.charAt(k);
-      o+=id==='beat'?(K==='x'?'b':'0'):id==='snare'?(Sn==='x'?'p':Sn==='o'?'k':'0'):id==='clap'?(Sn==='c'?'c':'0'):(H==='x'?'x':H==='O'?'o':H==='o'?'k':'0');}
+      o+=id==='beat'?(K==='x'?'b':'0'):id==='snare'?(Sn==='x'?'p':Sn==='o'?'k':Sn==='c'?'c':'0'):(H==='x'?'x':H==='O'?'o':H==='o'?'k':'0');}
     return o;
   }
-  function fromBeat(i){var Bt=BEATS[i],r;for(r=0;r<4;r++)pat[r]=rowFromBeat(Bt,TRACKS[r].id);
-    for(r=4;r<R;r++)pat[r]=dots(EXTRA[Bt.n]?EXTRA[Bt.n][r-4]:COMMON[TRACKS[r].id][0]);bpm=Bt.bpm;sw=Bt.sw;pre=i;edited=false;}
+  /* Für die Umrechnung alter Stände: Crashes (c) aus der Toms-Zeile in die Becken-Zeile */
+  function onlyC(x){return x.replace(/[^c]/g,'0');}
+  function noC(x){return x.replace(/c/g,'0');}
+  function fromBeat(i){var Bt=BEATS[i],X=EXTRA[Bt.n],r;for(r=0;r<3;r++)pat[r]=rowFromBeat(Bt,TRACKS[r].id);
+    for(r=3;r<R;r++)pat[r]=dots(X?X[r-3]:COMMON[TRACKS[r].id][0]);bpm=Bt.bpm;sw=Bt.sw;pre=i;edited=false;}
   function num(x,lo,hi,d){x=+x;return isFinite(x)?Math.max(lo,Math.min(hi,x)):d;}
   function arr(a,f,d){var o=[],r;for(r=0;r<R;r++)o.push(Array.isArray(a)&&a.length===R?f(a[r]):d);return o;}
 
   var P=S.pat;
+  /* Alter Stand (vor v2): Spuren hats, beat, clap, snare, click, toms, fx. Die Clap wandert in die Snare,
+     die Becken aus der Toms-Spur in die neue Becken-Spur an Stelle 3 */
+  if(P&&P.v!==2&&Array.isArray(P.g)&&P.g.length===R){
+    var g=P.g.map(function(x){return typeof x==='string'&&x.length===N?x:zero();}),sn='',k;
+    for(k=0;k<N;k++)sn+=g[3].charAt(k)!=='0'?g[3].charAt(k):g[2].charAt(k)==='c'?'c':'0';
+    var mv=function(a,d){return Array.isArray(a)&&a.length===R?[a[0],a[1],a[3],d,a[4],a[5],a[6]]:a;};
+    P.g=[g[0],g[1],sn,onlyC(g[5]),g[4],noC(g[5]),g[6]];P.vol=mv(P.vol,.8);P.mute=mv(P.mute,false);P.solo=mv(P.solo,false);P.br=mv(P.br,'c');P.v=2;
+  }
   if(P&&clean(P.g)){pat=clean(P.g);bpm=Math.round(num(P.bpm,60,180,100));sw=num(P.sw,0,.6,0);pre=P.pre|0;if(pre<-1||pre>=BEATS.length)pre=-1;edited=!!P.ed;}
   else{pat=empty();fromBeat(0);}
   vol=arr(P&&P.vol,function(x){return num(x,0,1,.8);},.8);
   mute=arr(P&&P.mute,function(x){return !!x;},false);
   solo=arr(P&&P.solo,function(x){return !!x;},false);
   if(P&&Array.isArray(P.br)&&P.br.length===R)brush=brush.map(function(d,r){return sndIx(r,P.br[r])>=0?P.br[r]:d;});
-  function persist(){S.pat={g:pat,bpm:bpm,sw:sw,vol:vol,mute:mute,solo:solo,pre:pre,ed:edited,br:brush};save();}
+  function persist(){S.pat={v:2,g:pat,bpm:bpm,sw:sw,vol:vol,mute:mute,solo:solo,pre:pre,ed:edited,br:brush};save();}
   function anySolo(){return solo.some(Boolean);}
   function audible(r){return anySolo()?solo[r]:!mute[r];}
   function gainOf(r){return Math.pow(vol[r]/.8,1.6);} /* 80 % entspricht dem Originalpegel */
@@ -250,7 +262,7 @@
   }
   function dice(r){
     var id=TRACKS[r].id,ix;
-    if(r<4){do{ix=Math.floor(Math.random()*BEATS.length);}while(ix===lastDice[r]&&BEATS.length>1);lastDice[r]=ix;pat[r]=rowFromBeat(BEATS[ix],id);}
+    if(r<3){do{ix=Math.floor(Math.random()*BEATS.length);}while(ix===lastDice[r]&&BEATS.length>1);lastDice[r]=ix;pat[r]=rowFromBeat(BEATS[ix],id);}
     else{pk[r]=((pk[r]||0)+1)%3;pat[r]=dots(COMMON[id][pk[r]]);}
     changed();
   }
