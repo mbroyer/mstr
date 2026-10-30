@@ -43,9 +43,9 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 /* Raster: Name-Zeile über 16 Punkten; ab 640 px Name links */
 .tracks{display:flex;flex-direction:column;gap:clamp(12px,2.6vh,24px)}
 .trk{display:grid;grid-template-columns:minmax(0,1fr);gap:5px;transition:opacity .2s}
-.tl{display:flex;align-items:center;gap:6px;min-width:0}
+.tl{display:flex;align-items:center;gap:8px;min-width:0}
 .tn{border:0;background:none;padding:2px 0;cursor:pointer;display:flex;align-items:baseline;gap:8px;min-width:0;flex:1;text-align:left}
-.tn .nm{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:500}
+.tn .nm{white-space:nowrap;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:500}
 .tn .tb{font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tn .go{width:12px;height:12px;color:var(--mute);flex:none;align-self:center;margin-left:-4px}
 .ms{width:26px;height:22px;border-radius:6px;border:1px solid var(--line);background:transparent;font-family:var(--f-mono);font-size:10px;font-weight:500;cursor:pointer;color:var(--mute);padding:0;flex:none}
@@ -61,7 +61,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .beatrow{margin-top:-6px}
 .beatrow .tl{display:none}
 @media (min-width:640px){
-  .trk{grid-template-columns:170px minmax(0,1fr);gap:16px;align-items:center}
+  .trk{grid-template-columns:220px minmax(0,1fr);gap:16px;align-items:center}
   .beatrow .tl{display:block}
 }
 
@@ -164,3 +164,12 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .tempo .big{font-size:42px}
 .bpmrow .big{font-size:88px}
 .tempo .big small,.bpmrow .big small{font-family:var(--f-ui);font-weight:600;margin-left:4px}
+
+/* Spur-Icons: feine Linien in Tinte, beim Anschlag kurz Flieder */
+.ic{width:24px;height:24px;border-radius:50%;display:grid;place-items:center;flex:none;transition:background .12s}
+.ic svg{width:18px;height:18px;fill:none;stroke:var(--ink);stroke-width:1.5;stroke-linecap:round;stroke-linejoin:round}
+.ic svg .f{fill:var(--ink);stroke:none}
+.ic.hit{background:var(--accent)}
+.ic.hit svg{stroke:var(--on-accent)}
+.ic.hit svg .f{fill:var(--on-accent)}
+.trk.quiet .ic{opacity:.35}

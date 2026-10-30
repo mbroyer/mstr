@@ -11,6 +11,7 @@ with sync_playwright() as p:
     pg.goto(url);pg.wait_for_timeout(300)
     assert pg.locator('.tracks .trk').count()==7,pg.locator('.tracks .trk').count()
     assert pg.locator('.tracks .trk').first.locator('.dot').count()==16
+    assert pg.locator('.tracks .ic svg').count()==7,'Spur-Icons fehlen'
     assert pg.evaluate('document.documentElement.scrollWidth')<=390,'waagerechtes Scrollen'
     assert pg.inner_text('#preName')=='Boom Bap'
     on=pg.locator('.dot.on').count();assert on>0
