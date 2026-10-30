@@ -10,6 +10,7 @@ Herausgelöst aus der Monster-Beatbox in NumNum (Repo `mbroyer/numnum`, Datei `s
 - 16 Vorlagen (Amapiano als Start, Lo-Fi, One Drop, Reggaeton, Afrobeats, Funk, Rock, House, Beat It, Minimal, 2-Step, Trap, Techno, Drum'n'Bass, Jungle, Electro, Amapiano) mit Tempo und Swing, Tempo 60–180 BPM mit Tap-Tempo, Swing auf jedem zweiten Achtel
 - Drop: ein Takt Anlauf mit dem eigenen Beat (ohne Kick in der zweiten Hälfte) und einem schneller werdenden Wirbel mit dem Snare-Klang des Beats; unter 100 BPM schließt sich ein Tiefpass, sonst öffnet sich ein Hochpass, ab 150 BPM alles doppelt so schnell; zwei Schritte Pause mit Reverse-Becken, dann Kick, Crash und Sub
 - Effekte (FX, zuschaltbar, gespeichert), je mit Regler: Raum (langer Hall, Menge), Echo (Menge, Abstand 1/8, 1/8 punktiert oder 1/4 im Tempo), Filter (Tiefpass, der sich öffnet und schließt; Tiefe, 1, 2 oder 4 Takte), Pumpen (alles außer Kick atmet im Takt; Tiefe, Viertel oder Achtel), Stottern (am Taktende wiederholt sich ein Schritt in Zweiunddreißigsteln; Länge 2–8 Schritte, jeder, jeder 2. oder 4. Takt), Vinyl (dumpfer, körnig, Knistern; Stärke). Kick und Sub bleiben ohne Raum und Echo. Beim Stoppen verstummen die Effekte sofort. Gespeichert in `mstr-v1` unter `fx`, `fxa`, `fxo`
+- Teilen (Pfeil oben rechts): der ganze Beat steckt im Link `?b=…` (sieben eingebaute Spuren, Tempo, Swing, Vorlage, Lautstärke, Mute/Solo, Effekte), ohne Server. Auf dem Handy öffnet sich das Teilen-Menü des Systems, sonst wird der Link kopiert. Wer den Link öffnet, bekommt den Beat (mit Rückgängig), seine eigene Spur Aufnahme bleibt, wie sie ist; die Aufnahme selbst reist nicht mit
 - Leertaste startet und stoppt, „Leeren“ lässt sich rückgängig machen
 - Heller und dunkler Modus (folgt dem System oder fest eingestellt)
 - Der Beat liegt in localStorage unter `mstr-v1` (nie umbenennen), die Aufnahme unter `mstr-rec-mic` (ältere Aufnahmen anderer Spuren werden beim Laden dorthin übernommen)
@@ -27,6 +28,7 @@ python3 tests/t3.py     # Spur Aufnahme
 python3 tests/t4.py     # Stopp beim Sperren / Tab verlassen
 python3 tests/t5.py     # Effekte schalten, Regler, Pegel, gespeichert
 python3 tests/t6.py     # Drop je Beat-Art
+python3 tests/t7.py     # Beat teilen per Link
 ```
 
 ## Dateien
