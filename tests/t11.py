@@ -1,4 +1,4 @@
-# Molekül-Ansicht: Schalter oben tauscht das Raster gegen die Karte, läuft live mit, bleibt gespeichert, Tipp aufs Molekül zurück
+# Karten-Ansicht: Umschalter Grid | Card oben tauscht das Raster gegen die Karte, läuft live mit, bleibt gespeichert, Tipp aufs Molekül öffnet das Namens-Blatt
 import os
 from playwright.sync_api import sync_playwright
 H=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -8,8 +8,8 @@ with sync_playwright() as p:
     ctx=b.new_context(viewport={'width':390,'height':760});pg=ctx.new_page();pg.on('pageerror',lambda e:err.append(str(e)))
     pg.goto('file://'+H+'/index.html');pg.wait_for_timeout(300)
     assert pg.locator('#mol').is_hidden() and pg.locator('#tracks').is_visible()
-    pg.click('#view');pg.wait_for_timeout(200)
-    assert pg.locator('#mol').is_visible() and pg.locator('#tracks').is_hidden() and pg.get_attribute('#view','aria-pressed')=='true'
+    pg.click('#vCard');pg.wait_for_timeout(200)
+    assert pg.locator('#mol').is_visible() and pg.locator('#tracks').is_hidden() and pg.get_attribute('#vCard','aria-pressed')=='true' and pg.get_attribute('#vGrid','aria-pressed')=='false'
     assert pg.evaluate("JSON.parse(localStorage.getItem('mstr-v1')).view")=='mol'
     assert pg.evaluate('document.documentElement.scrollWidth')<=390
     box=pg.locator('#mol').bounding_box();assert box['height']>=320 and box['width']>=350
@@ -21,12 +21,13 @@ with sync_playwright() as p:
     # Effekt an: Modell folgt (Raum), Blatt schließen, weiter spielen ohne Fehler
     pg.click('#fxBtn');pg.wait_for_timeout(200);pg.locator('.fxrow[data-fx="room"] .fxi').click();pg.keyboard.press('Escape');pg.wait_for_timeout(900)
     assert pg.evaluate('MSTR.state().fx.room')
-    # Neu laden: Ansicht bleibt; Tipp aufs Molekül bringt das Raster zurück
+    # Neu laden: Ansicht bleibt; Tipp aufs Molekül öffnet das Namens-Blatt; Grid bringt das Raster zurück
     pg.reload();pg.wait_for_timeout(400);assert pg.locator('#mol').is_visible()
-    pg.click('#mol');pg.wait_for_timeout(200);assert pg.locator('#tracks').is_visible() and pg.locator('#mol').is_hidden()
+    pg.click('#mol');pg.wait_for_timeout(300);assert pg.locator('#shName').is_visible();pg.keyboard.press('Escape');pg.wait_for_timeout(200)
+    pg.click('#vGrid');pg.wait_for_timeout(200);assert pg.locator('#tracks').is_visible() and pg.locator('#mol').is_hidden()
     assert pg.evaluate("JSON.parse(localStorage.getItem('mstr-v1')).view")==''
     # Zweites Umschalten, auch schnell hin und her: die Ansicht läuft weiter (iPhone blieb stehen)
-    pg.click('#view');pg.click('#mol');pg.click('#view');pg.wait_for_timeout(100);pg.click('#play');pg.wait_for_timeout(1200)
+    pg.click('#vCard');pg.click('#vGrid');pg.click('#vCard');pg.wait_for_timeout(100);pg.click('#play');pg.wait_for_timeout(1200)
     c1=pg.evaluate(snap);pg.wait_for_timeout(300);c2=pg.evaluate(snap);assert c1!=c2,'läuft nach dem zweiten Umschalten'
     b.close()
 assert not err,err

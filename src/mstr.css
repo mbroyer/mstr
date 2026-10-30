@@ -241,7 +241,15 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .vpick .opt.off{color:var(--mute);padding:0 13px}
 
 /* Molekül-Ansicht: ersetzt Raster und Taktzeile, füllt die Höhe bis zum Transport */
-.mol{display:block;width:100%;flex:1 1 auto;min-height:320px;border-radius:24px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.mol{display:block;width:100%;flex:1 1 auto;min-height:300px;border-radius:24px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .mol:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
 .app.molecule .tracks,.app.molecule .beatrow{display:none}
-#view[aria-pressed="true"]{background:var(--accent);color:var(--on-accent)}
+/* Umschalter oben: Raster zum Bauen, Karte zum Zusehen und Teilen */
+.seg{display:flex;background:var(--soft);border-radius:999px;padding:3px;gap:2px}
+.seg button{height:30px;padding:0 14px;border-radius:999px;border:0;background:none;color:var(--mute);font:600 13px var(--f-ui);cursor:pointer}
+.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+.cardfoot{display:flex;gap:8px;align-items:center}
+.cardfoot .pill{flex:1;width:auto}
+.cardfoot .ib{width:48px;height:48px}
+.app.molecule .head{display:none}
+#shCardT{margin-top:-8px}
