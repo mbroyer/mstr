@@ -173,6 +173,12 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .fxi span{display:flex;flex-direction:column;gap:2px}
 .fxi b{font-size:17px;font-weight:600;letter-spacing:-.01em}
 .fxi small{font-size:13px;color:var(--mute)}
+.namef{display:flex;flex-direction:column;gap:8px}
+.namef input{height:52px;border-radius:14px;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:0 16px;font-family:var(--f-ed);font-size:26px;outline:none;width:100%}
+.namef input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent)}
+.namef input::placeholder{color:var(--mute)}
+.pill.go{background:var(--accent);color:var(--on-accent);border-color:var(--accent);font-size:15px;height:48px}
+.shnote{margin:0;font-size:13px;color:var(--mute);text-align:center}
 .fxi i{width:26px;height:26px;border-radius:50%;background:var(--off);flex:none;transition:background .15s,transform .15s}
 .fxi[aria-pressed="true"] i{background:var(--accent);transform:scale(1.1)}
 .seg2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -600,7 +606,7 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
   var MIC=trIx('mic');
   /* Start-Vorlage für den ersten Besuch: Amapiano */
   var START=Math.max(0,BEATS.map(function(b){return b.n;}).indexOf('amapiano'));
-  var pat,vol=[],mute=[],solo=[],pre=0,edited=false,brush=TRACKS.map(function(t){return t.s[0][0];}),pk=[],lastDice=[];
+  var pat,vol=[],mute=[],solo=[],pre=0,edited=false,title='',brush=TRACKS.map(function(t){return t.s[0][0];}),pk=[],lastDice=[];
   var cells=[],rows=[],playing=false,step=0,bar=0,nextT=0,timer=0,queue=[],raf=0,shown=-1,drop=0;
   var $=function(id){return document.getElementById(id);};
   var app=$('app'),tracksEl=$('tracks'),playB=$('play'),dropB=$('drop'),sheet=$('sheet');
@@ -625,7 +631,7 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
   function noC(x){return x.replace(/c/g,'0');}
   /* Die Spur Aufnahme gehört dir: eine Vorlage lässt sie, wie sie ist */
   function fromBeat(i){var Bt=BEATS[i],X=EXTRA[Bt.n],r;for(r=0;r<3;r++)pat[r]=rowFromBeat(Bt,TRACKS[r].id);
-    for(r=3;r<R;r++)if(r!==MIC)pat[r]=dots(X?X[r-3]:COMMON[TRACKS[r].id][0]);bpm=Bt.bpm;sw=Bt.sw;pre=i;edited=false;}
+    for(r=3;r<R;r++)if(r!==MIC)pat[r]=dots(X?X[r-3]:COMMON[TRACKS[r].id][0]);bpm=Bt.bpm;sw=Bt.sw;pre=i;edited=false;title='';}
   function num(x,lo,hi,d){x=+x;return isFinite(x)?Math.max(lo,Math.min(hi,x)):d;}
   function arr(a,f,d){var o=[],r;for(r=0;r<R;r++)o.push(Array.isArray(a)&&a.length===R?f(a[r]):d);return o;}
 
@@ -648,13 +654,13 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
   if(P&&P.v===3){if([0,6,10,12].indexOf(P.pre)>=0)P.pre=-1;P.v=4;}
   /* Stand v4: Bossa ist durch Beat It ersetzt, Shuffle durch Afrobeats */
   if(P&&P.v===4){if(P.pre===7||P.pre===9)P.pre=-1;P.v=5;}
-  if(P&&clean(P.g)){pat=clean(P.g);bpm=Math.round(num(P.bpm,60,180,100));sw=num(P.sw,0,.6,0);pre=P.pre|0;if(pre<-1||pre>=BEATS.length)pre=-1;edited=!!P.ed;}
+  if(P&&clean(P.g)){pat=clean(P.g);bpm=Math.round(num(P.bpm,60,180,100));sw=num(P.sw,0,.6,0);pre=P.pre|0;if(pre<-1||pre>=BEATS.length)pre=-1;edited=!!P.ed;title=typeof P.nm==='string'?P.nm.slice(0,40):'';}
   else{pat=empty();fromBeat(START);}
   vol=arr(P&&P.vol,function(x){return num(x,0,1,.8);},.8);
   mute=arr(P&&P.mute,function(x){return !!x;},false);
   solo=arr(P&&P.solo,function(x){return !!x;},false);
   if(P&&Array.isArray(P.br)&&P.br.length===R)brush=brush.map(function(d,r){return sndIx(r,P.br[r])>=0?P.br[r]:d;});
-  function persist(){S.pat={v:5,g:pat,bpm:bpm,sw:sw,vol:vol,mute:mute,solo:solo,pre:pre,ed:edited,br:brush};save();}
+  function persist(){S.pat={v:5,g:pat,bpm:bpm,sw:sw,vol:vol,mute:mute,solo:solo,pre:pre,ed:edited,br:brush,nm:title};save();}
   function anySolo(){return solo.some(Boolean);}
   function audible(r){return anySolo()?solo[r]:!mute[r];}
   function gainOf(r){return Math.pow(vol[r]/.8,1.6);} /* 80 % entspricht dem Originalpegel */
@@ -705,8 +711,9 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
     }
     app.classList.toggle('solo',so);
     $('bpm').textContent=bpm;$('swTxt').textContent='Swing '+Math.round(sw*100)+' %';
-    $('preName').textContent=pre>=0?NM[BEATS[pre].n]:'Your beat';
-    $('sub').textContent=pre>=0&&edited?'edited':'';
+    /* Eigener Name (beim Teilen vergeben) geht vor; sonst Name der Vorlage */
+    $('preName').textContent=title||(pre>=0?NM[BEATS[pre].n]:'Your beat');
+    $('sub').textContent=title&&pre>=0?'based on '+NM[BEATS[pre].n]:pre>=0&&edited?'edited':'';
   }
   function changed(){edited=true;paint();persist();}
 
@@ -943,8 +950,8 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
     setTimeout(function(){if(t.parentNode)t.remove();},5000);
   }
   $('clr').addEventListener('click',function(){
-    undo={g:pat.slice(),pre:pre,ed:edited};pat=empty();pre=-1;edited=false;paint();persist();
-    showToast('All tracks cleared','Undo',function(){pat=undo.g;pre=undo.pre;edited=undo.ed;paint();persist();});
+    undo={g:pat.slice(),pre:pre,ed:edited,nm:title};pat=empty();pre=-1;edited=false;title='';paint();persist();
+    showToast('All tracks cleared','Undo',function(){pat=undo.g;pre=undo.pre;edited=undo.ed;title=undo.nm;paint();persist();});
   });
 
   /* ---------- Beat teilen: der ganze Beat steckt im Link (?b=…), es gibt keinen Server.
@@ -952,6 +959,7 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
      vorlage: Name der Vorlage, mit * wenn verändert, leer bei eigenem Beat. raster: die sieben eingebauten Spuren hintereinander,
      Läufe von Nullen als Großbuchstaben (A = 1 … P = 16). lautstärke: je Spur zwei Zeichen Base36 (leer, wenn alle 80 %).
      mute/solo: Bitmasken Base36. effekte: je eingeschaltetem Effekt Nummer, Stärke (2 Zeichen Base36) und Auswahl.
+     Danach optional .<name>: der eigene Name, URL-kodiert (Punkte als %2E), höchstens 40 Zeichen.
      Die Spur Aufnahme fehlt absichtlich: die Aufnahme liegt nur auf dem eigenen Gerät, beim Empfänger bleibt seine Spur, wie sie ist ---------- */
   var SR=MIC<0?R:MIC; /* geteilt werden die Spuren vor der Aufnahme */
   function b36(v){return (v<36?'0':'')+v.toString(36);}
@@ -964,16 +972,16 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
     for(r=0;r<SR;r++){if(mute[r])m|=1<<r;if(solo[r])so|=1<<r;}
     if(vol.slice(0,SR).some(function(x){return Math.round(x*100)!==80;}))for(r=0;r<SR;r++)v+=b36(Math.round(vol[r]*100));
     FXS.forEach(function(x,i){var id=x[0];if(FX[id])f+=i+b36(FXA[id])+(x[4]?FXO[id]:0);});
-    return ['1',bpm,Math.round(sw*100),pre>=0?BEATS[pre].n+(edited?'*':''):'',g,v,m||so?m.toString(36)+'_'+so.toString(36):'',f].join('.');
+    return ['1',bpm,Math.round(sw*100),pre>=0?BEATS[pre].n+(edited?'*':''):'',g,v,m||so?m.toString(36)+'_'+so.toString(36):'',f].concat(title?[encodeURIComponent(title).replace(/\./g,'%2E')]:[]).join('.');
   }
   /* Liest einen Link-Code. Ungültig: null, dann bleibt alles, wie es ist */
   function readCode(s){
-    var p=String(s||'').split('.'),g='',k,c,r;
-    if(p.length!==8||p[0]!=='1')return null;
+    var p=String(s||'').split('.').map(function(x){try{return decodeURIComponent(x);}catch(e){return '';}}),g='',k,c,r;
+    if((p.length!==8&&p.length!==9)||p[0]!=='1')return null;
     for(k=0;k<p[4].length;k++){c=p[4].charAt(k);if(c>='A'&&c<='P')g+=new Array(c.charCodeAt(0)-63).join('0');else g+=c;}
     if(g.length!==SR*N)return null;
     var rows=[];for(r=0;r<SR;r++){var row=g.substr(r*N,N);for(k=0;k<N;k++)if(row.charAt(k)!=='0'&&sndIx(r,row.charAt(k))<0)return null;rows.push(row);}
-    var o={g:rows,bpm:Math.round(num(p[1],60,180,100)),sw:num(p[2],0,60,0)/100,pre:-1,ed:false,vol:null,mute:0,solo:0,fx:[]};
+    var o={g:rows,bpm:Math.round(num(p[1],60,180,100)),sw:num(p[2],0,60,0)/100,pre:-1,ed:false,vol:null,mute:0,solo:0,fx:[],nm:(p[8]||'').replace(/[\u0000-\u001f]/g,'').trim().slice(0,40)};
     var nm=p[3].replace(/\*$/,''),ix=BEATS.map(function(b){return b.n;}).indexOf(nm);if(nm&&ix>=0){o.pre=ix;o.ed=/\*$/.test(p[3]);}
     if(p[5].length===SR*2){o.vol=[];for(r=0;r<SR;r++)o.vol.push(num(parseInt(p[5].substr(r*2,2),36),0,100,80)/100);}
     var ms=p[6].split('_');if(ms.length===2){o.mute=parseInt(ms[0],36)||0;o.solo=parseInt(ms[1],36)||0;}
@@ -981,32 +989,49 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
       o.fx.push([F[0],num(parseInt(p[7].substr(k+1,2),36),0,100,50),+p[7].charAt(k+3)]);}
     return o;
   }
-  function snap(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,ed:edited,vol:vol.slice(),mute:mute.slice(),solo:solo.slice(),
+  function snap(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,ed:edited,nm:title,vol:vol.slice(),mute:mute.slice(),solo:solo.slice(),
     fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}
-  function restore(z){pat=z.pat;bpm=z.bpm;sw=z.sw;pre=z.pre;edited=z.ed;vol=z.vol;mute=z.mute;solo=z.solo;
+  function restore(z){pat=z.pat;bpm=z.bpm;sw=z.sw;pre=z.pre;edited=z.ed;title=z.nm;vol=z.vol;mute=z.mute;solo=z.solo;
     FXS.forEach(function(f){var id=f[0];FX[id]=z.fx[id];FXA[id]=z.fxa[id];FXO[id]=z.fxo[id];});fxSave();fxApply(false);fxUI();paint();persist();}
   function useCode(o){
     var r;for(r=0;r<SR;r++){pat[r]=o.g[r];mute[r]=!!(o.mute&1<<r);solo[r]=!!(o.solo&1<<r);if(o.vol)vol[r]=o.vol[r];}
-    bpm=o.bpm;sw=o.sw;pre=o.pre;edited=o.ed;
+    bpm=o.bpm;sw=o.sw;pre=o.pre;edited=o.ed;title=o.nm;
     FXS.forEach(function(f){FX[f[0]]=false;});
     o.fx.forEach(function(x){var F=FXS.filter(function(f){return f[0]===x[0];})[0];FX[x[0]]=true;FXA[x[0]]=x[1];if(F[4]&&F[4].some(function(q){return q[0]===x[2];}))FXO[x[0]]=x[2];});
     fxSave();fxApply(false);persist();
   }
-  function shareUrl(){return location.href.split(/[?#]/)[0]+'?b='+shareCode();}
+  /* Geteilte Links zeigen immer auf die Website, egal wo die App gerade läuft */
+  var SITE='https://asimplemanslab.com/mstr/app/';
+  function shareUrl(){return SITE+'?b='+shareCode();}
   function shareBeat(){
-    var url=shareUrl(),name=pre>=0?NM[BEATS[pre].n]:'my beat',note=pat[MIC]&&pat[MIC]!==zero()?' Your recording stays on this device.':'';
+    var url=shareUrl(),name=title||(pre>=0?NM[BEATS[pre].n]:'my beat'),note=pat[MIC]&&pat[MIC]!==zero()?' Your recording stays on this device.':'';
     /* Handy: das Teilen-Menü des Systems. Sonst (oder wenn es fehlt) den Link kopieren */
     if(navigator.share&&matchMedia('(pointer: coarse)').matches){
-      navigator.share({title:'MSTR',text:'Listen to '+name+' on MSTR',url:url}).then(function(){if(note)showToast(note.trim());}).catch(function(){});return;}
-    function shown(){showToast('Link copied.'+note);}
+      navigator.share({title:name+' · MSTR',text:'Listen to “'+name+'” on MSTR',url:url}).then(function(){closeSheet();if(note)showToast(note.trim());}).catch(function(){});return;}
+    function shown(){closeSheet();showToast('Link copied.'+note);}
     if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(shown,function(){window.prompt('Copy this link',url);});
     else window.prompt('Copy this link',url);
   }
-  $('share').addEventListener('click',shareBeat);
+  /* Teilen: halbes Blatt. Erst dem Beat einen Namen geben (bleibt gespeichert und steht oben als Titel), dann den Link schicken */
+  function shareSheet(){
+    var own=pat[MIC]&&pat[MIC]!==zero();
+    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Share your beat</span>'+XB+'</div>'+
+      '<label class="namef"><span class="lbl">Name</span><input id="shName" type="text" maxlength="40" autocomplete="off" enterkeyhint="send" data-focus></label>'+
+      '<button type="button" class="pill wide go" id="shSend">Send link</button>'+
+      '<p class="shnote">Opens your beat on asimplemanslab.com/mstr'+(own?'. Your recording stays on this device.':'.')+'</p>',function(el){
+      var inp=el.querySelector('#shName');
+      inp.value=title;inp.placeholder=pre>=0?NM[BEATS[pre].n]:'Your beat';
+      function setName(){var v=inp.value.replace(/[\u0000-\u001f]/g,'').trim().slice(0,40);if(v!==title){title=v;paint();persist();}}
+      inp.addEventListener('input',setName);
+      inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();setName();shareBeat();}});
+      el.querySelector('#shSend').addEventListener('click',function(){setName();shareBeat();});
+    },'teilen',true);
+  }
+  $('share').addEventListener('click',shareSheet);
   /* Geteilter Link geöffnet: Beat übernehmen, Adresse aufräumen, mit Rückgängig */
   var shared=null;
   (function(){
-    var m=/[?&]b=([^&#]*)/.exec(location.search),o=m&&readCode(decodeURIComponent(m[1]));
+    var m=/[?&]b=([^&#]*)/.exec(location.search),o=m&&readCode(m[1]);
     if(m)try{history.replaceState(null,'',location.href.split('?')[0]+location.hash);}catch(e){}
     if(o){shared=snap();useCode(o);}
   })();
@@ -1018,7 +1043,7 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
   if(window.matchMedia)try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',themeUI);}catch(e){}
 
   build();themeUI();fxUI();playB.innerHTML=I_PLAY;
-  if(shared){var before=shared;showToast('Shared beat loaded','Undo',function(){restore(before);});}
+  if(shared){var before=shared;showToast(title?'“'+title+'” loaded':'Shared beat loaded','Undo',function(){restore(before);});}
   window.MSTR={setPlay:setPlay,code:shareCode,url:shareUrl,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
 })();
 
