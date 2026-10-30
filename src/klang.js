@@ -22,11 +22,11 @@ var B=null,_bac=null;
 function bus(){
   getAC();if(!ac)return null;if(_bac===ac&&B)return B;_bac=ac;B={};var i;
   B.OUT=ac.createGain();B.OUT.gain.value=.9;B.FILT=ac.createBiquadFilter();B.FILT.type='lowpass';B.FILT.frequency.value=20000;B.FILT.Q.value=.7;B.OUT.connect(B.FILT);
-  B.DUCK=ac.createGain();B.DUCK.connect(B.OUT);
+  B.DUCK=ac.createGain();B.PUMP=ac.createGain();B.DUCK.connect(B.PUMP);B.PUMP.connect(B.OUT);
   var len=ac.sampleRate*1.1|0,ir=ac.createBuffer(2,len,ac.sampleRate),ch;for(ch=0;ch<2;ch++){var d=ir.getChannelData(ch);for(i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,4);}
   B.REV=ac.createConvolver();B.REV.buffer=ir;var rg=ac.createGain();rg.gain.value=.25;B.REV.connect(rg);rg.connect(B.OUT);
   B.DLY=ac.createDelay(2);var fb=ac.createGain(),lp=ac.createBiquadFilter(),dg=ac.createGain();lp.type='lowpass';lp.frequency.value=2800;fb.gain.value=.38;dg.gain.value=.45;
-  B.FB=fb;B.DLY.connect(lp);lp.connect(fb);fb.connect(B.DLY);lp.connect(dg);dg.connect(B.OUT);
+  B.FB=fb;B.DLY.connect(lp);lp.connect(fb);fb.connect(B.DLY);lp.connect(dg);dg.connect(B.OUT);B.DG=dg;
   B.SAT=ac.createWaveShaper();var cv=new Float32Array(1024);for(i=0;i<1024;i++){var x=i/512-1;cv[i]=Math.tanh(x*2.5)/Math.tanh(2.5);}B.SAT.curve=cv;var sg=ac.createGain();sg.gain.value=.8;B.SAT.connect(sg);sg.connect(B.OUT);
   B.NZ=ac.createBuffer(1,ac.sampleRate,ac.sampleRate);var c=B.NZ.getChannelData(0);for(i=0;i<c.length;i++)c[i]=Math.random()*2-1;
   fxChain();fxApply(true);
@@ -35,13 +35,16 @@ function bus(){
 
 /* ---------- Zuschaltbare Effekte: Raum, Echo, Filter, Vinyl. Gelten für den ganzen Beat und bleiben gespeichert ----------
    Raum und Echo sind Sends vom Bus ohne Kick und Sub (sonst wird der Bass matschig), Vinyl und Filter liegen hinter dem Drop-Filter */
-/* Je Effekt: id, Name, Beschreibung, Name des Reglers, Auswahl [Wert, Name] (Echo: Abstand in Sechzehnteln, Filter: Takte je Durchlauf) */
+/* Je Effekt: id, Name, Beschreibung, Name des Reglers, Auswahl [Wert, Name]
+   (Echo: Abstand in Sechzehnteln, Filter: Takte je Durchlauf, Pumpen: Sechzehntel je Atemzug, Stottern: jeder wievielte Takt) */
 var FXS=[['room','Raum','Langer Hall','Menge'],
   ['echo','Echo','Wiederholungen im Tempo','Menge',[[2,'1/8'],[3,'1/8 punktiert'],[4,'1/4']]],
   ['sweep','Filter','Öffnet und schließt sich im Takt','Tiefe',[[1,'1 Takt'],[2,'2 Takte'],[4,'4 Takte']]],
+  ['pump','Pumpen','Alles atmet im Takt, nur die Kick nicht','Tiefe',[[4,'Viertel'],[2,'Achtel']]],
+  ['stut','Stottern','Am Taktende wiederholt sich ein Stück, ganz schnell','Länge',[[1,'Jeder Takt'],[2,'Jeder 2.'],[4,'Jeder 4.']]],
   ['lofi','Vinyl','Dumpfer, etwas körnig, mit Knistern','Stärke']];
 /* FX: an oder aus, FXA: Stärke 0–100 (50 ist die Grundeinstellung), FXO: gewählte Auswahl */
-var FX={},FXA={},FXO={echo:3,sweep:2};
+var FXLIVE=false,FX={},FXA={},FXO={echo:3,sweep:2,pump:4,stut:2};
 FXS.forEach(function(f){var id=f[0],a=S.fxa&&S.fxa[id],o=S.fxo&&S.fxo[id];FX[id]=!!(S.fx&&S.fx[id]);FXA[id]=typeof a==='number'&&a>=0&&a<=100?a:50;
   if(f[4]&&f[4].some(function(x){return x[0]===o;}))FXO[id]=o;});
 function fxChain(){
@@ -60,7 +63,7 @@ function fxChain(){
   /* Raum: eigener, langer Hall; tiefe Frequenzen gehen nicht hinein */
   var len=sr*2.8|0,ir=ac.createBuffer(2,len,sr),ch;for(ch=0;ch<2;ch++){var d=ir.getChannelData(ch);for(i=0;i<len;i++)d[i]=(Math.random()*2-1)*Math.pow(1-i/len,3);}
   var rv=ac.createConvolver(),rh=ac.createBiquadFilter(),ro=ac.createGain();rv.buffer=ir;rh.type='highpass';rh.frequency.value=350;ro.gain.value=.55;
-  B.RS=ac.createGain();B.RS.gain.value=0;B.DUCK.connect(B.RS);B.RS.connect(rh);rh.connect(rv);rv.connect(ro);ro.connect(B.OUT);
+  B.RS=ac.createGain();B.RS.gain.value=0;B.DUCK.connect(B.RS);B.RS.connect(rh);rh.connect(rv);rv.connect(ro);ro.connect(B.OUT);B.RO=ro;
   /* Echo: nutzt die Delay-Schleife des Busses */
   B.ES=ac.createGain();B.ES.gain.value=0;B.DUCK.connect(B.ES);B.ES.connect(B.DLY);
 }
@@ -74,11 +77,24 @@ function fxApply(now){
   /* Echo: mehr Menge heißt lauter und mehr Wiederholungen */
   to(B.ES.gain,FX.echo?1.1*ae:0);to(B.FB.gain,FX.echo?.2+.4*ae:.38);
   /* Vinyl: je stärker, desto dumpfer und mehr Knistern; schwach mischt etwas vom sauberen Klang dazu */
-  to(B.LD.gain,FX.lofi?Math.max(0,.6-1.2*al):1);to(B.LW.gain,FX.lofi?.9:0);to(B.KN.gain,FX.lofi?2*al:0);to(B.LL.frequency,8000*Math.pow(.2,al));
+  to(B.LD.gain,FX.lofi?Math.max(0,.6-1.2*al):1);to(B.LW.gain,FX.lofi?.9:0);to(B.KN.gain,FX.lofi&&FXLIVE?2*al:0);to(B.LL.frequency,8000*Math.pow(.2,al));
   /* Filter: Tiefe senkt die Mitte, weitet den Hub und hebt die Resonanz */
   var c=4000*Math.pow(.1,as);to(B.SW.frequency,FX.sweep?c:20000);to(B.SW.Q,FX.sweep?2+4*as:.7);to(B.LFD.gain,FX.sweep?c*.85:0);
+  to(B.RO.gain,.55);to(B.DG.gain,.45);if(!FX.pump)to(B.PUMP.gain,1);
   fxTempo();
 }
+/* Stopp: die Effekte klingen nicht nach. Echo-Schleife, Raum und Knistern schnell stumm; beim Abspielen setzt fxApply alles zurück */
+function fxStart(){FXLIVE=true;fxApply(true);}
+function fxHalt(){
+  FXLIVE=false;if(!B||!B.SW)return;var t=ac.currentTime;
+  [B.RO.gain,B.DG.gain,B.FB.gain,B.ES.gain,B.RS.gain,B.KN.gain].forEach(function(p){p.cancelScheduledValues(t);p.setTargetAtTime(0,t,.03);});
+  B.PUMP.gain.cancelScheduledValues(t);B.PUMP.gain.setTargetAtTime(1,t,.03);
+}
+/* Pumpen: auf jedem Schlag (Viertel oder Achtel) tief absenken, dann wieder einatmen */
+function fxPump(t,s){if(!FX.pump||s%FXO.pump)return;var g=B.PUMP.gain,a=FXA.pump/100,L=st()*FXO.pump;
+  g.cancelScheduledValues(t);g.setTargetAtTime(1-.92*a,t,.004);g.setTargetAtTime(1,t+.02,L*.32);}
+/* Stottern: wie viele Schritte am Taktende (2 bis 8) */
+function fxStutLen(){return 2+Math.round(FXA.stut*6/100);}
 function fxTempo(){if(!B||!B.SW)return;var t=ac.currentTime;B.DLY.delayTime.setTargetAtTime(st()*FXO.echo,t,.05);B.LFO.frequency.setTargetAtTime(1/(st()*16*FXO.sweep),t,.05);}
 function fxSave(){S.fx={};S.fxa={};S.fxo={};FXS.forEach(function(f){var id=f[0];if(FX[id])S.fx[id]=1;if(FXA[id]!==50)S.fxa[id]=FXA[id];if(f[4])S.fxo[id]=FXO[id];});save();}
 function fxSet(id,on){FX[id]=!!on;fxSave();fxApply(false);}
