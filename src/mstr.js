@@ -270,7 +270,7 @@
   var X='',XB='<button type="button" class="ib" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>';
   function presetSheet(){
     var order=BEATS.map(function(b,i){return i;}).sort(function(a,b){return BEATS[a].bpm-BEATS[b].bpm||a-b;});
-    openSheet('<div class="sh-top"><h2 class="ed" id="sheetT">'+BEATS.length+' beats<br><em>by tempo</em></h2>'+X+'</div><div class="plist" role="listbox" aria-label="Beats"></div>',function(el){
+    openSheet('<div class="sh-top"><h2 class="ed" id="sheetT">'+BEATS.length+' beats<br><em>by tempo</em></h2>'+X+'</div><div class="plist" role="listbox" aria-label="Beats"></div><a class="lab" href="https://asimplemanslab.com/" aria-label="Made with love by A Simple Man\u2019s Lab"><span>Made with love by</span><i aria-hidden="true"></i></a>',function(el){
       var list=el.querySelector('.plist');
       order.forEach(function(i){var Bt=BEATS[i],b=document.createElement('button');b.type='button';b.className='pitem'+(i===pre?' sel':'');b.setAttribute('role','option');b.setAttribute('aria-selected',i===pre?'true':'false');
         if(i===pre)b.setAttribute('data-focus','');
