@@ -173,6 +173,10 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .fxi span{display:flex;flex-direction:column;gap:2px}
 .fxi b{font-size:17px;font-weight:600;letter-spacing:-.01em}
 .fxi small{font-size:13px;color:var(--mute)}
+.shx .go{width:18px;height:18px;flex:none;color:var(--mute)}
+.shx.ready .go{color:var(--on-accent)}
+.shx.ready{background:var(--accent);color:var(--on-accent);border-radius:16px;padding-inline:16px;margin-block:6px}
+.shx.ready small{color:var(--on-accent);opacity:.7}
 .fxi i{width:26px;height:26px;border-radius:50%;background:var(--off);flex:none;transition:background .15s,transform .15s}
 .fxi[aria-pressed="true"] i{background:var(--accent);transform:scale(1.1)}
 .seg2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
@@ -601,7 +605,7 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
   /* Start-Vorlage für den ersten Besuch: Amapiano */
   var START=Math.max(0,BEATS.map(function(b){return b.n;}).indexOf('amapiano'));
   var pat,vol=[],mute=[],solo=[],pre=0,edited=false,brush=TRACKS.map(function(t){return t.s[0][0];}),pk=[],lastDice=[];
-  var cells=[],rows=[],playing=false,step=0,bar=0,nextT=0,timer=0,queue=[],raf=0,shown=-1,drop=0;
+  var cells=[],rows=[],playing=false,startT=0,step=0,bar=0,nextT=0,timer=0,queue=[],raf=0,shown=-1,drop=0;
   var $=function(id){return document.getElementById(id);};
   var app=$('app'),tracksEl=$('tracks'),playB=$('play'),dropB=$('drop'),sheet=$('sheet');
   var beats=document.querySelectorAll('.beatrow .grp span:first-child');
@@ -735,15 +739,18 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
       if(s===0){fxTempo();if(drop===1){drop=2;dropBuild(t,N*six);}else if(drop===2){drop=0;dropBoom(t);}}
       /* Drop: ein Takt Anlauf mit dem eigenen Beat (siehe dropBuild), die letzten zwei Schritte Pause, dann der Einschlag */
       if(drop===2)dropStep(s,t,six);
-      else{
-        /* Stottern: am Ende jedes n-ten Takts spielt statt der letzten Schritte immer wieder der erste davon, in Zweiunddreißigsteln */
-        var L=FX.stut&&(bar+1)%FXO.stut===0?fxStutLen():0,src=N-L,k;
-        if(L&&s>=src){for(r=0;r<R;r++)if(audible(r)){var w2=pat[r].charAt(src);if(w2!=='0')for(k=0;k<2;k++)play(TRACKS[r].id,t+k*six/2,[src,w2,2,gainOf(r)*(1-.35*(s-src+k/2)/L)]);}}
-        else for(r=0;r<R;r++)if(audible(r)){var w=pat[r].charAt(s);if(w!=='0')play(TRACKS[r].id,t,[s,w,2,gainOf(r)]);}
-        fxPump(t,s);}
+      else playStep(s,t,six,bar);
       queue.push({s:s,t:t});
       step=(step+1)%N;if(!step)bar++;nextT+=six;
     }
+  }
+  /* Ein Schritt des Beats (ohne Drop): Spuren, Stottern, Pumpen */
+  function playStep(s,t,six,bar){
+    /* Stottern: am Ende jedes n-ten Takts spielt statt der letzten Schritte immer wieder der erste davon, in Zweiunddreißigsteln */
+    var L=FX.stut&&(bar+1)%FXO.stut===0?fxStutLen():0,src=N-L,k,r;
+    if(L&&s>=src){for(r=0;r<R;r++)if(audible(r)){var w2=pat[r].charAt(src);if(w2!=='0')for(k=0;k<2;k++)play(TRACKS[r].id,t+k*six/2,[src,w2,2,gainOf(r)*(1-.35*(s-src+k/2)/L)]);}}
+    else for(r=0;r<R;r++)if(audible(r)){var w=pat[r].charAt(s);if(w!=='0')play(TRACKS[r].id,t,[s,w,2,gainOf(r)]);}
+    fxPump(t,s);
   }
   /* Drop: je nach Beat anders. Der Beat läuft im Anlauf weiter, nur ohne Kick, Toms, Becken und FX in der zweiten Hälfte.
      Ein Wirbel mit dem Snare-Klang des Beats (Snare, Clap oder Rim) wird schneller: Viertel, Achtel, Sechzehntel.
@@ -794,7 +801,7 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
     if(on===playing)return;
     if(on){
       try{getAC();if(!ac)return;if(ac.state==='suspended')ac.resume();bus();}catch(e){return;}
-      playing=true;step=0;bar=0;fxStart();nextT=ac.currentTime+.06;queue=[];sched();timer=setInterval(sched,25);raf=requestAnimationFrame(loop);
+      playing=true;step=0;bar=0;fxStart();nextT=startT=ac.currentTime+.06;queue=[];sched();timer=setInterval(sched,25);raf=requestAnimationFrame(loop);
     }else{
       playing=false;dropReset();fxHalt();clearInterval(timer);cancelAnimationFrame(raf);queue=[];head(-1);
     }
@@ -1002,7 +1009,65 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
     if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(shown,function(){window.prompt('Copy this link',url);});
     else window.prompt('Copy this link',url);
   }
-  $('share').addEventListener('click',shareBeat);
+  /* Beat als Audiodatei: vier Takte ab der Eins, offline berechnet, genau wie sie klingen (mit Effekten und eigener Aufnahme),
+     dazu ein kurzes Ausklingen von Hall und Echo. Dafür wird ac kurz gegen einen OfflineAudioContext getauscht: Bus und Ausgang
+     entstehen dort neu, alle Schritte werden eingeplant, dann gilt sofort wieder der echte Kontext. Ergebnis: Stereo-WAV */
+  var BARS=4,TAIL=1.5;
+  function capture(done){
+    getAC();var OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!ac||!OAC)return done(null);
+    if(REC.mic&&!REC.mic.buf){decodeRec('mic');var w=0,iv=setInterval(function(){if(!REC.mic||REC.mic.buf||++w>20){clearInterval(iv);capture(done);}},100);return;}
+    var six=st(),len=BARS*N*six,sr=ac.sampleRate,off,keep={ac:ac,B:B,bac:_bac,oc:_oc,og:_og,live:FXLIVE},s,k;
+    try{
+      off=new OAC(2,Math.ceil((.02+len+TAIL)*sr),sr);
+      ac=off;B=null;_bac=null;_oc=null;bus();FXLIVE=true;fxApply(true);
+      for(k=0;k<BARS;k++){fxTempo();for(s=0;s<N;s++)playStep(s,.02+k*N*six+s*six+((s%4===2)?six*sw:0),six,k);}
+    }catch(e){off=null;}
+    ac=keep.ac;B=keep.B;_bac=keep.bac;_oc=keep.oc;_og=keep.og;FXLIVE=keep.live;
+    if(!off)return done(null);
+    var p=off.startRendering(),fin=function(buf){
+      var n=Math.ceil((.02+len+TAIL)*sr),L=buf.getChannelData(0).slice(0,n),Rt=buf.getChannelData(1).slice(0,n),i,f=Math.ceil(TAIL*sr),a=n-f;
+      /* Ausklingen: nach dem letzten Takt sanft auf null */
+      for(i=a;i<n;i++){var g=Math.pow(1-(i-a)/f,2);L[i]*=g;Rt[i]*=g;}
+      done(wavBlob([L,Rt],sr));};
+    if(p&&p.then)p.then(fin,function(){done(null);});else off.oncomplete=function(e){fin(e.renderedBuffer);};
+  }
+  function wavBlob(ch,sr){
+    var n=ch[0].length,C=ch.length,ab=new ArrayBuffer(44+n*C*2),v=new DataView(ab),i,c,o=44;
+    function w(at,t){for(var j=0;j<t.length;j++)v.setUint8(at+j,t.charCodeAt(j));}
+    w(0,'RIFF');v.setUint32(4,36+n*C*2,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,C,true);v.setUint32(24,sr,true);v.setUint32(28,sr*C*2,true);v.setUint16(32,C*2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*C*2,true);
+    for(i=0;i<n;i++)for(c=0;c<C;c++){var x=Math.max(-1,Math.min(1,ch[c][i]));v.setInt16(o,x*32767,true);o+=2;}
+    return new Blob([ab],{type:'audio/wav'});
+  }
+  /* Teilen: halbes Blatt mit zwei Wegen, als Link (der Beat zum Weiterbauen) oder als Audiodatei (zum Anhören, mit eigener Aufnahme) */
+  var ARROW='<svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+  function shareSheet(){
+    var own=REC.mic&&pat[MIC]!==zero(),file=null,busy=false;
+    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Share</span>'+XB+'</div><div class="fxlist">'+
+      '<button type="button" class="fxi shx" id="shLink"><span><b>Link</b><small>Opens your beat in MSTR to play with'+(own?'. Your recording stays here':'')+'</small></span>'+ARROW+'</button>'+
+      '<div class="fxrow"><button type="button" class="fxi shx" id="shAudio"><span><b>Audio</b><small id="shAudioT">'+BARS+' bars as a sound file'+(own?', with your recording':'')+'</small></span>'+ARROW+'</button></div></div>',function(el){
+      var ab=el.querySelector('#shAudio'),tx=el.querySelector('#shAudioT');
+      el.querySelector('#shLink').addEventListener('click',shareBeat);
+      ab.addEventListener('click',function(){
+        if(busy)return;
+        if(file)return sendFile(file);
+        busy=true;ab.setAttribute('aria-busy','true');tx.textContent='Preparing …';
+        capture(function(blob){
+          busy=false;ab.removeAttribute('aria-busy');
+          if(!blob){tx.textContent='That did not work here. Try the link.';return;}
+          var nm=(pre>=0?NM[BEATS[pre].n]:'My beat').replace(/[^A-Za-z0-9-]+/g,'-').replace(/^-+|-+$/g,'');
+          file=new File([blob],'MSTR-'+nm+'-'+bpm+'bpm.wav',{type:'audio/wav'});
+          ab.classList.add('ready');ab.querySelector('b').textContent=canSendFile(file)?'Send audio':'Save audio';
+          tx.textContent='Ready, '+Math.round(BARS*N*st()+TAIL)+' seconds';
+        });
+      });
+    },'teilen',true);
+  }
+  function canSendFile(f){try{return !!(navigator.canShare&&navigator.share&&navigator.canShare({files:[f]}));}catch(e){return false;}}
+  function sendFile(f){
+    if(canSendFile(f)){navigator.share({files:[f],title:'MSTR'}).catch(function(){});return;}
+    var u=URL.createObjectURL(f),a=document.createElement('a');a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},4000);
+  }
+  $('share').addEventListener('click',shareSheet);
   /* Geteilter Link geöffnet: Beat übernehmen, Adresse aufräumen, mit Rückgängig */
   var shared=null;
   (function(){
@@ -1019,7 +1084,7 @@ function dropRec(id){delete REC[id];lsSet('mstr-rec-'+id,null);}
 
   build();themeUI();fxUI();playB.innerHTML=I_PLAY;
   if(shared){var before=shared;showToast('Shared beat loaded','Undo',function(){restore(before);});}
-  window.MSTR={setPlay:setPlay,code:shareCode,url:shareUrl,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
+  window.MSTR={setPlay:setPlay,capture:capture,code:shareCode,url:shareUrl,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
 })();
 
 })();

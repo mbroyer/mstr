@@ -23,7 +23,7 @@ with sync_playwright() as p:
     st=pg.evaluate('MSTR.state()')
     code=pg.evaluate('MSTR.code()');print('code',len(code),code)
     link=pg.evaluate('MSTR.url()');assert link.startswith('file://') and '?b=' in link and '#' not in link
-    pg.click('#share');pg.wait_for_timeout(300)
+    pg.click('#share');pg.wait_for_timeout(200);pg.click('#shLink');pg.wait_for_timeout(300)
     assert pg.evaluate('navigator.clipboard.readText()')==link
     assert 'Link copied' in pg.inner_text('.toast')
     # Empfänger: eigener Stand (anderes Tempo, Mic-Zeile) wird ersetzt, die Mic-Zeile bleibt
