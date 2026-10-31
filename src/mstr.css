@@ -36,9 +36,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .pill:active,.ib:active{transform:scale(.97)}
 
 .head{display:flex;flex-direction:column;gap:4px}
-.preset{margin:0;cursor:pointer;font-family:var(--f-ed);font-size:clamp(42px,11vw,60px);font-weight:400;letter-spacing:-.01em;line-height:1}
+.preset{margin:0;cursor:pointer;display:flex;align-items:center;gap:10px;min-width:0;font-family:var(--f-ed);font-size:clamp(42px,11vw,60px);font-weight:400;letter-spacing:-.01em;line-height:1}
 /* Beat wählen: gefüllter runder Knopf direkt neben dem Namen (im Dunkelmodus Weiß) */
 .prow{display:flex;align-items:center;gap:14px}
+/* Stift: zeigt, dass der Titel antippbar ist */
+.preset .pen{width:18px;height:18px;flex:none;color:var(--mute)}
+.preset #preTxt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ib.pick{width:44px;height:44px;background:var(--ink);color:var(--bg)}
 .ib.pick svg{width:20px;height:20px}
 .sub:empty{display:none}

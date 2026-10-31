@@ -181,7 +181,7 @@
     app.classList.toggle('solo',so);
     $('bpm').textContent=bpm;$('swTxt').textContent='Swing '+Math.round(sw*100)+' %';
     /* Eigener Name (beim Teilen vergeben) geht vor; sonst Name der Vorlage */
-    $('preName').textContent=title||(pre>=0?NM[BEATS[pre].n]:'Your beat');
+    $('preTxt').textContent=title||(pre>=0?NM[BEATS[pre].n]:'Your beat');
     $('sub').textContent=title&&pre>=0?'based on '+NM[BEATS[pre].n]:pre>=0&&edited?'edited':'';
   }
   function changed(){edited=true;paint();persist();}
@@ -654,7 +654,7 @@
   function molDraw(){molRaf=0;if(!molOn)return;molLast=performance.now();
     try{if(!(molTick++%12))molModel();molSize();
       if(playing)molS.time(ac.currentTime-playT0,performance.now());else if(molS.ct>=0)molS.reset();
-      var d=molDark(),o=cardOpts();if(!busyC)CARD.view(molX,molC.width,molC.height,molS,{fg:d?'#F3F3F4':'#0F0F10',bg:d?'#0E0E0F':'#FFFFFF',dark:d,title:o.title,by:o.by,preset:o.preset,hint:playing?'':'TAP TO PLAY'});
+      var d=molDark(),o=cardOpts();if(!busyC)CARD.view(molX,molC.width,molC.height,molS,{fg:d?'#F3F3F4':'#0F0F10',bg:d?'#0E0E0F':'#FFFFFF',dark:d,title:o.title,by:o.by,preset:o.preset,hint:playing?'':'TAP TO PLAY',edit:true});
     }catch(e){}
     molRaf=requestAnimationFrame(molDraw);}
   function molGo(){if(!molOn)return;if(molRaf)cancelAnimationFrame(molRaf);molRaf=requestAnimationFrame(molDraw);}

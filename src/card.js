@@ -183,30 +183,33 @@ var CARD=(function(){
     x.fillStyle=WHT;var n=4+Math.round(a*6);for(i=0;i<n;i++){var sx=g()*W,sy=g()*H,sp=.2+g()*.5,ph=g()*7;x.globalAlpha=.18+.2*g();x.beginPath();x.arc((sx+Math.sin(T*sp+ph)*30*sc)%W,(sy+T*sp*18*sc)%H,(.8+g()*1.4)*sc,0,7);x.fill();}
     if(live&&Math.random()<a*.22){x.globalAlpha=.9;x.beginPath();x.arc(W*(.2+Math.random()*.6),380*sc+(Math.random()-.5)*400*sc,1.6*sc,0,7);x.fill();}
     x.globalAlpha=1;var v=x.createRadialGradient(W/2,H/2,H*.3,W/2,H/2,H*.75);v.addColorStop(0,'rgba(0,0,0,0)');v.addColorStop(1,'rgba(0,0,0,'+(.3*a)+')');x.fillStyle=v;x.fillRect(0,0,W,H);}
-  function mono(x,txt,X,Y,col,al,sc){x.fillStyle=col;x.font='500 '+(11*sc)+'px "JetBrains Mono",ui-monospace,monospace';x.textAlign=al||'left';x.fillText(txt,X,Y);x.textAlign='left';}
+  function mono(x,txt,X,Y,col,al,sc,sz){x.fillStyle=col;x.font='500 '+((sz||11)*sc)+'px "JetBrains Mono",ui-monospace,monospace';x.textAlign=al||'left';x.fillText(txt,X,Y);x.textAlign='left';}
   function fit(x,txt,max,size,fam){var s=size;do{x.font=s+'px '+fam;s-=2;}while(x.measureText(txt).width>max&&s>18);}
   /* Die ganze Karte (9:16) auf eine Fläche W×H zeichnen; o = {title, by, preset, live} */
+  /* Story 9:16 (Einheiten: 540 × 960). Oben und unten bleibt Platz für die Leisten von Instagram und Co.:
+     alles Wichtige liegt zwischen y = 150 und y = 790 (also oberhalb der unteren 18 % und unterhalb der oberen 15 %) */
   function story(x,W,H,S,o){
     var sc=W/540,fg=WHT,bg=INK,live=!!o.live&&S.live();x.setTransform(1,0,0,1,0,0);
     x.fillStyle=bg;x.fillRect(0,0,W,H);
-    x.fillStyle=LIL;x.beginPath();x.arc(37*sc,45*sc,5*sc,0,7);x.fill();x.fillStyle=fg;x.font='700 '+(15*sc)+'px Figtree,sans-serif';x.textAlign='left';x.fillText('M S T R',48*sc,50*sc);
-    if(o.by){x.font='600 '+(14*sc)+'px Figtree,sans-serif';x.textAlign='right';x.fillText('by '+(o.by.charAt(0)==='@'?o.by:'@'+o.by),W-32*sc,52*sc);x.textAlign='left';}
-    ring(x,S,W/2,380*sc,sc,fg,bg,live,o.glass);
+    x.fillStyle=LIL;x.beginPath();x.arc(38*sc,164*sc,6*sc,0,7);x.fill();x.fillStyle=fg;x.font='700 '+(20*sc)+'px Figtree,sans-serif';x.textAlign='left';x.fillText('M S T R',52*sc,171*sc);
+    if(o.by){x.font='600 '+(19*sc)+'px Figtree,sans-serif';x.textAlign='right';x.fillText('by '+(o.by.charAt(0)==='@'?o.by:'@'+o.by),W-32*sc,172*sc);x.textAlign='left';}
+    ring(x,S,W/2,400*sc,sc*.78,fg,bg,live,o.glass);
     if(S.m.fx.lofi)vinyl(x,W,H,S,S.m.fx.lofi.a,live,sc);
-    x.fillStyle=fg;fit(x,o.title,W-64*sc,74*sc,'"Instrument Serif",ui-serif,Georgia,serif');x.fillText(o.title,32*sc,720*sc);
-    mono(x,((o.preset?o.preset+' · ':'')+S.m.bpm+' BPM · SWING '+Math.round(S.m.sw*100)+'% · '+S.m.tot+' HITS').toUpperCase(),32*sc,756*sc,GRY,'left',sc);
+    x.fillStyle=fg;fit(x,o.title,W-64*sc,92*sc,'"Instrument Serif",ui-serif,Georgia,serif');x.fillText(o.title,32*sc,686*sc);
+    mono(x,((o.preset?o.preset+' · ':'')+S.m.bpm+' BPM · SWING '+Math.round(S.m.sw*100)+'% · '+S.m.tot+' HITS').toUpperCase(),32*sc,724*sc,GRY,'left',sc,16);
     var tot=clipLen(S.m.bpm),prog=live?Math.min(1,S.ct/tot):0;
-    x.fillStyle='#2A2A2E';x.fillRect(32*sc,800*sc,W-64*sc,4*sc);x.fillStyle=LIL;x.fillRect(32*sc,800*sc,Math.max(4*sc,(W-64*sc)*prog),4*sc);
-    x.fillStyle=bg;for(var k=1;k<NBAR;k++)x.fillRect(32*sc+(W-64*sc)*k*(240/S.m.bpm)/tot-sc,799*sc,2*sc,6*sc);
-    mono(x,'TAP TO PLAY · ASIMPLEMANSLAB.COM/MSTR',32*sc,H-40*sc,GRY,'left',sc);}
+    x.fillStyle='#2A2A2E';x.fillRect(32*sc,750*sc,W-64*sc,4*sc);x.fillStyle=LIL;x.fillRect(32*sc,750*sc,Math.max(4*sc,(W-64*sc)*prog),4*sc);
+    x.fillStyle=bg;for(var k=1;k<NBAR;k++)x.fillRect(32*sc+(W-64*sc)*k*(240/S.m.bpm)/tot-sc,749*sc,2*sc,6*sc);
+    mono(x,'TAP TO PLAY · ASIMPLEMANSLAB.COM/MSTR',32*sc,780*sc,GRY,'left',sc,14);}
 
   /* Karte im Sequencer: füllt eine Fläche W×H in den Farben der App; o = {fg, bg, dark, title, by, preset}.
-     Unten stehen Titel und Zeile wie auf der fertigen Karte, oben rechts „by @name“, oben links o.hint (etwa TAP TO PLAY). Läuft der Beat nicht, steht das Bild */
+     Unten stehen Titel und Zeile wie auf der fertigen Karte, oben rechts „by @name“, oben links o.hint (etwa TAP TO PLAY), o.edit zeichnet einen kleinen Stift hinter den Titel. Läuft der Beat nicht, steht das Bild */
   function view(x,W,H,S,o){var sc=Math.min(W/540,H/760),live=S.live(),txt=o.title?130*sc:0;x.setTransform(1,0,0,1,0,0);x.fillStyle=o.bg;x.fillRect(0,0,W,H);
     var rs=Math.min(sc,(H-txt-40*sc)/560);ring(x,S,W/2,(H-txt)/2,rs,o.fg,o.dark?INK:o.bg,live,0);if(S.m.fx.lofi&&o.dark)vinyl(x,W,H,S,S.m.fx.lofi.a,live,sc);
     if(o.hint)mono(x,o.hint,24*sc,34*sc,GRY,'left',sc);
     if(o.by){x.fillStyle=o.fg;x.font='600 '+(14*sc)+'px Figtree,sans-serif';x.textAlign='right';x.fillText('by '+(o.by.charAt(0)==='@'?o.by:'@'+o.by),W-24*sc,34*sc);x.textAlign='left';}
     if(o.title){x.fillStyle=o.fg;fit(x,o.title,W-48*sc,56*sc,'"Instrument Serif",ui-serif,Georgia,serif');x.fillText(o.title,24*sc,H-66*sc);
+      if(o.edit){var tw=Math.min(x.measureText(o.title).width,W-48*sc),ps=18*sc;x.save();x.translate(24*sc+tw+12*sc,H-66*sc-ps);x.scale(ps/24,ps/24);x.strokeStyle=GRY;x.lineWidth=2;x.lineCap='round';x.lineJoin='round';x.stroke(new Path2D('M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z'));x.restore();}
       mono(x,((o.preset?o.preset+' · ':'')+S.m.bpm+' BPM · SWING '+Math.round(S.m.sw*100)+'% · '+S.m.tot+' HITS').toUpperCase(),24*sc,H-36*sc,GRY,'left',sc);}}
   /* Video aufnehmen: Canvas plus Ton aus dem fertig gerechneten Puffer, in Echtzeit (so lang wie der Clip).
      buf: AudioBuffer des Clips, ac: AudioContext. onTick(sek, gesamt). done(File|null, Grund) */
