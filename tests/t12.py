@@ -36,11 +36,17 @@ with sync_playwright() as p:
     CH={'calm':['Lo-Fi','One Drop'],'dark':['Techno','Minimal'],'happy':['Afrobeats','House'],'sad':['Lo-Fi','One Drop'],'party':['House','Amapiano'],
         'angry':['Techno','Trap'],'dreamy':['Lo-Fi','One Drop'],'epic':['Rock','Beat It'],'playful':['Funk','Reggaeton'],'slow':['Lo-Fi','One Drop'],
         'fast':["Drum'n'Bass",'Jungle'],'dusty':['Lo-Fi'],'warm':['Lo-Fi'],'spacey':['Minimal','Techno'],'dub':['One Drop'],'glitchy':['Electro','Jungle'],
-        'nervous':['Minimal','Electro'],'romantic':['Lo-Fi','One Drop'],'festival':['House','Afrobeats'],'focus':['Lo-Fi','Minimal'],'tired':['Lo-Fi','One Drop'],'late night drive':['Techno','Minimal']}
+        'nervous':['Minimal','Electro'],'romantic':['Lo-Fi','One Drop'],'festival':['House','Afrobeats'],'focus':['Lo-Fi','Minimal'],'tired':['Lo-Fi','One Drop'],'late night drive':['Techno','Minimal','House']}
+    # (derselbe Satz mehrmals hintereinander ist ein neuer Take: dann kommen alle Vorlagen der genannten Stimmungen in Frage, hier night und drive)
     for w,ok in CH.items():
         for i in range(4):
             s=say(w);bs=pg.inner_text('#sub').replace('based on ','');assert bs in ok,(w,bs,ok)
     s=say('dreamy');assert s['bpm']<80,s['bpm']
+    # Another take: derselbe Vibe gibt deutlich andere Muster (im Schnitt mindestens 12 von 112 Schritten) und mehr als eine Vorlage
+    ds=[];bases=set();prev=say('sad · dreamy · minimal')
+    for i in range(8):
+        s=say('sad · dreamy · minimal');ds.append(sum(a!=c for r1,r2 in zip(prev['pat'][:7],s['pat'][:7]) for a,c in zip(r1,r2)));bases.add(pg.inner_text('#sub'));prev=s
+    print('takes',ds,bases);assert sum(ds)/len(ds)>=12 and len(bases)>=2
     # Klänge und ohne …
     s=say('happy summer beat with cowbell');assert '5' in s['pat'][4],s['pat']
     s=say('drum and bass without hats');assert pg.inner_text('#sub')=="based on Drum'n'Bass" and s['pat'][0]==Z and 'n' not in s['pat'][6],s['pat']

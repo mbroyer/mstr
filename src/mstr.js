@@ -384,9 +384,13 @@
   }
   /* „Another take“: dieselbe Beschreibung noch einmal (der Parser würfelt leicht); ohne Beschreibung nimmt er den Stil der Vorlage, ohne beides fragt er nach dem Vibe */
   function anotherTake(){var t=typeof S.say==='string'&&S.say.trim()?S.say:pre>=0?BEATS[pre].n:'';if(!t){vibe();return;}sayBeat(t);}
+  var lastSay=typeof S.say==='string'?S.say.trim():'';
   function sayBeat(text){
     text=String(text||'').trim();if(!text)return false;
-    var o=WORTE(text,{n:BEATS.map(function(b){return b.n;}),bpm:BEATS.map(function(b){return b.bpm;}),sw:BEATS.map(function(b){return b.sw;}),rows:beatRows});
+    /* Gleicher Satz wie eben = ein neuer Take: andere Vorlage, wenn die Stimmung eine hergibt, und deutlich anderes Muster (bis zu acht Würfe) */
+    var again=text===lastSay,ctxW={n:BEATS.map(function(b){return b.n;}),bpm:BEATS.map(function(b){return b.bpm;}),sw:BEATS.map(function(b){return b.sw;}),rows:beatRows,avoid:again?pre:null},o,tries=0;
+    do{o=WORTE(text,ctxW);}while(again&&++tries<8&&o.g.reduce(function(n,row,r){for(var k=0;k<16;k++)if(row.charAt(k)!==pat[r].charAt(k))n++;return n;},0)<12);
+    lastSay=text;
     var r;
     for(r=0;r<7;r++)pat[r]=o.g[r];
     bpm=o.bpm;sw=o.sw;pre=o.pre;edited=true;

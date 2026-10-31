@@ -18,7 +18,7 @@ var WORTE=(function(){
     dnb:"drum ?(and|n|'n'|&) ?bass|dnb|d&b|liquid",
     afrobeats:'afro|afrobeat|afrobeats|nigeria|lagos|afropop',
     reggaeton:'reggaeton|dembow|latin|perreo',
-    minimal:'minimal techno|minimal|microhouse|tech ?house',
+    minimal:'minimal techno|microhouse|tech ?house',
     twostep:'2 ?-?step|two ?-?step|uk garage|ukg|garage',
     jungle:'jungle|breakbeat|breaks|amen',
     electro:'electro|robot|kraftwerk|machine|maschine|roboter',
@@ -44,7 +44,9 @@ var WORTE=(function(){
     ['tired|muede|exhausted|erschoepft|hopeful|hoffnung|gentle|zart|soft|sanft','lofi','onedrop'],
     ['drive|driving|road|strasse|autobahn|highway|cruise|cruising|roadtrip|road trip','techno','house'],
     ['spacey|cosmic|kosmisch|galaxy|galaxie|planet|moon|mond','minimal','techno'],
-    ['glitchy|glitch|broken|kaputt|chopped|stutter','electro','jungle']];
+    ['glitchy|glitch|broken|kaputt|chopped|stutter','electro','jungle'],
+    /* „minimal“ allein ist eher Dichte als Stil: nur wenn nichts anderes davor steht, wird es Minimal */
+    ['minimal|sparse|reduced|reduziert','minimal','minimal']];
   /* Klänge: Spur, Zeichen, Muster (null: eigene Regel unten) */
   var SOUND=[
     ['clap|klatsch',2,'c'],['rim|rimshot|sidestick',2,'k'],
@@ -95,7 +97,12 @@ var WORTE=(function(){
     function idx(n){return ctx.n.indexOf(n);}
     /* Stil: was zuerst im Text steht; „minimal techno“ zählt als Minimal */
     for(id in STYLE){i=find(t,STYLE[id]);if(i>=0&&(i<bi||(i===bi&&id==='minimal'))&&!neg(t,i)){bi=i;best=idx(id);}}
-    if(best<0){var mi=1e9;MOOD.forEach(function(m){var j=find(t,m[0]);if(j>=0&&j<mi){mi=j;best=idx(rnd()<.6?m[1]:m[2]);}});}
+    /* Stimmung: die zuerst genannte entscheidet (60/40 zwischen ihren zwei Vorlagen). Bei „Another take“ (ctx.avoid = Vorlage des
+       letzten Takes) kommen alle Vorlagen der genannten Stimmungen in den Topf, und die letzte bleibt draußen, wenn es andere gibt */
+    var styled=best>=0;
+    if(best<0){var mi=1e9,pot=[];MOOD.forEach(function(m){var j=find(t,m[0]);if(j<0)return;[m[1],m[2]].forEach(function(n){if(pot.indexOf(idx(n))<0)pot.push(idx(n));});
+      if(j<mi){mi=j;best=idx(rnd()<.6?m[1]:m[2]);}});
+      if(ctx.avoid!=null&&ctx.avoid===best){var alt=pot.filter(function(q){return q!==ctx.avoid;});if(alt.length)best=pick(alt);}}
     /* Tempo als Zahl (nicht „80s“ oder „90er“) */
     var num=/(^|\s)(\d{2,3})\s*(bpm)?(?=\s)/.exec(t.replace(/\b\d{2}(s|er|ies)\b/g,' ')),bpm=null;
     if(num&&+num[2]>=60&&+num[2]<=180)bpm=+num[2];
@@ -110,7 +117,7 @@ var WORTE=(function(){
       if(find(t,'very fast|super fast|sehr schnell|insane|wahnsinnig')>=0)f=1.22;
       else if(find(t,'fast|faster|schnell|quick|hektisch|frantic|rush|uptempo|up-tempo|energetic|treibend|driving')>=0)f=1.1;
       if(find(t,'half ?time|halftime')>=0)f*=.75;if(find(t,'double ?time')>=0)f*=1.3;
-      bpm=Math.round(base*f+(rnd()-.5)*4);}
+      bpm=Math.round(base*f+(rnd()-.5)*12);}
     bpm=Math.max(60,Math.min(180,bpm));
     /* Swing */
     if(find(t,'swing|swung|shuffle|wonky|drunk|betrunken|lazy|laid ?back|groovy|jazzy|bouncy|dilla|loose|locker')>=0)sw=Math.max(sw,find(t,'very|heavy|sehr|drunk|betrunken|dilla')>=0?.45:.3);
@@ -130,10 +137,18 @@ var WORTE=(function(){
       if(g[4]===dots('................'))g[4]=dots(pick(['1.1.1.1.1.1.1.1.','4..4..4...4.4...','..1...1...1...1.']));
       if(g[5]===dots('................'))g[5]=dots('............tpb.');}
 
-    /* Etwas Zufall, damit jede Beschreibung leicht anders klingt: ein paar Hats tauschen, mal eine Ghost-Note */
-    for(k=0;k<16;k++){var c=g[0].charAt(k);if(c==='x'&&k%4===3&&rnd()<.2)g[0]=set(g[0],k,'k');}
-    if(!sparse&&rnd()<.5){var gs=pick([3,7,11,14,15]);if(g[2].charAt(gs)==='0')g[2]=set(g[2],gs,'k');}
-    if(!sparse&&rnd()<.3){var ks=pick([6,10,11,14]);if(g[1].charAt(ks)==='0')g[1]=set(g[1],ks,'b');}
+    /* Jeder Take bekommt einen eigenen Groove, damit „Another take“ hörbar anders ist: Hi-Hat-Figur, Kick-Schub, Ghost-Notes,
+       Percussion, Tom-Fill und FX-Akzent werden neu gewürfelt; genannte Klänge und „ohne …“ kommen danach und gewinnen */
+    var EMPTY=dots('................');
+    if(g[0]!==EMPTY&&rnd()<.75)g[0]=dots(pick(sparse?['..o...o...o...o.','x...x...x...x...','..x...x...x..kx.']:
+      ['x.x.x.x.x.x.x.x.','xkxkxkxkxkxkxkxk','x.xkx.x.x.xkx.xx','..o...o...o...o.','x.o.x.o.x.o.x.o.','xxkxxxkxxxkxxxkx','x..xx.x.x..xx.x.']));
+    if(g[1]!==EMPTY&&rnd()<.6){var kv=pick(sparse?[[3],[10],[14]]:[[3],[6],[10,11],[14],[7,10],[6,14]]);kv.forEach(function(q){if(g[1].charAt(q)==='0')g[1]=set(g[1],q,'b');});}
+    if(!sparse&&g[2]!==EMPTY){var gn=1+Math.floor(rnd()*3);while(gn--){var gs=pick([2,3,7,9,11,14,15]);if(g[2].charAt(gs)==='0')g[2]=set(g[2],gs,'k');}}
+    if(!sparse&&rnd()<.55)g[4]=dots(pick(['1.1.1.1.1.1.1.1.','4..4..4...4.4...','..1...1...1...1.','3..3..3...3.3...','..5.....5.....5.','1111.1.11111.1.1','....2.......2...']));
+    else if(sparse&&rnd()<.5)g[4]=dots(pick(['..1...1...1...1.','....2.......2...','..5.....5.....5.','3.....3.....3...']));
+    if(rnd()<.35)g[5]=dots(pick(['............t.p.','..............pb','...........t..b.','............tpb.']));
+    if(!sparse&&rnd()<.3)g[6]=dots(pick(['....m.......m...','............z...','............s...','m.......m.......']));
+    if(!styled&&ctx.avoid!=null&&find(t,'straight|gerade|tight|robotic|mechanical|mechanisch')<0&&rnd()<.35)sw=Math.min(.45,sw+.1+rnd()*.12);
 
     /* Klänge, die genannt werden; „ohne …“ leert die Spur */
     SOUND.forEach(function(s){i=find(t,s[0]);if(i<0||neg(t,i))return;var r=s[1];
@@ -148,13 +163,18 @@ var WORTE=(function(){
     /* Effekte: alles aus, außer was gesagt wird; Lo-Fi und Dub bringen ihr Vinyl und Echo mit */
     var fx={};
     FXW.forEach(function(f){i=find(t,f[1]);if(i>=0&&!neg(t,i))fx[f[0]]=[amount(t,i),f[2]];});
+    var said=Object.keys(fx);
     if(ctx.n[best]==='lofi'&&!fx.lofi&&find(t,'vinyl|staub|dust')<0&&!/(no|without|ohne|kein)\s+(vinyl|crackle|knistern)/.test(t))fx.lofi=[45,0];
     if(find(t,'dub')>=0&&!fx.echo)fx.echo=[60,3];
     if(find(t,'dreamy|traeum|ambient|ethereal|floating|schweben')>=0&&!fx.echo)fx.echo=[35,3];
     /* Nichts genannt: der Stil bringt seine Effekte mit, die Stimmung legt einen dazu; „dry“ lässt alles aus */
     if(find(t,DRY)<0){
       if(!Object.keys(fx).length){var sf=STYLEFX[ctx.n[best]]||[['room',30,0]];fx[sf[0][0]]=[sf[0][1],sf[0][2]];if(sf[1]&&rnd()<.5)fx[sf[1][0]]=[sf[1][1],sf[1][2]];}
-      MOODFX.forEach(function(m){if(!fx[m[1]]&&Object.keys(fx).length<3&&find(t,m[0])>=0&&!neg(t,find(t,m[0])))fx[m[1]]=[m[2],m[3]];});}
+      MOODFX.forEach(function(m){if(!fx[m[1]]&&Object.keys(fx).length<3&&find(t,m[0])>=0&&!neg(t,find(t,m[0])))fx[m[1]]=[m[2],m[3]];});
+      /* Ein Take würfelt auch die Effekte: Stärken streuen (genannte behalten ihre Stärke), manchmal kommt einer dazu */
+      var POOL=[['room',35,0],['echo',30,3],['sweep',35,4],['pump',35,4],['stut',30,2],['lofi',35,0]];
+      if(Object.keys(fx).length<3&&rnd()<.45){var ex=pick(POOL);if(!fx[ex[0]])fx[ex[0]]=[ex[1],ex[2]];}
+      for(id in fx)if(said.indexOf(id)<0)fx[id]=[Math.max(15,Math.min(95,Math.round(fx[id][0]*(.75+rnd()*.55)))),fx[id][1]];}
     return {pre:best,bpm:bpm,sw:Math.max(0,Math.min(.6,sw)),g:g,fx:fx};
   };
 })();
