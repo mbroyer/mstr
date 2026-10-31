@@ -624,7 +624,7 @@
       if(gen!==cardGen)return;
       if(!buf){busyC=false;cb.disabled=false;cardLabel();cardNote('That did not work in this browser.');return;}
       o.mirror=molC;o.mirrorBg=molDark()?'#0E0E0F':'#FFFFFF';cb.classList.add('gen');cardNote('Generating the video with sound. Keep this screen open until it is done, Grid cancels.');
-      cardT=CARD.record(ac,buf,scene,o,function(t,tot){cb.style.setProperty('--p',Math.min(1,t/tot));cb.textContent='Generating · '+Math.ceil(tot-t)+' s left';},function(f,why){
+      cardT=CARD.record(ac,buf,scene,o,function(t,tot){cb.style.setProperty('--p',Math.min(1,t/tot));cb.textContent='Generating · '+Math.ceil(tot-t)+' s';},function(f,why){
         busyC=false;cb.disabled=false;cardT=null;
         if(why==='abort'){cardLabel();return;}
         if(!f){cardLabel();cardNote('Recording did not work here. Saving a picture instead.');CARD.image(scene,o,function(f2){if(f2){cfile=f2;ckey=key;giveCard(f2);}});return;}
@@ -670,7 +670,9 @@
     if(!drop)for(r=0;r<7;r++)if(pat[r].charAt(q)!=='0'&&audible(r))h.push(r);
     molS.fire({s:q,b:b,h:h,st:stu?1:0},performance.now());
     if(stu)setTimeout(function(){if(molOn&&playing)molS.fire({s:q,b:b,h:h,st:1},performance.now());},st()*500);}
-  function molSet(on){molOn=!!on;if(!molOn)cardStop();app.classList.toggle('molecule',molOn);molC.hidden=!molOn;foot.hidden=!molOn;if(molOn)cardLabel();else ct.hidden=true;
+  var transport=document.querySelector('.transport');
+  function molSet(on){molOn=!!on;if(!molOn)cardStop();app.classList.toggle('molecule',molOn);molC.hidden=!molOn;foot.hidden=!molOn;
+    if(molOn){foot.insertBefore(playB,cb);foot.insertBefore(fxB,cb);cardLabel();}else{transport.insertBefore(playB,transport.firstChild);transport.insertBefore(fxB,dropB);ct.hidden=true;}
     vGrid.setAttribute('aria-pressed',molOn?'false':'true');vCard.setAttribute('aria-pressed',molOn?'true':'false');
     S.view=molOn?'mol':'';save();if(molOn){molModel();molSize();molGo();}}
   vGrid.addEventListener('click',function(){molSet(false);});vCard.addEventListener('click',function(){molSet(true);});

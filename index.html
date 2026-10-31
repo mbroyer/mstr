@@ -261,7 +261,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .vpick .opt.off{color:var(--mute);padding:0 13px}
 
 /* Molekül-Ansicht: ersetzt Raster und Taktzeile, füllt die Höhe bis zum Transport */
-.mol{display:block;width:100%;flex:1 1 auto;min-height:300px;border-radius:24px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.mol{display:block;width:100%;flex:1 1 0;min-height:220px;border-radius:24px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .mol:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
 .app.molecule .tracks,.app.molecule .beatrow{display:none}
 /* Umschalter oben: Grid zum Bauen, Orbit zum Zusehen und Teilen */
@@ -274,7 +274,14 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .app.molecule .head{display:none}
 /* In der Karte gibt es keine Leiste: Tipp auf den Ring spielt und stoppt, Tipp auf den Titel benennt */
 .app.molecule .transport{display:none}
-.app.molecule .cardfoot{padding-bottom:max(12px,env(safe-area-inset-bottom,0px))}
+/* Orbit füllt genau den sichtbaren Bereich, nichts rutscht unter die Safari-Leiste; Play und Effekte stehen in der Reihe beim Knopf */
+.app.molecule{height:100%;height:100dvh;min-height:0;overflow:hidden;box-sizing:border-box}
+.app.molecule .cardfoot{padding-bottom:0}
+.cardfoot .play{width:48px;height:48px}
+.cardfoot #fxBtn{flex:none;height:48px;min-width:48px;width:48px;padding:0;border-radius:50%;justify-content:center;gap:4px}
+.cardfoot #fxBtn .fxl{display:none}
+.cardfoot #fxBtn.on{width:auto;padding:0 14px 0 12px;border-radius:999px}
+#shCardT{min-height:2.7em;padding-bottom:max(10px,env(safe-area-inset-bottom,0px))}
 #shCardT{margin-top:-8px;line-height:1.35}
 /* Video entsteht: der Knopf füllt sich von links mit dem Fortschritt (--p 0..1) */
 .pill.go.gen,.pill.go.gen:disabled{opacity:1;color:var(--ink);border-color:transparent;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 60%,var(--bg)) calc(var(--p,0) * 100%),color-mix(in srgb,var(--accent) 18%,var(--bg)) calc(var(--p,0) * 100%));transition:background .2s linear}
@@ -1499,7 +1506,7 @@ var CARD=(function(){
       if(gen!==cardGen)return;
       if(!buf){busyC=false;cb.disabled=false;cardLabel();cardNote('That did not work in this browser.');return;}
       o.mirror=molC;o.mirrorBg=molDark()?'#0E0E0F':'#FFFFFF';cb.classList.add('gen');cardNote('Generating the video with sound. Keep this screen open until it is done, Grid cancels.');
-      cardT=CARD.record(ac,buf,scene,o,function(t,tot){cb.style.setProperty('--p',Math.min(1,t/tot));cb.textContent='Generating · '+Math.ceil(tot-t)+' s left';},function(f,why){
+      cardT=CARD.record(ac,buf,scene,o,function(t,tot){cb.style.setProperty('--p',Math.min(1,t/tot));cb.textContent='Generating · '+Math.ceil(tot-t)+' s';},function(f,why){
         busyC=false;cb.disabled=false;cardT=null;
         if(why==='abort'){cardLabel();return;}
         if(!f){cardLabel();cardNote('Recording did not work here. Saving a picture instead.');CARD.image(scene,o,function(f2){if(f2){cfile=f2;ckey=key;giveCard(f2);}});return;}
@@ -1545,7 +1552,9 @@ var CARD=(function(){
     if(!drop)for(r=0;r<7;r++)if(pat[r].charAt(q)!=='0'&&audible(r))h.push(r);
     molS.fire({s:q,b:b,h:h,st:stu?1:0},performance.now());
     if(stu)setTimeout(function(){if(molOn&&playing)molS.fire({s:q,b:b,h:h,st:1},performance.now());},st()*500);}
-  function molSet(on){molOn=!!on;if(!molOn)cardStop();app.classList.toggle('molecule',molOn);molC.hidden=!molOn;foot.hidden=!molOn;if(molOn)cardLabel();else ct.hidden=true;
+  var transport=document.querySelector('.transport');
+  function molSet(on){molOn=!!on;if(!molOn)cardStop();app.classList.toggle('molecule',molOn);molC.hidden=!molOn;foot.hidden=!molOn;
+    if(molOn){foot.insertBefore(playB,cb);foot.insertBefore(fxB,cb);cardLabel();}else{transport.insertBefore(playB,transport.firstChild);transport.insertBefore(fxB,dropB);ct.hidden=true;}
     vGrid.setAttribute('aria-pressed',molOn?'false':'true');vCard.setAttribute('aria-pressed',molOn?'true':'false');
     S.view=molOn?'mol':'';save();if(molOn){molModel();molSize();molGo();}}
   vGrid.addEventListener('click',function(){molSet(false);});vCard.addEventListener('click',function(){molSet(true);});
