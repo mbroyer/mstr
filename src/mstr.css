@@ -48,7 +48,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .preset .pen{width:18px;height:18px;flex:none;color:var(--mute)}
 .preset.fixed{cursor:default}.preset.fixed .pen{display:none}
 .preset #preTxt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-/* Textknöpfe: „Change beat“ unter dem Titel, Link und WAV im Orbit */
+/* Textknöpfe: „Change beat“ unter dem Titel, der Link im Orbit */
 .lnk{border:0;background:none;padding:4px 0;font:600 13px var(--f-ui);color:var(--ink);display:inline-flex;align-items:center;gap:5px;cursor:pointer}
 .lnk svg{width:13px;height:13px;flex:none;color:var(--mute)}
 /* Beat beschreiben: das Feld steht oben in der Beat-Liste */

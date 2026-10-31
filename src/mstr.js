@@ -566,28 +566,7 @@ $('preName').addEventListener('click',function(){if(canName())nameSheet();});
     if(navigator.clipboard&&navigator.clipboard.writeText)navigator.clipboard.writeText(url).then(shown,function(){window.prompt('Copy this link',url);});
     else window.prompt('Copy this link',url);
   }
-  /* Beat als WAV-Loop zum Samplen: vier Takte, offline berechnet, genau wie sie klingen (mit Effekten und eigener Aufnahme).
-     Nahtlos: ein Takt Vorlauf wird mitgerechnet und weggeschnitten, so liegen Hall und Echo des letzten Takts schon am Anfang,
-     und Filter und Stottern (Perioden 1, 2 oder 4 Takte) stehen am Ende wieder genau wie am Anfang.
-     Dafür wird ac kurz gegen einen OfflineAudioContext getauscht: Bus und Ausgang entstehen dort neu, alle Schritte werden
-     eingeplant, dann gilt sofort wieder der echte Kontext */
-  var BARS=4;
-  function renderLoop(done){
-    getAC();var OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!ac||!OAC)return done(null);
-    if(REC.mic&&!REC.mic.buf){decodeRec('mic');var w=0,iv=setInterval(function(){if(!REC.mic||REC.mic.buf||++w>20){clearInterval(iv);renderLoop(done);}},100);return;}
-    var six=st(),barT=N*six,sr=ac.sampleRate,n=Math.round(BARS*barT*sr),a=Math.round(barT*sr),off,keep={ac:ac,B:B,bac:_bac,oc:_oc,og:_og,live:FXLIVE},s,k;
-    try{
-      off=new OAC(2,a+n,sr);
-      ac=off;B=null;_bac=null;_oc=null;bus();FXLIVE=true;fxApply(true);
-      /* Takt -1 ist der Vorlauf; er zählt als letzter Takt der Schleife (wichtig fürs Stottern) */
-      for(k=-1;k<BARS;k++){fxTempo();for(s=0;s<N;s++)playStep(s,(k+1)*barT+s*six+((s%4===2)?six*sw:0),six,(k+BARS)%BARS);}
-    }catch(e){off=null;}
-    ac=keep.ac;B=keep.B;_bac=keep.bac;_oc=keep.oc;_og=keep.og;FXLIVE=keep.live;
-    if(!off)return done(null);
-    var p=off.startRendering(),fin=function(buf){done(wavBlob([buf.getChannelData(0).slice(a,a+n),buf.getChannelData(1).slice(a,a+n)],sr));};
-    if(p&&p.then)p.then(fin,function(){done(null);});else off.oncomplete=function(e){fin(e.renderedBuffer);};
-  }
-  /* Ton für die Karte: der Bogen über 8 Takte plus Schlussschlag (Kick und Crash) und Nachklang, offline gerechnet wie der WAV-Loop,
+  /* Ton für die Karte: der Bogen über 8 Takte plus Schlussschlag (Kick und Crash) und Nachklang, offline gerechnet,
      ohne Vorlauf (der Clip fängt leer an). done(AudioBuffer|null) */
   function renderClip(done){
     getAC();var OAC=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!ac||!OAC)return done(null);
@@ -605,21 +584,13 @@ $('preName').addEventListener('click',function(){if(canName())nameSheet();});
     var p=off.startRendering();
     if(p&&p.then)p.then(done,function(){done(null);});else off.oncomplete=function(e){done(e.renderedBuffer);};
   }
-  function wavBlob(ch,sr){
-    var n=ch[0].length,C=ch.length,ab=new ArrayBuffer(44+n*C*2),v=new DataView(ab),i,c,o=44;
-    function w(at,t){for(var j=0;j<t.length;j++)v.setUint8(at+j,t.charCodeAt(j));}
-    w(0,'RIFF');v.setUint32(4,36+n*C*2,true);w(8,'WAVE');w(12,'fmt ');v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,C,true);v.setUint32(24,sr,true);v.setUint32(28,sr*C*2,true);v.setUint16(32,C*2,true);v.setUint16(34,16,true);w(36,'data');v.setUint32(40,n*C*2,true);
-    for(i=0;i<n;i++)for(c=0;c<C;c++){var x=Math.max(-1,Math.min(1,ch[c][i]));v.setInt16(o,x*32767,true);o+=2;}
-    return new Blob([ab],{type:'audio/wav'});
-  }
   function baseName(){
     return (title||(pre>=0?NM[BEATS[pre].n]:'MSTR beat')).normalize('NFD').replace(/[\u0300-\u036f]/g,'').replace(/[^A-Za-z0-9]+/g,'-').replace(/^-+|-+$/g,'')||'MSTR-beat';
   }
-  function fileName(){return baseName()+'-'+bpm+'bpm.wav';}
   function canSendFile(f){try{return !!(navigator.canShare&&navigator.share&&navigator.canShare({files:[f]}));}catch(e){return false;}}
   function saveFile(f){var u=URL.createObjectURL(f),a=document.createElement('a');a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},4000);}
   /* Teilen: Name und „By“ im Namens-Blatt (Titel antippen; der Würfel schlägt einen Titel aus dem Beat vor),
-     „Share video“ im Orbit macht das Video, darunter stehen Link und WAV-Loop */
+     „Share video“ im Orbit macht das Video, darunter steht der Link */
   var handle=typeof S.by==='string'?S.by.slice(0,24):'';
   /* Karte: die eingeschalteten Effekte wandern mit ins Bild (Stärke 0–1 und Auswahl), GLASS ist die Durchsichtigkeit der Atome */
   var GLASS=0;
@@ -649,29 +620,14 @@ $('preName').addEventListener('click',function(){if(canName())nameSheet();});
       by.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();closeSheet();}});
     },'name','top');
   }
-  /* Link und WAV-Loop stehen im Orbit als Textzeile unter dem Video-Knopf; die Hinweiszeile darunter antwortet */
+  /* Der Link steht im Orbit als Textzeile unter dem Video-Knopf; die Hinweiszeile darunter antwortet */
   (function(){
-    var sb=$('shSend'),sbT=0,wb=$('shWav'),wl=wb.querySelector('span'),file=null,busy=false;
+    var sb=$('shSend'),sbT=0;
     function sendLabel(){sb.querySelector('span').textContent=nativeShare()?'Send link':'Copy link';}
     sendLabel();window.addEventListener('resize',sendLabel);
     sb.addEventListener('click',function(){shareBeat(function(){
       var own=pat[MIC]&&pat[MIC]!==zero();cardNote('Link copied. Paste it into a chat or mail, it opens your beat on asimplemanslab.com/mstr.'+(own?' Your recording stays on this device.':''));
       sb.querySelector('span').textContent='\u2713 Link copied';clearTimeout(sbT);sbT=setTimeout(function(){sendLabel();},2500);});});
-    /* Download: am Handy übers Teilen-Menü (dort „In Dateien sichern“), sonst direkt. Lässt der Browser das Teilen
-       nach dem Rechnen nicht mehr zu, braucht es einen zweiten Tipp */
-    function give(f){
-      if(navigator.share&&matchMedia('(pointer: coarse)').matches&&canSendFile(f)){
-        navigator.share({files:[f],title:f.name}).catch(function(e){if(e&&e.name==='NotAllowedError'){wl.textContent='Save '+f.name;}});return;}
-      saveFile(f);cardNote('Saved '+f.name+': '+BARS+' bars that loop seamlessly, for sampling'+(pat[MIC]&&pat[MIC]!==zero()?', with your recording':'')+'.');
-    }
-    wb.addEventListener('click',function(){
-      if(busy)return;
-      if(file&&file.name===fileName())return give(file);
-      busy=true;cardNote('Rendering '+BARS+' bars …');
-      renderLoop(function(blob){busy=false;
-        if(!blob){cardNote('That did not work in this browser.');return;}
-        file=new File([blob],fileName(),{type:'audio/wav'});give(file);});
-    });
   })();
   /* „Share“ in der Karten-Ansicht: Ton offline rechnen, Video in Echtzeit aufnehmen (die Karten-Ansicht zeigt derweil die Aufnahme),
      dann teilen (Handy) oder sichern (Rechner). Ohne Video gibt es ein Bild. Dieselbe Datei wird beim zweiten Tipp sofort gegeben */
@@ -782,5 +738,5 @@ $('preName').addEventListener('click',function(){if(canName())nameSheet();});
   document.addEventListener('visibilitychange',function(){if(!document.hidden)molGo();});window.addEventListener('pageshow',molGo);
   molSet(S.view!=='grid');
 
-  window.MSTR={welcome:vibe,vibe:vibe,take:anotherTake,view:molSet,say:sayBeat,setPlay:setPlay,renderLoop:renderLoop,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,hue:setHue,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,col:col,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
+  window.MSTR={welcome:vibe,vibe:vibe,take:anotherTake,view:molSet,say:sayBeat,setPlay:setPlay,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,hue:setHue,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,col:col,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
 })();
