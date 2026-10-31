@@ -181,7 +181,7 @@
     app.classList.toggle('solo',so);
     $('bpm').textContent=bpm;$('swTxt').textContent='Swing '+Math.round(sw*100)+' %';
     /* Eigener Name (beim Teilen vergeben) geht vor; sonst Name der Vorlage */
-    $('preName').textContent=title||(pre>=0?NM[BEATS[pre].n]:'Your beat');
+    $('preTxt').textContent=title||(pre>=0?NM[BEATS[pre].n]:'Your beat');
     $('sub').textContent=title&&pre>=0?'based on '+NM[BEATS[pre].n]:pre>=0&&edited?'edited':'';
   }
   function changed(){edited=true;paint();persist();}
@@ -302,7 +302,7 @@
   catcher.addEventListener('click',function(){closeSheet();});
   function openSheet(html,init,name,half){
     lastFocus=document.activeElement;sheet.innerHTML=(half?'<div class="grab" aria-hidden="true"></div>':BACK)+html;sheet.hidden=false;sheet.scrollTop=0;
-    sheet.classList.toggle('half',!!half);catcher.hidden=!half;
+    sheet.classList.toggle('half',!!half);sheet.classList.toggle('top',half==='top');catcher.hidden=!half;
     if(!half)document.body.classList.add('noscroll');
     sheet.querySelector('[data-close]').addEventListener('click',closeSheet);
     if(init)init(sheet);
@@ -564,7 +564,7 @@
       var by=el.querySelector('#shBy');by.value=handle;
       by.addEventListener('input',function(){handle=by.value.replace(/[\u0000-\u001f\s]/g,'').slice(0,24);S.by=handle;save();});
       by.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();closeSheet();}});
-    },'name',true);
+    },'name','top');
   }
   function moreSheet(){
     var own=pat[MIC]&&pat[MIC]!==zero(),mob=nativeShare();
@@ -654,7 +654,7 @@
   function molDraw(){molRaf=0;if(!molOn)return;molLast=performance.now();
     try{if(!(molTick++%12))molModel();molSize();
       if(playing)molS.time(ac.currentTime-playT0,performance.now());else if(molS.ct>=0)molS.reset();
-      var d=molDark(),o=cardOpts();if(!busyC)CARD.view(molX,molC.width,molC.height,molS,{fg:d?'#F3F3F4':'#0F0F10',bg:d?'#0E0E0F':'#FFFFFF',dark:d,title:o.title,by:o.by,preset:o.preset});
+      var d=molDark(),o=cardOpts();if(!busyC)CARD.view(molX,molC.width,molC.height,molS,{fg:d?'#F3F3F4':'#0F0F10',bg:d?'#0E0E0F':'#FFFFFF',dark:d,title:o.title,by:o.by,preset:o.preset,hint:playing?'':'TAP TO PLAY',edit:true});
     }catch(e){}
     molRaf=requestAnimationFrame(molDraw);}
   function molGo(){if(!molOn)return;if(molRaf)cancelAnimationFrame(molRaf);molRaf=requestAnimationFrame(molDraw);}
@@ -666,7 +666,9 @@
     vGrid.setAttribute('aria-pressed',molOn?'false':'true');vCard.setAttribute('aria-pressed',molOn?'true':'false');
     S.view=molOn?'mol':'';save();if(molOn){molModel();molSize();molGo();}}
   vGrid.addEventListener('click',function(){molSet(false);});vCard.addEventListener('click',function(){molSet(true);});
-  molC.addEventListener('click',function(){if(!busyC)nameSheet();});
+  /* Unterer Streifen (Titel und Zeile) öffnet den Namen, der Rest spielt oder stoppt */
+  function molTitleHit(e){var r=molC.getBoundingClientRect(),sc=Math.min(r.width/540,r.height/760);return e.clientY-r.top>r.height-130*sc;}
+  molC.addEventListener('click',function(e){if(busyC)return;if(molTitleHit(e))nameSheet();else setPlay(!playing);});
   molC.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();if(!busyC)nameSheet();}});
   document.addEventListener('visibilitychange',function(){if(!document.hidden)molGo();});window.addEventListener('pageshow',molGo);
   if(S.view==='mol')molSet(true);

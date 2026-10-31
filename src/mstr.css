@@ -36,9 +36,12 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .pill:active,.ib:active{transform:scale(.97)}
 
 .head{display:flex;flex-direction:column;gap:4px}
-.preset{margin:0;cursor:pointer;font-family:var(--f-ed);font-size:clamp(42px,11vw,60px);font-weight:400;letter-spacing:-.01em;line-height:1}
+.preset{margin:0;cursor:pointer;display:flex;align-items:center;gap:10px;min-width:0;font-family:var(--f-ed);font-size:clamp(42px,11vw,60px);font-weight:400;letter-spacing:-.01em;line-height:1}
 /* Beat wählen: gefüllter runder Knopf direkt neben dem Namen (im Dunkelmodus Weiß) */
 .prow{display:flex;align-items:center;gap:14px}
+/* Stift: zeigt, dass der Titel antippbar ist */
+.preset .pen{width:18px;height:18px;flex:none;color:var(--mute)}
+.preset #preTxt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ib.pick{width:44px;height:44px;background:var(--ink);color:var(--bg)}
 .ib.pick svg{width:20px;height:20px}
 .sub:empty{display:none}
@@ -120,6 +123,10 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 @keyframes fade{from{opacity:0}}
 .sheet.half{inset:auto 0 0 0;margin-inline:auto;max-width:760px;max-height:72vh;border-radius:28px 28px 0 0;box-shadow:0 -1px 0 var(--line),0 -24px 48px -24px rgba(0,0,0,.25);padding-top:10px;gap:20px;animation:up .25s cubic-bezier(.2,.8,.2,1)}
 @keyframes up{from{transform:translateY(48px);opacity:0}}
+/* top: Blatt von oben (Name), damit die Tastatur auf dem Handy die Felder nicht verdeckt */
+.sheet.half.top{inset:0 0 auto 0;border-radius:0 0 28px 28px;padding-top:max(18px,env(safe-area-inset-top,0px));padding-bottom:24px;box-shadow:0 1px 0 var(--line),0 24px 48px -24px rgba(0,0,0,.25);animation:down .25s cubic-bezier(.2,.8,.2,1)}
+.sheet.top .grab{display:none}
+@keyframes down{from{transform:translateY(-48px);opacity:0}}
 .catcher{position:fixed;inset:0;z-index:20}
 .grab{width:36px;height:4px;border-radius:2px;background:var(--line)}
 .pnav{display:flex;align-items:center;justify-content:space-between;gap:12px;min-height:40px}
@@ -252,4 +259,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .cardfoot .pill{flex:1;width:auto}
 .cardfoot .ib{width:48px;height:48px}
 .app.molecule .head{display:none}
+/* In der Karte gibt es keine Leiste: Tipp auf den Ring spielt und stoppt, Tipp auf den Titel benennt */
+.app.molecule .transport{display:none}
+.app.molecule .cardfoot{padding-bottom:max(12px,env(safe-area-inset-bottom,0px))}
 #shCardT{margin-top:-8px}
