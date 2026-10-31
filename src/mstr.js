@@ -677,7 +677,7 @@
   var hueY=0;
   function molSize(){var b=molC.getBoundingClientRect(),d=Math.min(2,window.devicePixelRatio||1),w=Math.round(b.width*d),h=Math.round(b.height*d);
     if(w&&h&&(molC.width!==w||molC.height!==h)){molC.width=w;molC.height=h;}
-    var sc=Math.min(b.width/540,b.height/760),y=Math.round(130*sc+34);if(y!==hueY){hueY=y;hueRow.style.transform='translateY(-'+y+'px)';hueRow.style.paddingLeft=Math.round(24*sc-11)+'px';}}
+    var sc=Math.min(b.width/540,b.height/760),y=Math.round(130*sc+48);if(y!==hueY){hueY=y;hueRow.style.transform='translateY(-'+y+'px)';hueRow.style.paddingLeft=Math.round(24*sc-11)+'px';}}
   /* Die Schleife läuft, solange die Ansicht an ist. Ein Fehler beim Zeichnen bricht sie nicht ab, und molGo startet sie
      immer frisch, damit ein liegen gebliebener Frame (etwa nach dem Sperren des Handys) sie nicht blockiert */
   function molDraw(){molRaf=0;if(!molOn)return;molLast=performance.now();
