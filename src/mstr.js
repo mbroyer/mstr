@@ -178,9 +178,13 @@
     /* Eigener Name (beim Teilen vergeben) geht vor; sonst Name der Vorlage */
     $('preTxt').textContent=title||(pre>=0?NM[BEATS[pre].n]:'Your beat');
     $('sub').textContent=title&&pre>=0?'based on '+NM[BEATS[pre].n]:pre>=0&&edited?'edited':'';
+    /* Eine unveränderte Vorlage behält ihren Namen: kein Stift, kein Namens-Blatt */
+    $('preName').classList.toggle('fixed',!canName());$('preName').title=canName()?'Name your beat':'';
     if(cb&&molOn)cardLabel();
   }
   function changed(){edited=true;paint();persist();}
+  /* Benennen geht nur bei eigenen oder veränderten Beats; Namen werden nur erzeugt, nie getippt */
+  function canName(){return pre<0||edited;}
 
   /* ---------- Wiedergabe ---------- */
   function head(s,b){
@@ -385,14 +389,16 @@
     var o=WORTE(text,{n:BEATS.map(function(b){return b.n;}),bpm:BEATS.map(function(b){return b.bpm;}),sw:BEATS.map(function(b){return b.sw;}),rows:beatRows});
     var before=snap(),r;
     for(r=0;r<7;r++)pat[r]=o.g[r];
-    bpm=o.bpm;sw=o.sw;pre=o.pre;edited=true;title=o.nm;
+    bpm=o.bpm;sw=o.sw;pre=o.pre;edited=true;
     FXS.forEach(function(f){var id=f[0],x=o.fx[id];FX[id]=!!x;if(x){FXA[id]=x[0];if(f[4]&&f[4].some(function(q){return q[0]===x[1];}))FXO[id]=x[1];}});
-    fxSave();fxApply(false);fxUI();paint();persist();
+    fxSave();fxApply(false);fxUI();
+    /* Der Name kommt aus dem Beat selbst, nicht aus dem getippten Text */
+    title=CARD.title(cardModel(),Math.floor(Math.random()*8));paint();persist();
     if(!playing)setPlay(true);
     showToast('New beat','Undo',function(){restore(before);});
     return true;
   }
-$('preName').addEventListener('click',function(){nameSheet();});
+$('preName').addEventListener('click',function(){if(canName())nameSheet();});
 
   function tempoSheet(){
     var taps=[];
@@ -629,15 +635,14 @@ $('preName').addEventListener('click',function(){nameSheet();});
   function setTitle(v){v=v.replace(/[\u0000-\u001f]/g,'').trim().slice(0,40);if(v!==title){title=v;paint();persist();}}
   function nameSheet(){
     openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Name your beat</span>'+XB+'</div>'+
-      '<label class="namef"><span class="lbl">Name</span><span class="namer"><input id="shName" type="text" maxlength="40" autocomplete="off" enterkeyhint="done" data-focus>'+
-      '<button type="button" class="ib" id="shDice" aria-label="Suggest a title" title="Suggest a title"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></span></label>'+
+      '<div class="namef"><span class="lbl">Name</span><div class="namer"><strong class="nameo" id="shName"></strong>'+
+      '<button type="button" class="pill dice" id="shDice"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Another name</button></div></div>'+
       '<label class="byf"><span class="lbl">By</span><input id="shBy" type="text" maxlength="24" autocomplete="off" placeholder="@you"></label>'+
-      '<p class="shnote">Both appear on your card. The name also travels with the link.</p>',function(el){
-      var inp=el.querySelector('#shName'),dice=el.querySelector('#shDice'),diceN=0,m=cardModel();
-      inp.value=title;inp.placeholder=pre>=0?NM[BEATS[pre].n]:'Your beat';
-      inp.addEventListener('input',function(){setTitle(inp.value);});
-      inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();closeSheet();}});
-      dice.addEventListener('click',function(){inp.value=CARD.title(m,diceN++);setTitle(inp.value);});
+      '<p class="shnote">Names come from the beat itself: tempo, swing and the loudest track. Both appear on your card, the name also travels with the link.</p>',function(el){
+      var out=el.querySelector('#shName'),dice=el.querySelector('#shDice'),diceN=0,m=cardModel();
+      /* Ohne Namen bekommt der Beat gleich einen; „Another name“ geht die Vorschläge durch */
+      if(!title)setTitle(CARD.title(m,diceN));diceN++;out.textContent=title;
+      dice.addEventListener('click',function(){setTitle(CARD.title(m,diceN++));out.textContent=title;});
       var by=el.querySelector('#shBy');by.value=handle;
       by.addEventListener('input',function(){handle=by.value.replace(/[\u0000-\u001f\s]/g,'').slice(0,24);S.by=handle;save();});
       by.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();closeSheet();}});
@@ -746,7 +751,7 @@ $('preName').addEventListener('click',function(){nameSheet();});
   function molDraw(){molRaf=0;if(!molOn)return;molLast=performance.now();
     try{if(!(molTick++%12))molModel();molSize();
       if(playing)molS.time(ac.currentTime-playT0,performance.now());else if(molS.ct>=0)molS.reset();
-      var d=molDark(),o=cardOpts();if(!busyC)CARD.view(molX,molC.width,molC.height,molS,{fg:d?'#F3F3F4':'#0F0F10',bg:d?'#0E0E0F':'#FFFFFF',dark:d,title:o.title,by:o.by,preset:o.preset,hint:playing?'':'TAP TO PLAY',edit:true});
+      var d=molDark(),o=cardOpts();if(!busyC)CARD.view(molX,molC.width,molC.height,molS,{fg:d?'#F3F3F4':'#0F0F10',bg:d?'#0E0E0F':'#FFFFFF',dark:d,title:o.title,by:o.by,preset:o.preset,hint:playing?'':'TAP TO PLAY',edit:canName()});
     }catch(e){}
     molRaf=requestAnimationFrame(molDraw);}
   function molGo(){if(!molOn)return;if(molRaf)cancelAnimationFrame(molRaf);molRaf=requestAnimationFrame(molDraw);}
@@ -768,8 +773,8 @@ $('preName').addEventListener('click',function(){nameSheet();});
   molC.addEventListener('pointerdown',function(e){swX=e.clientX;swY=e.clientY;swOn=true;swiped=false;});
   molC.addEventListener('pointermove',function(e){if(!swOn||swiped||busyC)return;var dx=e.clientX-swX,dy=e.clientY-swY;if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(dy)*1.5){swiped=true;hueStep(dx<0?1:-1);}});
   molC.addEventListener('pointerup',function(){swOn=false;});molC.addEventListener('pointercancel',function(){swOn=false;swiped=false;});
-  molC.addEventListener('click',function(e){if(swiped){swiped=false;return;}if(busyC)return;if(molTitleHit(e))nameSheet();else setPlay(!playing);});
-  molC.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();if(!busyC)nameSheet();}});
+  molC.addEventListener('click',function(e){if(swiped){swiped=false;return;}if(busyC)return;if(molTitleHit(e)){if(canName())nameSheet();}else setPlay(!playing);});
+  molC.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();if(!busyC&&canName())nameSheet();}});
   document.addEventListener('visibilitychange',function(){if(!document.hidden)molGo();});window.addEventListener('pageshow',molGo);
   if(S.view==='mol')molSet(true);
 

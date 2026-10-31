@@ -1,7 +1,8 @@
 /* ===== Beat aus Worten: eine Beschreibung (Englisch oder Deutsch) wird zu einem Beat, ganz ohne Server.
    Stichworte für Stil, Stimmung, Tempo, Swing, Dichte, Klänge und Effekte. Der Stil wählt die Vorlage als Grundlage,
    der Rest verändert sie; dazu etwas Zufall, so gibt dieselbe Beschreibung beim nächsten Mal eine Variante.
-   WORTE(text, ctx) liefert {pre, bpm, sw, g (sieben Spuren), fx {id:[Stärke, Auswahl]}, nm}.
+   WORTE(text, ctx) liefert {pre, bpm, sw, g (sieben Spuren), fx {id:[Stärke, Auswahl]}}.
+   Jeder Beat bekommt Effekte: genannte zuerst, sonst die, die zum Stil passen (außer „dry“/„trocken“).
    ctx: n (Namen der Vorlagen), bpm (ihr Tempo), sw (ihr Swing), rows(i) (ihre sieben Spuren), rnd (Zufall 0–1) ===== */
 var WORTE=(function(){
   /* Stile in Reihenfolge der Vorlagen-Namen; was im Text zuerst steht, gewinnt */
@@ -54,6 +55,17 @@ var WORTE=(function(){
     ['pump','pump|pumping|sidechain|side-chain|breath|atmen|atmend|ducking|pumpend',4],
     ['stut','stutter|stotter|glitch|glitchy|chopped|broken|kaputt|stuttering',2],
     ['lofi','vinyl|dust|dusty|staub|old|alt|retro|crackle|knister|tape|kassette|cassette|warm|grain|grainy|lo-?fi|record|schallplatte|platte']];
+  /* Effekte, die zum Stil gehören, wenn keine genannt sind: der erste immer, der zweite zur Hälfte */
+  var STYLEFX={
+    lofi:[['lofi',45,0],['room',30,0]],house:[['pump',40,4],['sweep',35,4]],funk:[['room',25,0],['stut',30,2]],rock:[['room',45,0]],
+    techno:[['sweep',45,2],['pump',45,4]],trap:[['room',45,0],['stut',35,4]],onedrop:[['echo',55,3],['room',30,0]],pop80:[['room',60,0],['echo',25,2]],
+    dnb:[['room',30,0],['echo',30,2]],afrobeats:[['room',30,0],['echo',25,3]],reggaeton:[['echo',30,2],['room',25,0]],minimal:[['sweep',35,4],['echo',25,3]],
+    twostep:[['sweep',35,2],['pump',35,2]],jungle:[['echo',35,2],['stut',35,4]],electro:[['sweep',40,2],['stut',30,2]],amapiano:[['room',35,0],['echo',30,3]]};
+  /* Stimmung bringt ihren Effekt mit, wenn er nicht schon dabei ist */
+  var MOODFX=[['dark|duester|finster|night|nacht|underground|keller|cave|hoehle','sweep',40,4],['sad|traurig|melanchol|rain|regen|lonely|einsam|sleep|schlaf','room',50,0],
+    ['party|dance|tanz|tanzen|dancefloor|feier|club','pump',40,4],['angry|wuetend|aggressive|aggressiv|hard|hart|brutal|heavy','stut',40,2],
+    ['happy|froehlich|sunny|sonnig|summer|sommer|beach|strand','echo',25,3],['epic|episch|stadium|stadion|huge|riesig','room',70,0]];
+  var DRY='dry|trocken|clean|sauber|no effects|without effects|ohne effekte|keine effekte|pur|pure|raw|roh';
   var MORE='very|super|lots of|lot of|loads of|tons of|heavy|massive|extreme|really|sehr|extrem|viel|voll|krass|ganz viel|mega|so much',
       LESS='a bit|a little|little|slight|slightly|subtle|soft|light|leicht|etwas|wenig|bisschen|dezent|sanft|kaum';
 
@@ -129,9 +141,10 @@ var WORTE=(function(){
     if(ctx.n[best]==='lofi'&&!fx.lofi&&find(t,'vinyl|staub|dust')<0&&!/(no|without|ohne|kein)\s+(vinyl|crackle|knistern)/.test(t))fx.lofi=[45,0];
     if(find(t,'dub')>=0&&!fx.echo)fx.echo=[60,3];
     if(find(t,'dreamy|traeum|ambient|ethereal|floating|schweben')>=0&&!fx.echo)fx.echo=[35,3];
-    var nm=String(text||'').replace(/[\u0000-\u001f]/g,' ').replace(/\s+/g,' ').trim();
-    if(nm.length>40){nm=nm.slice(0,40);var sp=nm.lastIndexOf(' ');if(sp>20)nm=nm.slice(0,sp);}
-    nm=nm.charAt(0).toUpperCase()+nm.slice(1);
-    return {pre:best,bpm:bpm,sw:Math.max(0,Math.min(.6,sw)),g:g,fx:fx,nm:nm};
+    /* Nichts genannt: der Stil bringt seine Effekte mit, die Stimmung legt einen dazu; „dry“ lässt alles aus */
+    if(find(t,DRY)<0){
+      if(!Object.keys(fx).length){var sf=STYLEFX[ctx.n[best]]||[['room',30,0]];fx[sf[0][0]]=[sf[0][1],sf[0][2]];if(sf[1]&&rnd()<.5)fx[sf[1][0]]=[sf[1][1],sf[1][2]];}
+      MOODFX.forEach(function(m){if(!fx[m[1]]&&Object.keys(fx).length<3&&find(t,m[0])>=0&&!neg(t,find(t,m[0])))fx[m[1]]=[m[2],m[3]];});}
+    return {pre:best,bpm:bpm,sw:Math.max(0,Math.min(.6,sw)),g:g,fx:fx};
   };
 })();

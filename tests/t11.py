@@ -26,8 +26,10 @@ with sync_playwright() as p:
     # Effekt an: Modell folgt (Raum), Blatt schließen, weiter spielen ohne Fehler
     pg.click('#vGrid');pg.click('#fxBtn');pg.wait_for_timeout(200);pg.locator('.fxrow[data-fx="room"] .fxi').click();pg.keyboard.press('Escape');pg.click('#vCard');pg.wait_for_timeout(900)
     assert pg.evaluate('MSTR.state().fx.room')
-    # Neu laden: Ansicht bleibt; Tipp auf den Titel öffnet das Namens-Blatt oben (Tastatur verdeckt es nicht); Tipp auf den Ring stoppt; Grid bringt das Raster zurück
+    # Neu laden: Ansicht bleibt; Tipp auf den Titel einer unveränderten Vorlage öffnet nichts; nach einem gesetzten Punkt öffnet er das Namens-Blatt oben (Tastatur verdeckt es nicht); Tipp auf den Ring stoppt; Grid bringt das Raster zurück
     pg.reload();pg.wait_for_timeout(400);assert pg.locator('#mol').is_visible()
+    bx=pg.locator('#mol').bounding_box();pg.click('#mol',position={'x':60,'y':bx['height']-40});pg.wait_for_timeout(300);assert pg.locator('#sheet').is_hidden(),'Vorlage ohne Änderung: kein Namens-Blatt'
+    pg.click('#vGrid');pg.wait_for_timeout(200);pg.locator('.tracks .trk').nth(4).locator('.dot').nth(5).click();pg.click('#vCard');pg.wait_for_timeout(400)
     bx=pg.locator('#mol').bounding_box();pg.click('#mol',position={'x':60,'y':bx['height']-40});pg.wait_for_timeout(300);assert pg.locator('#shName').is_visible()
     assert pg.evaluate("document.querySelector('.sheet').classList.contains('top')&&document.querySelector('.sheet').getBoundingClientRect().top<=1"),'Namensblatt oben'
     pg.keyboard.press('Escape');pg.wait_for_timeout(200)

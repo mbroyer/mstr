@@ -1,5 +1,5 @@
 # Beat aus Worten: Sprechblase öffnet das Feld, Abschicken macht einen Beat (Stil, Tempo, Swing, Klänge, ohne …, Effekte),
-# Spur Aufnahme bleibt, Name ist die Beschreibung, Rückgängig, Stand bleibt nach Neuladen
+# Spur Aufnahme bleibt, Name wird erzeugt (nie der getippte Text), jeder Beat hat Effekte (außer „dry“), Rückgängig, Stand bleibt nach Neuladen
 import os,json
 from playwright.sync_api import sync_playwright
 H=os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
@@ -19,10 +19,15 @@ with sync_playwright() as p:
         pg.evaluate('MSTR.say('+json.dumps(t)+')');return pg.evaluate('MSTR.state()')
     # Stil und Tempo-Wörter
     s=say('dusty slow hip hop with vinyl');assert pg.inner_text('#sub')=='based on Lo-Fi' and s['bpm']<82 and s['fx']['lofi'],s
-    assert pg.inner_text('#preName')=='Dusty slow hip hop with vinyl'
+    nm=pg.inner_text('#preName');assert nm and nm.lower()!='dusty slow hip hop with vinyl' and not pg.evaluate("document.querySelector('#preName').classList.contains('fixed')"),nm
     assert s['pat'][7]=='a'+'0'*15,'Spur Aufnahme bleibt'
     s=say('dark fast techno, lots of echo');assert pg.inner_text('#sub')=='based on Techno' and s['bpm']>138 and s['fx']['echo'] and s['fxa']['echo']>=80,s
     assert not s['fx']['lofi'],'Effekte, die nicht genannt sind, gehen aus'
+    # Ohne Effekt-Wörter bringt der Stil seine mit; „dry“ lässt alle aus
+    for txt in ['reggae','techno','asdf qwer','happy summer beat','slow hip hop']:
+        s=say(txt);assert any(s['fx'].values()),(txt,s['fx'])
+    s=say('reggae');assert s['fx']['echo'],s['fx']
+    s=say('dry techno');assert not any(s['fx'].values()),s['fx']
     # Deutsch mit Endungen, Zahl als Tempo, „80s“ ist kein Tempo
     s=say('schneller treibender Techno mit Stottern');assert pg.inner_text('#sub')=='based on Techno' and s['bpm']>138 and s['fx']['stut'],s
     s=say('something at 90 bpm');assert s['bpm']==90
@@ -50,13 +55,13 @@ with sync_playwright() as p:
     pg.click('.toast button');pg.wait_for_timeout(200)
     s=pg.evaluate('MSTR.state()');assert s['pat']==before['pat'] and s['bpm']==before['bpm'],'Rückgängig'
     # Leeres Feld nimmt das Beispiel; der Pfeil schickt ab; die letzte Beschreibung steht beim nächsten Mal drin
-    pg.click('#preBtn');pg.wait_for_timeout(300);pg.fill('#sayIn','');ph=pg.get_attribute('#sayIn','placeholder')
+    pg.click('#preBtn');pg.wait_for_timeout(300);pg.fill('#sayIn','');ph=pg.get_attribute('#sayIn','placeholder');p0=pg.evaluate('MSTR.state()')['pat']
     pg.click('#sayGo');pg.wait_for_timeout(300)
-    assert pg.inner_text('#preName').lower()==ph.lower(),(pg.inner_text('#preName'),ph)
+    assert pg.inner_text('#preName').lower()!=ph.lower() and pg.inner_text('#preName') and pg.evaluate('MSTR.state()')['pat']!=p0,'Beispiel wird abgeschickt, Name kommt aus dem Beat'
     pg.click('#preBtn');pg.wait_for_timeout(300);pg.fill('#sayIn','minimal techno with ride');pg.click('#sayGo');pg.wait_for_timeout(300)
     s=pg.evaluate('MSTR.state()');pg.evaluate('MSTR.setPlay(false)')
     pg.reload();pg.wait_for_timeout(300)
-    assert pg.inner_text('#preName')=='Minimal techno with ride' and pg.evaluate('MSTR.state()')['pat']==s['pat']
+    nm=pg.inner_text('#preName');assert nm and nm!='Minimal techno with ride' and pg.evaluate('MSTR.state()')['pat']==s['pat']
     pg.click('#preBtn');pg.wait_for_timeout(300);assert pg.input_value('#sayIn')=='minimal techno with ride'
     pg.keyboard.press('Escape')
     assert not err,err

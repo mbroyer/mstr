@@ -26,12 +26,14 @@ with sync_playwright() as p:
     pg.evaluate("document.querySelector('#tempoBtn').click()");pg.wait_for_timeout(200)
     pg.fill('#tBpm','120');pg.dispatch_event('#tBpm','change');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
     pg.click('#play');pg.wait_for_timeout(300)
-    pg.click('#preName');pg.wait_for_timeout(200);pg.fill('#shName','Café Loop');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
+    pg.locator('.tracks .trk').nth(4).locator('.dot').nth(5).click();pg.wait_for_timeout(100)
+    pg.click('#preName');pg.wait_for_timeout(200);name=pg.inner_text('#shName');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
+    import re;base=re.sub(r'[^A-Za-z0-9]+','-',name).strip('-')
     pg.click('#vCard');pg.wait_for_timeout(200)
     with pg.expect_download(timeout=15000) as d:pg.click('#shWav')
-    dl=d.value;print(dl.suggested_filename);assert dl.suggested_filename=='Cafe-Loop-120bpm.wav'
+    dl=d.value;print(dl.suggested_filename);assert dl.suggested_filename==base+'-120bpm.wav',(dl.suggested_filename,base)
     assert pg.evaluate('MSTR.state().playing'),'Wiedergabe läuft weiter'
-    pg.wait_for_timeout(200);assert 'Saved Cafe-Loop-120bpm.wav' in pg.inner_text('#shCardT')
+    pg.wait_for_timeout(200);assert 'Saved '+base+'-120bpm.wav' in pg.inner_text('#shCardT')
     ch,sr,n,smp=wav(dl.path())
     print('kanäle',ch,'rate',sr,'sekunden',round(n/sr,4))
     assert ch==2 and n==round(8*sr),'genau 4 Takte bei 120 BPM = 8 s'
