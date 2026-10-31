@@ -179,7 +179,6 @@
     $('preTxt').textContent=title||(pre>=0?NM[BEATS[pre].n]:'Your beat');
     $('sub').textContent=title&&pre>=0?'based on '+NM[BEATS[pre].n]:pre>=0&&edited?'edited':'';
     /* Eine unveränderte Vorlage behält ihren Namen: kein Stift, kein Namens-Blatt */
-    $('preName').classList.toggle('fixed',!canName());$('preName').title=canName()?'Name your beat':'';
     if(cb&&molOn)cardLabel();
   }
   function changed(){edited=true;paint();persist();}
@@ -388,7 +387,7 @@
   function sayBeat(text){
     text=String(text||'').trim();if(!text)return false;
     var o=WORTE(text,{n:BEATS.map(function(b){return b.n;}),bpm:BEATS.map(function(b){return b.bpm;}),sw:BEATS.map(function(b){return b.sw;}),rows:beatRows});
-    var before=snap(),r;
+    var r;
     for(r=0;r<7;r++)pat[r]=o.g[r];
     bpm=o.bpm;sw=o.sw;pre=o.pre;edited=true;
     FXS.forEach(function(f){var id=f[0],x=o.fx[id];FX[id]=!!x;if(x){FXA[id]=x[0];if(f[4]&&f[4].some(function(q){return q[0]===x[1];}))FXO[id]=x[1];}});
@@ -396,10 +395,8 @@
     /* Der Name kommt aus dem Beat selbst, nicht aus dem getippten Text */
     title=CARD.title(cardModel(),Math.floor(Math.random()*8));paint();persist();
     if(!playing)setPlay(true);
-    showToast('New beat','Undo',function(){restore(before);});
     return true;
   }
-$('preName').addEventListener('click',function(){if(canName())nameSheet();});
 
   function tempoSheet(){
     var taps=[];
@@ -620,14 +617,14 @@ $('preName').addEventListener('click',function(){if(canName())nameSheet();});
       by.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();closeSheet();}});
     },'name','top');
   }
-  /* Der Link steht im Orbit als Textzeile unter dem Video-Knopf; die Hinweiszeile darunter antwortet */
+  /* Der Link ist ein runder Knopf neben dem Video-Knopf; die Hinweiszeile darunter antwortet kurz */
   (function(){
     var sb=$('shSend'),sbT=0;
-    function sendLabel(){sb.querySelector('span').textContent=nativeShare()?'Send link':'Copy link';}
+    function sendLabel(){var t=nativeShare()?'Send link':'Copy link';sb.setAttribute('aria-label',t);sb.title=t;sb.classList.remove('ok');}
     sendLabel();window.addEventListener('resize',sendLabel);
     sb.addEventListener('click',function(){shareBeat(function(){
-      var own=pat[MIC]&&pat[MIC]!==zero();cardNote('Link copied. Paste it into a chat or mail, it opens your beat on asimplemanslab.com/mstr.'+(own?' Your recording stays on this device.':''));
-      sb.querySelector('span').textContent='\u2713 Link copied';clearTimeout(sbT);sbT=setTimeout(function(){sendLabel();},2500);});});
+      var own=pat[MIC]&&pat[MIC]!==zero();cardNote('Link copied.'+(own?' Your recording stays on this device.':''));
+      sb.classList.add('ok');sb.setAttribute('aria-label','Link copied');clearTimeout(sbT);sbT=setTimeout(function(){sendLabel();cardNote('');},2500);});});
   })();
   /* „Share“ in der Karten-Ansicht: Ton offline rechnen, Video in Echtzeit aufnehmen (die Karten-Ansicht zeigt derweil die Aufnahme),
      dann teilen (Handy) oder sichern (Rechner). Ohne Video gibt es ein Bild. Dieselbe Datei wird beim zweiten Tipp sofort gegeben */
@@ -639,9 +636,8 @@ $('preName').addEventListener('click',function(){if(canName())nameSheet();});
   function cardNote(t){ct.textContent=t;ct.hidden=!t||!molOn;}
   function cardLabel(){if(busyC)return;cb.classList.remove('gen');cb.style.removeProperty('--p');var ready=cfile&&ckey===cardKey(),mob=nativeShare(),secs=Math.round(CARD.clipLen(bpm));
     cb.textContent=video?(mob?'Share video':'Save video'):(mob?'Share image':'Save image');
-    if(!video){cardNote(ready?'Ready. Tap to share it again.':'A picture of your orbit for Story and chats.');return;}
-    if(ready)cardNote(mob?'Ready, '+secs+' s with sound. Tap to open the share sheet, the link to your beat comes along. It stays until you change the beat.':'Ready, '+secs+' s with sound. Tap to save it again, it stays until you change the beat.');
-    else cardNote('Makes a '+secs+' s video with sound for Story, Reels and chats, then '+(mob?'opens the share sheet with the link to your beat':'saves it')+'. Takes as long as the video.');}
+    if(!video){cardNote(ready?'Ready. Tap to share it again.':'');return;}
+    cardNote(ready?(mob?'Ready, '+secs+' s with sound. Tap to share.':'Ready, '+secs+' s with sound. Tap to save it again.'):'');}
   /* Am Handy reist der Link als Text mit dem Video: in Chats kommt beides in einer Nachricht an, Instagram nimmt nur das Video */
   /* Am Handy öffnet erst ein frischer Tipp das Teilen-Menü (iOS verweigert es ohne Geste); verweigert es trotzdem, wird die Datei gesichert */
   function giveCard(f){
@@ -717,9 +713,8 @@ $('preName').addEventListener('click',function(){if(canName())nameSheet();});
     molS.fire({s:q,b:b,h:h,st:stu?1:0},performance.now());
     if(stu)setTimeout(function(){if(molOn&&playing)molS.fire({s:q,b:b,h:h,st:1},performance.now());},st()*500);}
   var transport=document.querySelector('.transport');
-  var links=$('cardlinks');
-  /* Der Orbit ist die Startseite, das Raster ist „die Maschine“ dahinter (S.view 'grid'); Play wandert mit in die Reihe bei Another take */
-  function molSet(on){molOn=!!on;if(!molOn)cardStop();app.classList.toggle('molecule',molOn);molC.hidden=!molOn;foot.hidden=!molOn;hueRow.hidden=!molOn;links.hidden=!molOn;takes.hidden=!molOn;machineRow.hidden=!molOn;vOrbit.hidden=molOn;vibeTxt.hidden=!molOn;
+    /* Der Orbit ist die Startseite, das Raster ist „die Maschine“ dahinter (S.view 'grid'); Play wandert mit in die Reihe bei Another take */
+  function molSet(on){molOn=!!on;if(!molOn)cardStop();app.classList.toggle('molecule',molOn);molC.hidden=!molOn;foot.hidden=!molOn;hueRow.hidden=!molOn;takes.hidden=!molOn;machineRow.hidden=!molOn;vOrbit.hidden=molOn;vibeTxt.hidden=!molOn;
     if(molOn){takes.insertBefore(playB,takes.firstChild);cardLabel();vibeUI();forceDark();}else{transport.insertBefore(playB,transport.firstChild);ct.hidden=true;themeUI();}
     S.view=molOn?'':'grid';save();if(molOn){molModel();molSize();molGo();}}
   function vibeUI(){var t=typeof S.say==='string'?S.say.trim():'';vibeTxt.textContent=t.length>26?t.slice(0,25).trim()+'…':t;}
@@ -738,5 +733,5 @@ $('preName').addEventListener('click',function(){if(canName())nameSheet();});
   document.addEventListener('visibilitychange',function(){if(!document.hidden)molGo();});window.addEventListener('pageshow',molGo);
   molSet(S.view!=='grid');
 
-  window.MSTR={welcome:vibe,vibe:vibe,take:anotherTake,view:molSet,say:sayBeat,setPlay:setPlay,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,hue:setHue,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,col:col,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
+  window.MSTR={name:nameSheet,welcome:vibe,vibe:vibe,take:anotherTake,view:molSet,say:sayBeat,setPlay:setPlay,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,hue:setHue,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,col:col,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
 })();

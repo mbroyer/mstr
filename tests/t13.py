@@ -28,8 +28,11 @@ with sync_playwright() as p:
     s0=pg.evaluate('MSTR.state()');pg.evaluate('MSTR.setPlay(false)');pg.reload();pg.wait_for_timeout(400)
     assert pg.locator('#sheet').is_hidden() and pg.locator('#mol').is_visible() and pg.evaluate('MSTR.state()')['pat']==s0['pat']
     # Another take: gleicher Vibe, anderes Muster, läuft
-    pg.click('#takeBtn');pg.wait_for_timeout(400);s1=pg.evaluate('MSTR.state()')
-    assert s1['pat']!=s0['pat'] and s1['playing'] and pg.text_content('#vibeTxt')=='dark · spacey · fast' and 'New beat' in pg.inner_text('.toast')
+    # Der Parser würfelt leicht; selten kommt zufällig dasselbe Muster, darum bis zu drei Takes
+    for i in range(3):
+        pg.click('#takeBtn');pg.wait_for_timeout(400);s1=pg.evaluate('MSTR.state()')
+        if s1['pat']!=s0['pat']:break
+    assert s1['pat']!=s0['pat'] and s1['playing'] and pg.text_content('#vibeTxt')=='dark · spacey · fast' and pg.locator('.toast').count()==0
     # Change vibe: Blatt mit X und dem alten Satz, Chips markiert; X schließt ohne Änderung
     pg.evaluate('MSTR.setPlay(false)');pg.click('#vibeBtn');pg.wait_for_timeout(300)
     assert pg.locator('#sheet [data-close]').count()==1 and pg.input_value('#sayIn')=='dark · spacey · fast' and pg.get_attribute('.chip[data-w="dark"]','aria-pressed')=='true'
