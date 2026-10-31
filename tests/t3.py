@@ -11,7 +11,7 @@ with sync_playwright() as p:
     pg=b.new_page(viewport={'width':390,'height':844})
     pg.on('pageerror',lambda e:err.append(str(e)))
     pg.on('console',lambda m:m.type=='error' and err.append(m.text))
-    pg.goto('file://'+H+'/index.html');pg.evaluate("MSTR.welcome(false)");pg.wait_for_timeout(300)
+    pg.goto('file://'+H+'/index.html');pg.evaluate("MSTR.welcome(false);MSTR.view(false)");pg.wait_for_timeout(300)
     mic=pg.locator('.tracks .trk').nth(7)
     assert 'own' in mic.get_attribute('class') and mic.locator('.nm').text_content()=='Mic'
     # Nur die Spur Aufnahme hat den Aufnahmeknopf

@@ -10,7 +10,7 @@ def press(pg,loc,ms=600,touch=False):
 with sync_playwright() as p:
     b=p.chromium.launch(**({'executable_path':os.environ['PW_CHROME']} if os.environ.get('PW_CHROME') else {}))
     pg=b.new_page(viewport={'width':390,'height':844});pg.on('pageerror',lambda e:err.append(str(e)))
-    pg.goto(url);pg.evaluate("MSTR.welcome(false)");pg.wait_for_timeout(300)
+    pg.goto(url);pg.evaluate("MSTR.welcome(false);MSTR.view(false)");pg.wait_for_timeout(300)
     pg.click('#preBtn');pg.wait_for_timeout(200);pg.click('#clr');pg.wait_for_timeout(200)
     hats=pg.locator('.tracks .trk').nth(0).locator('.dot')
     # Kurz antippen schaltet wie bisher, ohne Feld
