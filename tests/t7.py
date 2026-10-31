@@ -9,7 +9,7 @@ with sync_playwright() as p:
     # Absender: Vorlage verändern, Tempo, Swing, Lautstärke, Mute, Effekte
     ctx=b.new_context(viewport={'width':390,'height':844},permissions=['clipboard-read','clipboard-write'])
     pg=ctx.new_page();pg.on('pageerror',lambda e:err.append(str(e)))
-    pg.goto(url);pg.wait_for_timeout(300)
+    pg.goto(url);pg.evaluate("MSTR.welcome(false)");pg.wait_for_timeout(300)
     assert pg.locator('#vCard').is_visible() and pg.inner_text('#vCard').strip()=='Share' and pg.locator('#share').count()==0,'Share oben rechts, kein Teilen-Knopf in der Leiste'
     assert pg.evaluate('document.documentElement.scrollWidth')<=390,'waagerechtes Scrollen'
     pg.locator('.tracks .trk').nth(5).locator('.dot').nth(3).click()
@@ -44,7 +44,7 @@ with sync_playwright() as p:
     link=link.replace(SITE,url)
     # Empfänger: eigener Stand (anderes Tempo, Mic-Zeile) wird ersetzt, die Mic-Zeile bleibt
     ctx2=b.new_context(viewport={'width':390,'height':844});q=ctx2.new_page();q.on('pageerror',lambda e:err.append(str(e)))
-    q.goto(url);q.wait_for_timeout(300)
+    q.goto(url);q.evaluate("MSTR.welcome(false)");q.wait_for_timeout(300)
     q.evaluate("localStorage.setItem('mstr-v1',JSON.stringify({pat:{v:5,g:Array(8).fill('0'.repeat(16)).map((x,i)=>i==7?'a'+'0'.repeat(15):x),bpm:70,sw:0,pre:-1}}))")
     q.goto(link);q.wait_for_timeout(400)
     s2=q.evaluate('MSTR.state()')
@@ -75,14 +75,14 @@ with sync_playwright() as p:
     # Handy mit Teilen-Menü: Send link, das Menü bekommt Titel, Text und Link
     m=b.new_context(viewport={'width':390,'height':844},has_touch=True,is_mobile=True);mp=m.new_page();mp.on('pageerror',lambda e:err.append(str(e)))
     mp.add_init_script("navigator.share=d=>{window.__shared=d;return Promise.resolve();}")
-    mp.goto(url);mp.wait_for_timeout(300);mp.click('#preName');mp.wait_for_timeout(300);mp.fill('#shName','Test');mp.keyboard.press('Escape');mp.wait_for_timeout(200)
+    mp.goto(url);mp.evaluate("MSTR.welcome(false)");mp.wait_for_timeout(300);mp.click('#preName');mp.wait_for_timeout(300);mp.fill('#shName','Test');mp.keyboard.press('Escape');mp.wait_for_timeout(200)
     mp.click('#vCard');mp.wait_for_timeout(300)
     assert mp.inner_text('#shSend')=='Send link'
     mp.click('#shSend');mp.wait_for_timeout(300)
     d=mp.evaluate('window.__shared');assert d['url'].startswith(SITE+'?b=') and 'Test' in d['text'],d
     # Leiste am Handy: Effects und Drop tragen ihr Wort (erst unter 360 px nur das Symbol), alles passt ohne Scrollen
     for vw in (320,360,390):
-        q2=b.new_page(viewport={'width':vw,'height':800});q2.goto(url);q2.wait_for_timeout(200)
+        q2=b.new_page(viewport={'width':vw,'height':800});q2.goto(url);q2.evaluate("MSTR.welcome(false)");q2.wait_for_timeout(200)
         assert q2.locator('#fxBtn .fxl').is_visible()==(vw>=360) and q2.evaluate('document.documentElement.scrollWidth')<=vw
         r=q2.locator('#tempoBtn').bounding_box();assert r['x']+r['width']<=vw-12,(vw,r)
     b.close()

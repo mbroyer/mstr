@@ -8,7 +8,7 @@ with sync_playwright() as p:
     b=p.chromium.launch(**({'executable_path':os.environ['PW_CHROME']} if os.environ.get('PW_CHROME') else {}))
     pg=b.new_page(viewport={'width':390,'height':844})
     pg.on('pageerror',lambda e:err.append(str(e)))
-    pg.goto(url);pg.wait_for_timeout(300)
+    pg.goto(url);pg.evaluate("MSTR.welcome(false)");pg.wait_for_timeout(300)
     assert pg.locator('.tracks .trk').count()==8,pg.locator('.tracks .trk').count()
     assert pg.locator('.tracks .trk').first.locator('.dot').count()==16
     assert pg.locator('.tracks .ic svg').count()==8,'Spur-Icons fehlen'
