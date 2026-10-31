@@ -270,10 +270,12 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .cardfoot{display:flex;gap:8px;align-items:center}
 /* Farbwahl im Orbit: fünf Punkte, der gewählte trägt einen Ring; die Orbit-Farbe färbt dort auch den Video-Knopf */
-.hue{display:flex;justify-content:center;gap:14px;padding:2px 0 10px}
-.hue button{width:22px;height:22px;border-radius:50%;border:0;padding:0;background:var(--c);cursor:pointer;transition:transform .15s}
-.hue button[aria-checked="true"]{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--c)}
-.hue button:active{transform:scale(.9)}
+/* Zurückhaltend wie die App: kleine graue Punkte, nur der gewählte trägt seine Farbe; die Tipp-Fläche bleibt groß */
+.hue{display:flex;justify-content:center;gap:2px;padding:0 0 6px}
+.hue button{width:28px;height:24px;border:0;padding:0;background:none;cursor:pointer;display:grid;place-items:center}
+.hue button::after{content:"";width:6px;height:6px;border-radius:50%;background:var(--off);transition:transform .15s,background .15s}
+.hue button[aria-checked="true"]::after{background:var(--c);transform:scale(1.5)}
+.hue button:active::after{transform:scale(.8)}
 .app.molecule{--accent:var(--orbit,#C7B3FF)}
 .cardfoot .pill{flex:1;width:auto}
 .cardfoot .ib{width:48px;height:48px}

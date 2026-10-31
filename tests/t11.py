@@ -38,6 +38,7 @@ with sync_playwright() as p:
     c1=pg.evaluate(snap);pg.wait_for_timeout(300);c2=pg.evaluate(snap);assert c1!=c2,'läuft nach dem zweiten Umschalten'
     # Farbwahl: fünf Punkte im Orbit, Koralle färbt Orbit und Link, bleibt nach dem Neuladen, Grid blendet die Punkte aus
     assert pg.locator('#hue button').count()==5 and pg.locator('#hue').is_visible()
+    assert pg.locator('#hue').bounding_box()['height']<=32,'Farbwahl bleibt klein'
     assert pg.get_attribute('#hue button[data-hue="f"]','aria-checked')=='true' and not pg.evaluate('MSTR.code()').endswith('.k')
     pg.wait_for_timeout(300);d1=pg.evaluate(snap);pg.click('#hue button[data-hue="k"]');pg.wait_for_timeout(300)
     assert pg.evaluate('MSTR.state().col')=='k' and pg.get_attribute('#hue button[data-hue="k"]','aria-checked')=='true' and pg.evaluate('MSTR.code()').endswith('.k')
