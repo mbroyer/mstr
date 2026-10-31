@@ -10,10 +10,10 @@ with sync_playwright() as p:
     ctx=b.new_context(viewport={'width':390,'height':844},permissions=['clipboard-read','clipboard-write'])
     pg=ctx.new_page();pg.on('pageerror',lambda e:err.append(str(e)))
     pg.goto(url);pg.wait_for_timeout(300)
-    assert pg.locator('#vCard').is_visible() and pg.locator('#share').count()==0,'kein Teilen-Knopf mehr in der Leiste'
+    assert pg.locator('#vCard').is_visible() and pg.inner_text('#vCard').strip()=='Share' and pg.locator('#share').count()==0,'Share oben rechts, kein Teilen-Knopf in der Leiste'
     assert pg.evaluate('document.documentElement.scrollWidth')<=390,'waagerechtes Scrollen'
     pg.locator('.tracks .trk').nth(5).locator('.dot').nth(3).click()
-    pg.locator('.tracks .trk').nth(4).locator('.ms.m').click()
+    pg.locator('.tracks .trk').nth(4).locator('.tn').click();pg.click('#kMute');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
     pg.click('#fxBtn');pg.wait_for_timeout(200)
     pg.locator('.fxrow .fxi').nth(1).click();pg.locator('.fxrow').nth(1).locator('.opt').nth(2).click()
     pg.locator('.fxrow .fxi').nth(5).click()
@@ -31,16 +31,15 @@ with sync_playwright() as p:
     st=pg.evaluate('MSTR.state()')
     code=pg.evaluate('MSTR.code()');print('code',len(code),code);assert code.endswith('.m')
     link=pg.evaluate('MSTR.url()');assert link.startswith(SITE+'?b=') and '#' not in link
-    # Link: in der Karten-Ansicht hinter dem Mehr-Knopf
-    pg.keyboard.press('Escape');pg.wait_for_timeout(200);pg.click('#vCard');pg.click('#more');pg.wait_for_timeout(300)
+    # Link: im Orbit als Textzeile unter dem Video-Knopf
+    pg.keyboard.press('Escape');pg.wait_for_timeout(200);pg.click('#vCard');pg.wait_for_timeout(300);assert pg.locator('#more').count()==0
     assert pg.inner_text('#shSend')=='Copy link'
     pg.click('#shSend');pg.wait_for_timeout(300)
     assert pg.evaluate('navigator.clipboard.readText()')==link
-    # Rechner: der Knopf heißt Copy link und bestätigt das Kopieren, das Blatt bleibt offen (für Download WAV)
-    assert pg.inner_text('#shSend')=='\u2713 Link copied' and 'Paste it' in pg.inner_text('#shSendT')
-    assert pg.locator('#sheet').is_visible()
+    # Rechner: der Knopf heißt Copy link und bestätigt das Kopieren, die Hinweiszeile erklärt
+    assert pg.inner_text('#shSend')=='\u2713 Link copied' and 'Paste it' in pg.inner_text('#shCardT')
     pg.wait_for_timeout(2700);assert pg.inner_text('#shSend')=='Copy link'
-    pg.keyboard.press('Escape')
+    pg.click('#vGrid')
     pg.reload();pg.wait_for_timeout(300);assert pg.inner_text('#preName')=="Mia's Groove 2.0 ü",'Name bleibt gespeichert'
     link=link.replace(SITE,url)
     # Empfänger: eigener Stand (anderes Tempo, Mic-Zeile) wird ersetzt, die Mic-Zeile bleibt
@@ -55,7 +54,7 @@ with sync_playwright() as p:
     assert s2['fx']==st['fx'] and s2['fxa']['lofi']==73 and s2['fxo']['echo']==4,(s2['fx'],s2['fxa'],s2['fxo'])
     assert q.inner_text('#preName')=="Mia's Groove 2.0 ü" and s2['pre']==st['pre']
     assert s2['col']=='m','Orbit-Farbe kommt mit dem Link'
-    assert q.locator('.tracks .trk').nth(4).locator('.ms.m').get_attribute('aria-pressed')=='true'
+    assert q.locator('.tracks .trk.quiet').count()==1
     assert '?b=' not in q.url,q.url
     assert "Mia's Groove 2.0 ü\u201d loaded" in q.inner_text('.toast'),q.inner_text('.toast')
     # bleibt nach Neuladen
@@ -77,14 +76,14 @@ with sync_playwright() as p:
     m=b.new_context(viewport={'width':390,'height':844},has_touch=True,is_mobile=True);mp=m.new_page();mp.on('pageerror',lambda e:err.append(str(e)))
     mp.add_init_script("navigator.share=d=>{window.__shared=d;return Promise.resolve();}")
     mp.goto(url);mp.wait_for_timeout(300);mp.click('#preName');mp.wait_for_timeout(300);mp.fill('#shName','Test');mp.keyboard.press('Escape');mp.wait_for_timeout(200)
-    mp.click('#vCard');mp.click('#more');mp.wait_for_timeout(300)
-    assert mp.inner_text('#shSend')=='Send link' and 'Paste' not in mp.inner_text('#shSendT')
+    mp.click('#vCard');mp.wait_for_timeout(300)
+    assert mp.inner_text('#shSend')=='Send link'
     mp.click('#shSend');mp.wait_for_timeout(300)
     d=mp.evaluate('window.__shared');assert d['url'].startswith(SITE+'?b=') and 'Test' in d['text'],d
-    # Leiste am Handy: Effects nur als Symbol, alles passt ohne Scrollen
-    for vw in (360,390):
+    # Leiste am Handy: Effects und Drop tragen ihr Wort (erst unter 360 px nur das Symbol), alles passt ohne Scrollen
+    for vw in (320,360,390):
         q2=b.new_page(viewport={'width':vw,'height':800});q2.goto(url);q2.wait_for_timeout(200)
-        assert q2.locator('#fxBtn .fxl').is_hidden() and q2.evaluate('document.documentElement.scrollWidth')<=vw
+        assert q2.locator('#fxBtn .fxl').is_visible()==(vw>=360) and q2.evaluate('document.documentElement.scrollWidth')<=vw
         r=q2.locator('#tempoBtn').bounding_box();assert r['x']+r['width']<=vw-12,(vw,r)
     b.close()
 assert not err,err

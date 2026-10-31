@@ -7,11 +7,13 @@ with sync_playwright() as p:
     b=p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'],**({'executable_path':os.environ['PW_CHROME']} if os.environ.get('PW_CHROME') else {}))
     ctx=b.new_context(viewport={'width':390,'height':760});pg=ctx.new_page();pg.on('pageerror',lambda e:err.append(str(e)))
     pg.goto('file://'+H+'/index.html');pg.wait_for_timeout(300)
-    assert pg.locator('#mol').is_hidden() and pg.locator('#tracks').is_visible()
+    assert pg.locator('#mol').is_hidden() and pg.locator('#tracks').is_visible() and pg.locator('#vGrid').is_hidden() and pg.locator('#vCard').is_visible()
+    assert pg.locator('#shCardT').is_hidden() and pg.locator('#cardlinks').is_hidden(),'im Raster kein Orbit-Hinweis'
+    assert pg.locator('#miniOrb').is_hidden();pg.click('#play');pg.wait_for_timeout(300);assert pg.locator('#miniOrb').is_visible(),'Mini-Orbit läuft im Share-Knopf mit';pg.click('#play')
     assert pg.evaluate('document.documentElement.dataset.theme')=='dark','neue Nutzer starten dunkel'
     assert pg.locator('#hue button').first.is_hidden()
     pg.click('#vCard');pg.wait_for_timeout(200)
-    assert pg.locator('#mol').is_visible() and pg.locator('#tracks').is_hidden() and pg.get_attribute('#vCard','aria-pressed')=='true' and pg.get_attribute('#vGrid','aria-pressed')=='false'
+    assert pg.locator('#mol').is_visible() and pg.locator('#tracks').is_hidden() and pg.locator('#vCard').is_hidden() and pg.locator('#vGrid').is_visible(),'Orbit: Pfeil zurück statt Share'
     assert pg.locator('.transport').is_hidden() and pg.locator('#shCardBtn').is_visible(),'in der Karte keine Leiste'
     assert pg.evaluate("JSON.parse(localStorage.getItem('mstr-v1')).view")=='mol'
     assert pg.evaluate('document.documentElement.scrollWidth')<=390

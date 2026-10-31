@@ -50,25 +50,31 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 
 .head{display:flex;flex-direction:column;gap:4px}
 .preset{margin:0;cursor:pointer;display:flex;align-items:center;gap:10px;min-width:0;font-family:var(--f-ed);font-size:clamp(42px,11vw,60px);font-weight:400;letter-spacing:-.01em;line-height:1}
-/* Beat wählen: gefüllter runder Knopf direkt neben dem Namen (im Dunkelmodus Weiß) */
+/* Share: der einzige farbige Knopf im Kopf, beim Spielen läuft darin ein winziger Orbit mit */
+.pill.share{background:var(--accent);color:var(--on-accent);border-color:var(--accent);height:40px;padding:0 16px 0 13px;font-size:14px;gap:7px}
+.pill.share svg{width:18px;height:18px}
+#miniOrb{width:22px;height:22px;display:none}
+.app.live #miniOrb{display:block}
+.app.live .pill.share .shi{display:none}
 .prow{display:flex;align-items:center;gap:14px}
 /* Stift: zeigt, dass der Titel antippbar ist */
 .preset .pen{width:18px;height:18px;flex:none;color:var(--mute)}
 .preset #preTxt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ib.pick{width:44px;height:44px;background:var(--ink);color:var(--bg)}
-.ib.pick svg{width:20px;height:20px}
-/* Beat beschreiben: Sprechblase links neben der Beat-Wahl, das Feld kommt von oben */
-.prow .ib.say{width:44px;height:44px;flex:none;margin-left:-6px}
-.prow .ib.say svg{width:21px;height:21px}
+/* Textknöpfe: „Change beat“ unter dem Titel, Link und WAV im Orbit */
+.lnk{border:0;background:none;padding:4px 0;font:600 13px var(--f-ui);color:var(--ink);display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+.lnk svg{width:13px;height:13px;flex:none;color:var(--mute)}
+/* Beat beschreiben: das Feld steht oben in der Beat-Liste */
 .sayf{display:flex;gap:10px;align-items:flex-end}
 .sayf textarea{flex:1;min-width:0;min-height:64px;resize:none;border-radius:14px;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:14px 16px;font-family:var(--f-ed);font-size:24px;line-height:1.15;outline:none;caret-color:var(--accent)}
 .sayf textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent)}
 .sayf textarea::placeholder{color:var(--mute)}
 .sayf .ib.go{width:52px;height:52px;flex:none;background:var(--accent);color:var(--on-accent)}
 .sayf .ib.go svg{width:22px;height:22px}
-.sub:empty{display:none}
 .pill svg{width:17px;height:17px;flex:none}
-.sub{margin:0;font-size:13px;color:var(--mute)}
+.sub{margin:0;font-size:13px;color:var(--mute);display:flex;align-items:center;gap:8px;min-height:24px}
+#sub:empty{display:none}
+#sub:not(:empty)::after{content:"·";margin-left:8px}
+.shnote.left{text-align:left}
 
 /* Raster: Name-Zeile über 16 Punkten; ab 640 px Name links */
 .tracks{display:flex;flex-direction:column;gap:clamp(12px,2.6vh,24px)}
@@ -78,8 +84,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .tn .nm{white-space:nowrap;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:500}
 .tn .tb{font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tn .go{width:12px;height:12px;color:var(--mute);flex:none;align-self:center;margin-left:-4px}
-.ms{width:26px;height:22px;border-radius:6px;border:1px solid var(--line);background:transparent;font-family:var(--f-mono);font-size:10px;font-weight:500;cursor:pointer;color:var(--mute);padding:0;flex:none}
-.ms[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .trk.quiet .steps{opacity:.28}
 /* Die eigene Spur Aufnahme steht etwas abgesetzt unter den eingebauten */
 .trk.own{border-top:1px solid var(--line);padding-top:clamp(12px,2.6vh,24px)}
@@ -121,17 +125,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 #drop.on svg path{fill:currentColor}
 #drop.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .app.building #drop{animation:pulse .25s ease-in-out infinite alternate}
-#fxBtn{height:44px;padding:0 12px 0 10px;gap:6px;font-variant-numeric:tabular-nums}
-#share{width:44px;height:44px;padding:0;flex:none}
-#share svg{width:19px;height:19px}
-/* Schmale Handys: Platz für Teilen in der Leiste, der Pfeil am Tempo entfällt (die Zahl selbst öffnet das Blatt) */
-/* Handys: Effects und Drop nur als Symbol (Effects mit Zahl, wenn Effekte an sind), damit Teilen und Tempo Luft haben */
-@media (max-width:430px){.transport .fxl{display:none}#fxBtn,#drop{min-width:44px;padding:0 12px;justify-content:center;gap:4px}#drop{width:44px;padding:0}#fxBtn.on{padding:0 14px 0 12px}}
-@media (max-width:380px){.tempo .chev{display:none}}
+#fxBtn{height:44px;padding:0 14px 0 12px;gap:6px;font-variant-numeric:tabular-nums}
+/* Effects und Drop tragen ihr Wort; erst auf sehr schmalen Handys bleibt nur das Symbol, die Swing-Zeile fällt am Handy weg */
+@media (max-width:479px){.swt{display:none}}
+@media (max-width:399px){.transport{gap:6px}.tempo .big{font-size:36px}#fxBtn,#drop{padding:0 11px 0 10px;gap:5px}}
+@media (max-width:359px){.transport .fxl{display:none}#fxBtn,#drop{min-width:44px;padding:0 12px;justify-content:center;gap:4px}#drop{width:44px;padding:0}#fxBtn.on{padding:0 14px 0 12px}}
 #fxBtn.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .tempo{margin-left:auto;border:0;background:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:4px 0;line-height:1}
 .tv{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
-.tempo .chev{width:30px;height:30px;padding:6px;border-radius:50%;background:var(--soft);color:var(--ink);flex:none}
 .big{font-weight:700;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums;font-size:32px}
 .big small{font-size:.42em;color:var(--mute);font-weight:600;letter-spacing:0;margin-left:2px}
 .swt{font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
@@ -218,6 +219,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .fxi i{width:26px;height:26px;border-radius:50%;background:var(--off);flex:none;transition:background .15s,transform .15s}
 .fxi[aria-pressed="true"] i{background:var(--accent);transform:scale(1.1)}
 .seg2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.seg2.three{grid-template-columns:repeat(3,1fr)}
 .seg2 button{height:42px;border-radius:999px;border:1px solid var(--line);background:transparent;font-size:13px;font-weight:600;cursor:pointer;color:var(--mute)}
 .seg2 button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .seg2.sm{flex:1}
@@ -273,11 +275,12 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .mol{display:block;width:100%;flex:1 1 0;min-height:220px;border-radius:24px;cursor:pointer;touch-action:pan-y;-webkit-tap-highlight-color:transparent}
 .mol:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
 .app.molecule .tracks,.app.molecule .beatrow{display:none}
-/* Umschalter oben: Grid zum Bauen, Orbit zum Zusehen und Teilen */
-.seg{display:flex;background:var(--soft);border-radius:999px;padding:3px;gap:2px}
-.seg button{height:30px;padding:0 14px;border-radius:999px;border:0;background:none;color:var(--mute);font:600 13px var(--f-ui);cursor:pointer}
-.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+/* Im Orbit: Pfeil zurück links, die Marke bleibt in der Mitte (rechts ein gleich breiter Platzhalter) */
+.app.molecule .topr{width:36px}
 .cardfoot{display:flex;gap:8px;align-items:center}
+.cardlinks{display:flex;justify-content:center;gap:26px;margin-top:-6px}
+.cardlinks .lnk{font-size:14px}
+.cardlinks .lnk svg{width:15px;height:15px}
 /* Farbwahl im Orbit: fünf Punkte, der gewählte trägt einen Ring; die Orbit-Farbe färbt dort auch den Video-Knopf */
 /* Zurückhaltend wie die App: kleine graue Punkte, nur der gewählte trägt seine Farbe; die Tipp-Fläche bleibt groß */
 .hue{display:flex;justify-content:flex-start;gap:2px;height:0;position:relative;z-index:1}
@@ -290,7 +293,6 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .cardfoot .pill{flex:1;width:auto}
 .cardfoot .ib{width:48px;height:48px}
 .app.molecule .head{display:none}
-.app.molecule #theme{display:none}
 /* In der Karte gibt es keine Leiste: Tipp auf den Ring spielt und stoppt, Tipp auf den Titel benennt */
 .app.molecule .transport{display:none}
 /* Orbit füllt genau den sichtbaren Bereich, nichts rutscht unter die Safari-Leiste; Play und Effekte stehen in der Reihe beim Knopf */
@@ -300,8 +302,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .cardfoot #fxBtn{flex:none;height:48px;min-width:48px;width:48px;padding:0;border-radius:50%;justify-content:center;gap:4px}
 .cardfoot #fxBtn .fxl{display:none}
 .cardfoot #fxBtn.on{width:auto;padding:0 14px 0 12px;border-radius:999px}
-#shCardT{min-height:2.7em;padding-bottom:max(10px,env(safe-area-inset-bottom,0px))}
-#shCardT{margin-top:-8px;line-height:1.35}
+#shCardT{min-height:2.7em;padding-bottom:max(10px,env(safe-area-inset-bottom,0px));margin-top:-10px;line-height:1.35}
 /* Video entsteht: der Knopf füllt sich von links mit dem Fortschritt (--p 0..1) */
 .pill.go.gen,.pill.go.gen:disabled{opacity:1;color:var(--ink);border-color:transparent;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 60%,var(--bg)) calc(var(--p,0) * 100%),color-mix(in srgb,var(--accent) 18%,var(--bg)) calc(var(--p,0) * 100%));transition:background .2s linear}
 </style>
@@ -309,27 +310,26 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 <body>
 <div class="app" id="app">
   <header class="top">
+    <button type="button" class="ib" id="vGrid" hidden aria-label="Back to the grid"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
     <span class="mark"><i aria-hidden="true"></i>MSTR</span>
-    <div class="topr">
-      <div class="seg" id="view" role="group" aria-label="View"><button type="button" id="vGrid" aria-pressed="true">Grid</button><button type="button" id="vCard" aria-pressed="false">Orbit</button></div>
-      <button type="button" class="ib" id="theme" aria-label="Theme"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="12" r="8" fill="none" stroke="currentColor" stroke-width="2"/><path d="M12 4a8 8 0 0 1 0 16z" fill="currentColor"/></svg></button>
-    </div>
+    <div class="topr"><button type="button" class="pill share" id="vCard" aria-label="Share: your beat as an orbit, video and link"><canvas id="miniOrb" width="44" height="44" aria-hidden="true"></canvas><svg class="shi" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 15V4M8 8l4-4 4 4M5 13v6h14v-6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Share</span></button></div>
   </header>
   <div class="head">
-    <div class="prow"><h1 class="preset" id="preName" title="Name your beat"><span id="preTxt">Amapiano</span><svg class="pen" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></h1><button type="button" class="ib pick" id="preBtn" aria-haspopup="dialog" aria-label="Choose beat" title="Choose beat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button><button type="button" class="ib say" id="sayBtn" aria-haspopup="dialog" aria-label="Describe a beat" title="Describe a beat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 17h-8l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5v-9A1.5 1.5 0 0 1 5 5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 9.5h8M8 12.8h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
-    <p class="sub" id="sub"></p>
+    <div class="prow"><h1 class="preset" id="preName" title="Name your beat"><span id="preTxt">Amapiano</span><svg class="pen" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></h1></div>
+    <p class="sub"><span id="sub"></span><button type="button" class="lnk" id="preBtn" aria-haspopup="dialog">Change beat<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button></p>
   </div>
   <main class="tracks" id="tracks" aria-label="Tracks"></main>
   <canvas class="mol" id="mol" hidden aria-label="Your beat as an orbit. Tap the ring to play or stop, tap the title to name it, swipe sideways to change the colour" role="button" tabindex="0"></canvas>
   <div class="hue" id="hue" hidden role="radiogroup" aria-label="Orbit colour"></div>
-  <div class="cardfoot" id="cardfoot" hidden><button type="button" class="pill wide go" id="shCardBtn">Share video</button><button type="button" class="ib" id="more" aria-haspopup="dialog" aria-label="Link and WAV loop" title="Link and WAV loop"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="2" fill="currentColor"/><circle cx="12" cy="12" r="2" fill="currentColor"/><circle cx="19" cy="12" r="2" fill="currentColor"/></svg></button></div>
+  <div class="cardfoot" id="cardfoot" hidden><button type="button" class="pill wide go" id="shCardBtn">Share video</button></div>
+  <div class="cardlinks" id="cardlinks" hidden><button type="button" class="lnk" id="shSend"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M10 14a4 4 0 0 0 5.7 0l3-3a4 4 0 0 0-5.7-5.7l-1 1M14 10a4 4 0 0 0-5.7 0l-3 3a4 4 0 0 0 5.7 5.7l1-1" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg><span>Copy link</span></button><button type="button" class="lnk" id="shWav"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Download WAV</span></button></div>
   <p class="shnote" id="shCardT" hidden></p>
   <div class="trk beatrow" aria-hidden="true"><div class="tl"></div><div class="steps"><div class="grp"><span>1</span><span></span><span></span><span></span></div><div class="grp"><span>2</span><span></span><span></span><span></span></div><div class="grp"><span>3</span><span></span><span></span><span></span></div><div class="grp"><span>4</span><span></span><span></span><span></span></div></div></div>
   <footer class="transport">
     <button type="button" class="play" id="play" aria-label="Play (Space)"></button>
     <button type="button" class="pill" id="fxBtn" aria-haspopup="dialog" aria-label="Effects"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h9M17 7h3M4 17h3M11 17h9" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/><circle cx="15" cy="7" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/><circle cx="9" cy="17" r="2.2" fill="none" stroke="currentColor" stroke-width="2"/></svg><span class="fxl">Effects</span><span class="fxn" id="fxN"></span></button>
     <button type="button" class="pill" id="drop" aria-label="Drop"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M13.5 2.5L5 13.5h6l-1.5 8 8.5-11h-6z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/></svg><span class="fxl">Drop</span></button>
-    <button type="button" class="tempo" id="tempoBtn" aria-haspopup="dialog" aria-label="Tempo and swing"><span class="tv"><span class="swt" id="swTxt">Swing 0 %</span><span class="big"><span id="bpm">100</span><small>bpm</small></span></span><svg class="chev" viewBox="0 0 24 24" aria-hidden="true"><path d="M6 15l6-6 6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button>
+    <button type="button" class="tempo" id="tempoBtn" aria-haspopup="dialog" aria-label="Tempo and swing"><span class="tv"><span class="swt" id="swTxt">Swing 0 %</span><span class="big"><span id="bpm">100</span><small>bpm</small></span></span></button>
   </footer>
 </div>
 <section class="sheet" id="sheet" aria-labelledby="sheetT" hidden></section>
@@ -1153,9 +1153,6 @@ var WORTE=(function(){
       tn.setAttribute('aria-label',T.n+': Einstellungen');
       tn.addEventListener('click',function(){trackSheet(r);});
       tl.appendChild(tn);
-      ['M','S'].forEach(function(k){var b=document.createElement('button');b.type='button';b.className='ms '+k.toLowerCase();b.textContent=k;
-        b.setAttribute('aria-label',(k==='M'?'Mute: ':'Solo: ')+T.n);
-        b.addEventListener('click',function(){if(k==='M')mute[r]=!mute[r];else solo[r]=!solo[r];paint();persist();});tl.appendChild(b);});
       row.appendChild(tl);
       var steps=document.createElement('div');steps.className='steps';cells.push([]);
       for(var g=0;g<4;g++){var grp=document.createElement('div');grp.className='grp';
@@ -1218,8 +1215,6 @@ var WORTE=(function(){
         b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false');
         b.textContent=on&&multi&&(T.id==='click'||k>0)?(T.id==='click'?w:String(k+1)):'';}
       rows[r].classList.toggle('quiet',!audible(r));
-      rows[r].querySelector('.ms.m').setAttribute('aria-pressed',mute[r]?'true':'false');
-      rows[r].querySelector('.ms.s').setAttribute('aria-pressed',solo[r]?'true':'false');
       rows[r].querySelector('.tb').textContent=r===MIC&&!REC.mic?'Record your own sound':multi?T.s[sndIx(r,brush[r])][1]:'';
     }
     app.classList.toggle('solo',so);
@@ -1235,12 +1230,21 @@ var WORTE=(function(){
   function head(s,b){
     var r;
     if(shown>=0)for(r=0;r<R;r++)cells[r][shown].classList.remove('ph');
-    shown=s;if(s>=0)molHit(s,b);
+    shown=s;if(s>=0){molHit(s,b);miniDraw(s);}
     if(s>=0)for(r=0;r<R;r++){cells[r][s].classList.add('ph');if(pat[r].charAt(s)!=='0'&&audible(r)&&!drop)flash(r);}
     /* Taktzähler und Fortschrittslinie folgen dem laufenden Schritt */
     for(r=0;r<beats.length;r++)beats[r].classList.toggle('cur',s>=0&&r===Math.floor(s/4));
     app.style.setProperty('--prog',s<0?0:(s+1)/N);
   }
+  /* Winziger Orbit im Share-Knopf: läuft beim Spielen mit (je Schritt ein Bild), zeigt, wohin der Beat am Ende geht */
+  var mo=$('miniOrb'),mx=mo.getContext('2d');
+  function miniDraw(s){var W=mo.width,c=W/2,r,k;mx.clearRect(0,0,W,W);
+    mx.strokeStyle='rgba(15,15,16,.28)';mx.lineWidth=1;
+    for(k=0;k<3;k++){mx.beginPath();mx.arc(c,c,7+k*6,0,Math.PI*2);mx.stroke();}
+    mx.fillStyle='#0F0F10';
+    for(r=0;r<7;r++){if(pat[r].charAt(s)==='0'||!audible(r))continue;var a=s/N*Math.PI*2-Math.PI/2,rad=6+r*2.3,d=r===1?3:2.1;
+      mx.beginPath();mx.arc(c+Math.cos(a)*rad,c+Math.sin(a)*rad,d,0,Math.PI*2);mx.fill();}
+    mx.beginPath();mx.arc(c,c,2,0,Math.PI*2);mx.fill();}
   /* Das Spur-Icon blinkt kurz in Flieder, wenn die Spur klingt */
   function flash(r){var ic=rows[r].querySelector('.ic');ic.classList.remove('hit');void ic.offsetWidth;ic.classList.add('hit');clearTimeout(ic._t);ic._t=setTimeout(function(){ic.classList.remove('hit');},140);}
   function loop(){
@@ -1360,7 +1364,20 @@ var WORTE=(function(){
   var X='',XB='<button type="button" class="ib" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>';
   function presetSheet(){
     var order=BEATS.map(function(b,i){return i;}).sort(function(a,b){return BEATS[a].bpm-BEATS[b].bpm||a-b;});
-    openSheet('<div class="sh-top"><h2 class="ed" id="sheetT">'+BEATS.length+' beats<br><em>by tempo</em></h2>'+X+'</div><div class="plist" role="listbox" aria-label="Beats"></div><a class="lab" href="https://asimplemanslab.com/" aria-label="Made with love by A Simple Man\u2019s Lab"><span>Made with love by</span><i aria-hidden="true"></i></a>',function(el){
+    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Describe a beat</span></div>'+
+      '<form class="sayf" autocomplete="off"><textarea id="sayIn" rows="2" maxlength="200" enterkeyhint="send" aria-labelledby="sheetT"></textarea>'+
+      '<button type="submit" class="ib go" id="sayGo" aria-label="Make the beat" title="Make the beat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></form>'+
+      '<p class="shnote left">Style, mood, tempo, sounds, effects. In your own words, English or German.</p>'+
+      '<h2 class="ed">or pick one<br><em>'+BEATS.length+' beats by tempo</em></h2><div class="plist" role="listbox" aria-label="Beats"></div>'+
+      '<div class="field"><span class="lbl">Theme</span><div class="seg2 three" id="themeSeg"><button type="button" data-t="system">System</button><button type="button" data-t="light">Light</button><button type="button" data-t="dark">Dark</button></div></div>'+
+      '<a class="lab" href="https://asimplemanslab.com/" aria-label="Made with love by A Simple Man\u2019s Lab"><span>Made with love by</span><i aria-hidden="true"></i></a>',function(el){
+      var inp=el.querySelector('#sayIn'),f=el.querySelector('form');
+      inp.value=typeof S.say==='string'?S.say:'';inp.placeholder=SAY[Math.floor(Math.random()*SAY.length)];
+      function go(){var v=inp.value.trim()||inp.placeholder;S.say=inp.value.trim();save();closeSheet();sayBeat(v);}
+      f.addEventListener('submit',function(e){e.preventDefault();go();});
+      inp.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();go();}});
+      el.querySelectorAll('#themeSeg button').forEach(function(b){b.addEventListener('click',function(){S.theme=b.dataset.t;save();themeUI();});});
+      themeUI();
       var list=el.querySelector('.plist'),e=document.createElement('button');e.type='button';e.id='clr';e.className='pitem'+(pre<0&&pat.slice(0,7).join('')===empty().slice(0,7).join('')?' sel':'');e.setAttribute('role','option');
       e.innerHTML='<span class="n">Empty grid</span><span class="v">'+bpm+'<small>BPM</small></span>';e.addEventListener('click',function(){clearAll();closeSheet();});list.appendChild(e);
       order.forEach(function(i){var Bt=BEATS[i],b=document.createElement('button');b.type='button';b.className='pitem'+(i===pre?' sel':'');b.setAttribute('role','option');b.setAttribute('aria-selected',i===pre?'true':'false');
@@ -1387,19 +1404,6 @@ var WORTE=(function(){
     showToast('New beat','Undo',function(){restore(before);});
     return true;
   }
-  function saySheet(){
-    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Describe a beat</span>'+XB+'</div>'+
-      '<form class="sayf" autocomplete="off"><textarea id="sayIn" rows="2" maxlength="200" enterkeyhint="send" aria-labelledby="sheetT" data-focus></textarea>'+
-      '<button type="submit" class="ib go" id="sayGo" aria-label="Make the beat" title="Make the beat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></form>'+
-      '<p class="shnote">Style, mood, tempo, sounds, effects. In your own words.</p>',function(el){
-      var inp=el.querySelector('#sayIn'),f=el.querySelector('form');
-      inp.value=typeof S.say==='string'?S.say:'';inp.placeholder=SAY[Math.floor(Math.random()*SAY.length)];
-      function go(){var v=inp.value.trim()||inp.placeholder;S.say=inp.value.trim();save();closeSheet();sayBeat(v);}
-      f.addEventListener('submit',function(e){e.preventDefault();go();});
-      inp.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();go();}});
-    },'beschreiben','top');
-  }
-  $('sayBtn').addEventListener('click',saySheet);
 $('preName').addEventListener('click',function(){nameSheet();});
 
   function tempoSheet(){
@@ -1619,8 +1623,8 @@ $('preName').addEventListener('click',function(){nameSheet();});
   function fileName(){return baseName()+'-'+bpm+'bpm.wav';}
   function canSendFile(f){try{return !!(navigator.canShare&&navigator.share&&navigator.canShare({files:[f]}));}catch(e){return false;}}
   function saveFile(f){var u=URL.createObjectURL(f),a=document.createElement('a');a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},4000);}
-  /* Teilen in drei Stücken: Name und „By“ im Namens-Blatt (Titel antippen; der Würfel schlägt einen Titel aus dem Beat vor),
-     „Share“ in der Karten-Ansicht macht das Video, „⋯“ daneben hat Link und WAV-Loop */
+  /* Teilen: Name und „By“ im Namens-Blatt (Titel antippen; der Würfel schlägt einen Titel aus dem Beat vor),
+     „Share video“ im Orbit macht das Video, darunter stehen Link und WAV-Loop */
   var handle=typeof S.by==='string'?S.by.slice(0,24):'';
   /* Karte: die eingeschalteten Effekte wandern mit ins Bild (Stärke 0–1 und Auswahl), GLASS ist die Durchsichtigkeit der Atome */
   var GLASS=0;
@@ -1651,35 +1655,30 @@ $('preName').addEventListener('click',function(){nameSheet();});
       by.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();closeSheet();}});
     },'name','top');
   }
-  function moreSheet(){
-    var own=pat[MIC]&&pat[MIC]!==zero(),mob=nativeShare();
-    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Link and loop</span>'+XB+'</div>'+
-      '<button type="button" class="pill wide" id="shSend">'+(mob?'Send link':'Copy link')+'</button>'+
-      '<p class="shnote" id="shSendT">'+(mob?'':'Paste it into a chat or mail. ')+'Opens your beat on asimplemanslab.com/mstr'+(own?'. Your recording stays on this device.':'.')+'</p>'+
-      '<button type="button" class="pill wide" id="shWav"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Download WAV</span></button>'+
-      '<p class="shnote" id="shWavT">'+BARS+' bars that loop seamlessly, for sampling'+(own?', with your recording':'')+'</p>',function(el){
-      var sb=el.querySelector('#shSend'),sbT=0;
-      sb.addEventListener('click',function(){shareBeat(function(){
-        sb.textContent='✓ Link copied';clearTimeout(sbT);sbT=setTimeout(function(){sb.textContent='Copy link';},2500);});});
-      /* Download: am Handy übers Teilen-Menü (dort „In Dateien sichern“), sonst direkt. Lässt der Browser das Teilen
-         nach dem Rechnen nicht mehr zu, braucht es einen zweiten Tipp */
-      var wb=el.querySelector('#shWav'),wt=el.querySelector('#shWavT'),file=null,busy=false;
-      function give(f){
-        if(navigator.share&&matchMedia('(pointer: coarse)').matches&&canSendFile(f)){
-          navigator.share({files:[f],title:f.name}).catch(function(e){if(e&&e.name==='NotAllowedError'){wb.querySelector('span').textContent='Save '+f.name;wb.classList.add('go');}});return;}
-        saveFile(f);wt.textContent='Saved '+f.name;
-      }
-      wb.addEventListener('click',function(){
-        if(busy)return;
-        if(file&&file.name===fileName())return give(file);
-        busy=true;wt.textContent='Rendering …';
-        renderLoop(function(blob){busy=false;
-          if(!blob){wt.textContent='That did not work in this browser.';return;}
-          file=new File([blob],fileName(),{type:'audio/wav'});wt.textContent=file.name+', '+(Math.round(BARS*N*st()*10)/10)+' s';give(file);});
-      });
-    },'mehr',true);
-  }
-  $('more').addEventListener('click',moreSheet);
+  /* Link und WAV-Loop stehen im Orbit als Textzeile unter dem Video-Knopf; die Hinweiszeile darunter antwortet */
+  (function(){
+    var sb=$('shSend'),sbT=0,wb=$('shWav'),wl=wb.querySelector('span'),file=null,busy=false;
+    function sendLabel(){sb.querySelector('span').textContent=nativeShare()?'Send link':'Copy link';}
+    sendLabel();window.addEventListener('resize',sendLabel);
+    sb.addEventListener('click',function(){shareBeat(function(){
+      var own=pat[MIC]&&pat[MIC]!==zero();cardNote('Link copied. Paste it into a chat or mail, it opens your beat on asimplemanslab.com/mstr.'+(own?' Your recording stays on this device.':''));
+      sb.querySelector('span').textContent='\u2713 Link copied';clearTimeout(sbT);sbT=setTimeout(function(){sendLabel();},2500);});});
+    /* Download: am Handy übers Teilen-Menü (dort „In Dateien sichern“), sonst direkt. Lässt der Browser das Teilen
+       nach dem Rechnen nicht mehr zu, braucht es einen zweiten Tipp */
+    function give(f){
+      if(navigator.share&&matchMedia('(pointer: coarse)').matches&&canSendFile(f)){
+        navigator.share({files:[f],title:f.name}).catch(function(e){if(e&&e.name==='NotAllowedError'){wl.textContent='Save '+f.name;}});return;}
+      saveFile(f);cardNote('Saved '+f.name+': '+BARS+' bars that loop seamlessly, for sampling'+(pat[MIC]&&pat[MIC]!==zero()?', with your recording':'')+'.');
+    }
+    wb.addEventListener('click',function(){
+      if(busy)return;
+      if(file&&file.name===fileName())return give(file);
+      busy=true;cardNote('Rendering '+BARS+' bars …');
+      renderLoop(function(blob){busy=false;
+        if(!blob){cardNote('That did not work in this browser.');return;}
+        file=new File([blob],fileName(),{type:'audio/wav'});give(file);});
+    });
+  })();
   /* „Share“ in der Karten-Ansicht: Ton offline rechnen, Video in Echtzeit aufnehmen (die Karten-Ansicht zeigt derweil die Aufnahme),
      dann teilen (Handy) oder sichern (Rechner). Ohne Video gibt es ein Bild. Dieselbe Datei wird beim zweiten Tipp sofort gegeben */
   var cb=$('shCardBtn'),ct=$('shCardT'),cardT=null,cfile=null,ckey='',busyC=false,cardGen=0,video=CARD.canVideo();
@@ -1687,7 +1686,7 @@ $('preName').addEventListener('click',function(){nameSheet();});
   /* Der Knopf heißt von Anfang an „Share video“ (Rechner: „Save video“), während der Erstellung „Generating · 12 s“ mit Füllstand;
      die Zeile darunter erklärt jeden Schritt (erst entsteht das Video, dann öffnet sich das Teilen-Menü). Ändert sich der Beat, fängt es von vorn an */
   function cardKey(){var o=cardOpts();return shareCode()+'|'+o.title+'|'+o.by;}
-  function cardNote(t){ct.textContent=t;ct.hidden=!t;}
+  function cardNote(t){ct.textContent=t;ct.hidden=!t||!molOn;}
   function cardLabel(){if(busyC)return;cb.classList.remove('gen');cb.style.removeProperty('--p');var ready=cfile&&ckey===cardKey(),mob=nativeShare(),secs=Math.round(CARD.clipLen(bpm));
     cb.textContent=video?(mob?'Share video':'Save video'):(mob?'Share image':'Save image');
     if(!video){cardNote(ready?'Ready. Tap to share it again.':'A picture of your orbit for Story and chats.');return;}
@@ -1702,7 +1701,7 @@ $('preName').addEventListener('click',function(){nameSheet();});
         if(e&&e.name==='AbortError')return;
         if(e&&e.name==='NotAllowedError'){cardNote('Tap Share video once more to open the share sheet.');return;}
         saveFile(f);cardNote('Sharing did not work here, saved '+f.name+' instead.');});return;}
-    saveFile(f);cardNote('Saved '+f.name+'. Add the link from ⋯ so friends can open the beat.');
+    saveFile(f);cardNote('Saved '+f.name+'. Copy the link too, so friends can open the beat.');
   }
   /* Abbruch: auch während der Ton noch gerechnet wird (dann verfällt das Ergebnis) */
   function cardStop(){cardGen++;if(cardT){cardT();cardT=null;}if(busyC){busyC=false;cb.disabled=false;cardLabel();}}
@@ -1714,7 +1713,7 @@ $('preName').addEventListener('click',function(){nameSheet();});
     renderClip(function(buf){
       if(gen!==cardGen)return;
       if(!buf){busyC=false;cb.disabled=false;cardLabel();cardNote('That did not work in this browser.');return;}
-      o.mirror=molC;o.mirrorBg=molDark()?'#0E0E0F':'#FFFFFF';cb.classList.add('gen');cardNote('Generating the video with sound. Keep this screen open until it is done, Grid cancels.');
+      o.mirror=molC;o.mirrorBg=molDark()?'#0E0E0F':'#FFFFFF';cb.classList.add('gen');cardNote('Generating the video with sound. Keep this screen open until it is done, the arrow cancels.');
       cardT=CARD.record(ac,buf,scene,o,function(t,tot){cb.style.setProperty('--p',Math.min(1,t/tot));cb.textContent='Generating · '+Math.ceil(tot-t)+' s';},function(f,why){
         busyC=false;cb.disabled=false;cardT=null;
         if(why==='abort'){cardLabel();return;}
@@ -1733,8 +1732,8 @@ $('preName').addEventListener('click',function(){nameSheet();});
 
   /* ---------- Farbschema ---------- */
   var TN={system:'system',light:'light',dark:'dark'};
-  function themeUI(){var t=applyTheme();if(molOn)forceDark();$('theme').setAttribute('aria-label','Theme: '+TN[t]);$('theme').title='Theme: '+TN[t];}
-  $('theme').addEventListener('click',function(){var t=THEMES.indexOf(S.theme);S.theme=THEMES[(t<0?1:t+1)%3];save();themeUI();});
+  /* Das Farbschema wohnt am Ende der Beat-Liste (drei Schalter), nicht mehr im Kopf der Seite */
+  function themeUI(){var t=applyTheme();if(molOn)forceDark();var sg=$('themeSeg');if(sg)[].forEach.call(sg.children,function(b){b.setAttribute('aria-pressed',b.dataset.t===t?'true':'false');});}
   if(window.matchMedia)try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',themeUI);}catch(e){}
 
   build();themeUI();fxUI();playB.innerHTML=I_PLAY;
@@ -1767,9 +1766,9 @@ $('preName').addEventListener('click',function(){nameSheet();});
     molS.fire({s:q,b:b,h:h,st:stu?1:0},performance.now());
     if(stu)setTimeout(function(){if(molOn&&playing)molS.fire({s:q,b:b,h:h,st:1},performance.now());},st()*500);}
   var transport=document.querySelector('.transport');
-  function molSet(on){molOn=!!on;if(!molOn)cardStop();app.classList.toggle('molecule',molOn);molC.hidden=!molOn;foot.hidden=!molOn;hueRow.hidden=!molOn;
+  var links=$('cardlinks');
+  function molSet(on){molOn=!!on;if(!molOn)cardStop();app.classList.toggle('molecule',molOn);molC.hidden=!molOn;foot.hidden=!molOn;hueRow.hidden=!molOn;links.hidden=!molOn;vGrid.hidden=!molOn;vCard.hidden=molOn;
     if(molOn){foot.insertBefore(playB,cb);foot.insertBefore(fxB,cb);cardLabel();forceDark();}else{transport.insertBefore(playB,transport.firstChild);transport.insertBefore(fxB,dropB);ct.hidden=true;themeUI();}
-    vGrid.setAttribute('aria-pressed',molOn?'false':'true');vCard.setAttribute('aria-pressed',molOn?'true':'false');
     S.view=molOn?'mol':'';save();if(molOn){molModel();molSize();molGo();}}
   vGrid.addEventListener('click',function(){molSet(false);});vCard.addEventListener('click',function(){molSet(true);});
   /* Unterer Streifen (Titel und Zeile) öffnet den Namen, der Rest spielt oder stoppt */

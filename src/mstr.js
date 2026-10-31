@@ -109,9 +109,6 @@
       tn.setAttribute('aria-label',T.n+': Einstellungen');
       tn.addEventListener('click',function(){trackSheet(r);});
       tl.appendChild(tn);
-      ['M','S'].forEach(function(k){var b=document.createElement('button');b.type='button';b.className='ms '+k.toLowerCase();b.textContent=k;
-        b.setAttribute('aria-label',(k==='M'?'Mute: ':'Solo: ')+T.n);
-        b.addEventListener('click',function(){if(k==='M')mute[r]=!mute[r];else solo[r]=!solo[r];paint();persist();});tl.appendChild(b);});
       row.appendChild(tl);
       var steps=document.createElement('div');steps.className='steps';cells.push([]);
       for(var g=0;g<4;g++){var grp=document.createElement('div');grp.className='grp';
@@ -174,8 +171,6 @@
         b.classList.toggle('on',on);b.setAttribute('aria-pressed',on?'true':'false');
         b.textContent=on&&multi&&(T.id==='click'||k>0)?(T.id==='click'?w:String(k+1)):'';}
       rows[r].classList.toggle('quiet',!audible(r));
-      rows[r].querySelector('.ms.m').setAttribute('aria-pressed',mute[r]?'true':'false');
-      rows[r].querySelector('.ms.s').setAttribute('aria-pressed',solo[r]?'true':'false');
       rows[r].querySelector('.tb').textContent=r===MIC&&!REC.mic?'Record your own sound':multi?T.s[sndIx(r,brush[r])][1]:'';
     }
     app.classList.toggle('solo',so);
@@ -191,12 +186,21 @@
   function head(s,b){
     var r;
     if(shown>=0)for(r=0;r<R;r++)cells[r][shown].classList.remove('ph');
-    shown=s;if(s>=0)molHit(s,b);
+    shown=s;if(s>=0){molHit(s,b);miniDraw(s);}
     if(s>=0)for(r=0;r<R;r++){cells[r][s].classList.add('ph');if(pat[r].charAt(s)!=='0'&&audible(r)&&!drop)flash(r);}
     /* Taktzähler und Fortschrittslinie folgen dem laufenden Schritt */
     for(r=0;r<beats.length;r++)beats[r].classList.toggle('cur',s>=0&&r===Math.floor(s/4));
     app.style.setProperty('--prog',s<0?0:(s+1)/N);
   }
+  /* Winziger Orbit im Share-Knopf: läuft beim Spielen mit (je Schritt ein Bild), zeigt, wohin der Beat am Ende geht */
+  var mo=$('miniOrb'),mx=mo.getContext('2d');
+  function miniDraw(s){var W=mo.width,c=W/2,r,k;mx.clearRect(0,0,W,W);
+    mx.strokeStyle='rgba(15,15,16,.28)';mx.lineWidth=1;
+    for(k=0;k<3;k++){mx.beginPath();mx.arc(c,c,7+k*6,0,Math.PI*2);mx.stroke();}
+    mx.fillStyle='#0F0F10';
+    for(r=0;r<7;r++){if(pat[r].charAt(s)==='0'||!audible(r))continue;var a=s/N*Math.PI*2-Math.PI/2,rad=6+r*2.3,d=r===1?3:2.1;
+      mx.beginPath();mx.arc(c+Math.cos(a)*rad,c+Math.sin(a)*rad,d,0,Math.PI*2);mx.fill();}
+    mx.beginPath();mx.arc(c,c,2,0,Math.PI*2);mx.fill();}
   /* Das Spur-Icon blinkt kurz in Flieder, wenn die Spur klingt */
   function flash(r){var ic=rows[r].querySelector('.ic');ic.classList.remove('hit');void ic.offsetWidth;ic.classList.add('hit');clearTimeout(ic._t);ic._t=setTimeout(function(){ic.classList.remove('hit');},140);}
   function loop(){
@@ -316,7 +320,20 @@
   var X='',XB='<button type="button" class="ib" data-close aria-label="Close"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button>';
   function presetSheet(){
     var order=BEATS.map(function(b,i){return i;}).sort(function(a,b){return BEATS[a].bpm-BEATS[b].bpm||a-b;});
-    openSheet('<div class="sh-top"><h2 class="ed" id="sheetT">'+BEATS.length+' beats<br><em>by tempo</em></h2>'+X+'</div><div class="plist" role="listbox" aria-label="Beats"></div><a class="lab" href="https://asimplemanslab.com/" aria-label="Made with love by A Simple Man\u2019s Lab"><span>Made with love by</span><i aria-hidden="true"></i></a>',function(el){
+    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Describe a beat</span></div>'+
+      '<form class="sayf" autocomplete="off"><textarea id="sayIn" rows="2" maxlength="200" enterkeyhint="send" aria-labelledby="sheetT"></textarea>'+
+      '<button type="submit" class="ib go" id="sayGo" aria-label="Make the beat" title="Make the beat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></form>'+
+      '<p class="shnote left">Style, mood, tempo, sounds, effects. In your own words, English or German.</p>'+
+      '<h2 class="ed">or pick one<br><em>'+BEATS.length+' beats by tempo</em></h2><div class="plist" role="listbox" aria-label="Beats"></div>'+
+      '<div class="field"><span class="lbl">Theme</span><div class="seg2 three" id="themeSeg"><button type="button" data-t="system">System</button><button type="button" data-t="light">Light</button><button type="button" data-t="dark">Dark</button></div></div>'+
+      '<a class="lab" href="https://asimplemanslab.com/" aria-label="Made with love by A Simple Man\u2019s Lab"><span>Made with love by</span><i aria-hidden="true"></i></a>',function(el){
+      var inp=el.querySelector('#sayIn'),f=el.querySelector('form');
+      inp.value=typeof S.say==='string'?S.say:'';inp.placeholder=SAY[Math.floor(Math.random()*SAY.length)];
+      function go(){var v=inp.value.trim()||inp.placeholder;S.say=inp.value.trim();save();closeSheet();sayBeat(v);}
+      f.addEventListener('submit',function(e){e.preventDefault();go();});
+      inp.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();go();}});
+      el.querySelectorAll('#themeSeg button').forEach(function(b){b.addEventListener('click',function(){S.theme=b.dataset.t;save();themeUI();});});
+      themeUI();
       var list=el.querySelector('.plist'),e=document.createElement('button');e.type='button';e.id='clr';e.className='pitem'+(pre<0&&pat.slice(0,7).join('')===empty().slice(0,7).join('')?' sel':'');e.setAttribute('role','option');
       e.innerHTML='<span class="n">Empty grid</span><span class="v">'+bpm+'<small>BPM</small></span>';e.addEventListener('click',function(){clearAll();closeSheet();});list.appendChild(e);
       order.forEach(function(i){var Bt=BEATS[i],b=document.createElement('button');b.type='button';b.className='pitem'+(i===pre?' sel':'');b.setAttribute('role','option');b.setAttribute('aria-selected',i===pre?'true':'false');
@@ -343,19 +360,6 @@
     showToast('New beat','Undo',function(){restore(before);});
     return true;
   }
-  function saySheet(){
-    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Describe a beat</span>'+XB+'</div>'+
-      '<form class="sayf" autocomplete="off"><textarea id="sayIn" rows="2" maxlength="200" enterkeyhint="send" aria-labelledby="sheetT" data-focus></textarea>'+
-      '<button type="submit" class="ib go" id="sayGo" aria-label="Make the beat" title="Make the beat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></form>'+
-      '<p class="shnote">Style, mood, tempo, sounds, effects. In your own words.</p>',function(el){
-      var inp=el.querySelector('#sayIn'),f=el.querySelector('form');
-      inp.value=typeof S.say==='string'?S.say:'';inp.placeholder=SAY[Math.floor(Math.random()*SAY.length)];
-      function go(){var v=inp.value.trim()||inp.placeholder;S.say=inp.value.trim();save();closeSheet();sayBeat(v);}
-      f.addEventListener('submit',function(e){e.preventDefault();go();});
-      inp.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();go();}});
-    },'beschreiben','top');
-  }
-  $('sayBtn').addEventListener('click',saySheet);
 $('preName').addEventListener('click',function(){nameSheet();});
 
   function tempoSheet(){
@@ -575,8 +579,8 @@ $('preName').addEventListener('click',function(){nameSheet();});
   function fileName(){return baseName()+'-'+bpm+'bpm.wav';}
   function canSendFile(f){try{return !!(navigator.canShare&&navigator.share&&navigator.canShare({files:[f]}));}catch(e){return false;}}
   function saveFile(f){var u=URL.createObjectURL(f),a=document.createElement('a');a.href=u;a.download=f.name;document.body.appendChild(a);a.click();a.remove();setTimeout(function(){URL.revokeObjectURL(u);},4000);}
-  /* Teilen in drei Stücken: Name und „By“ im Namens-Blatt (Titel antippen; der Würfel schlägt einen Titel aus dem Beat vor),
-     „Share“ in der Karten-Ansicht macht das Video, „⋯“ daneben hat Link und WAV-Loop */
+  /* Teilen: Name und „By“ im Namens-Blatt (Titel antippen; der Würfel schlägt einen Titel aus dem Beat vor),
+     „Share video“ im Orbit macht das Video, darunter stehen Link und WAV-Loop */
   var handle=typeof S.by==='string'?S.by.slice(0,24):'';
   /* Karte: die eingeschalteten Effekte wandern mit ins Bild (Stärke 0–1 und Auswahl), GLASS ist die Durchsichtigkeit der Atome */
   var GLASS=0;
@@ -607,35 +611,30 @@ $('preName').addEventListener('click',function(){nameSheet();});
       by.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();closeSheet();}});
     },'name','top');
   }
-  function moreSheet(){
-    var own=pat[MIC]&&pat[MIC]!==zero(),mob=nativeShare();
-    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Link and loop</span>'+XB+'</div>'+
-      '<button type="button" class="pill wide" id="shSend">'+(mob?'Send link':'Copy link')+'</button>'+
-      '<p class="shnote" id="shSendT">'+(mob?'':'Paste it into a chat or mail. ')+'Opens your beat on asimplemanslab.com/mstr'+(own?'. Your recording stays on this device.':'.')+'</p>'+
-      '<button type="button" class="pill wide" id="shWav"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 4v11M8 11l4 4 4-4M5 19h14" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg><span>Download WAV</span></button>'+
-      '<p class="shnote" id="shWavT">'+BARS+' bars that loop seamlessly, for sampling'+(own?', with your recording':'')+'</p>',function(el){
-      var sb=el.querySelector('#shSend'),sbT=0;
-      sb.addEventListener('click',function(){shareBeat(function(){
-        sb.textContent='✓ Link copied';clearTimeout(sbT);sbT=setTimeout(function(){sb.textContent='Copy link';},2500);});});
-      /* Download: am Handy übers Teilen-Menü (dort „In Dateien sichern“), sonst direkt. Lässt der Browser das Teilen
-         nach dem Rechnen nicht mehr zu, braucht es einen zweiten Tipp */
-      var wb=el.querySelector('#shWav'),wt=el.querySelector('#shWavT'),file=null,busy=false;
-      function give(f){
-        if(navigator.share&&matchMedia('(pointer: coarse)').matches&&canSendFile(f)){
-          navigator.share({files:[f],title:f.name}).catch(function(e){if(e&&e.name==='NotAllowedError'){wb.querySelector('span').textContent='Save '+f.name;wb.classList.add('go');}});return;}
-        saveFile(f);wt.textContent='Saved '+f.name;
-      }
-      wb.addEventListener('click',function(){
-        if(busy)return;
-        if(file&&file.name===fileName())return give(file);
-        busy=true;wt.textContent='Rendering …';
-        renderLoop(function(blob){busy=false;
-          if(!blob){wt.textContent='That did not work in this browser.';return;}
-          file=new File([blob],fileName(),{type:'audio/wav'});wt.textContent=file.name+', '+(Math.round(BARS*N*st()*10)/10)+' s';give(file);});
-      });
-    },'mehr',true);
-  }
-  $('more').addEventListener('click',moreSheet);
+  /* Link und WAV-Loop stehen im Orbit als Textzeile unter dem Video-Knopf; die Hinweiszeile darunter antwortet */
+  (function(){
+    var sb=$('shSend'),sbT=0,wb=$('shWav'),wl=wb.querySelector('span'),file=null,busy=false;
+    function sendLabel(){sb.querySelector('span').textContent=nativeShare()?'Send link':'Copy link';}
+    sendLabel();window.addEventListener('resize',sendLabel);
+    sb.addEventListener('click',function(){shareBeat(function(){
+      var own=pat[MIC]&&pat[MIC]!==zero();cardNote('Link copied. Paste it into a chat or mail, it opens your beat on asimplemanslab.com/mstr.'+(own?' Your recording stays on this device.':''));
+      sb.querySelector('span').textContent='\u2713 Link copied';clearTimeout(sbT);sbT=setTimeout(function(){sendLabel();},2500);});});
+    /* Download: am Handy übers Teilen-Menü (dort „In Dateien sichern“), sonst direkt. Lässt der Browser das Teilen
+       nach dem Rechnen nicht mehr zu, braucht es einen zweiten Tipp */
+    function give(f){
+      if(navigator.share&&matchMedia('(pointer: coarse)').matches&&canSendFile(f)){
+        navigator.share({files:[f],title:f.name}).catch(function(e){if(e&&e.name==='NotAllowedError'){wl.textContent='Save '+f.name;}});return;}
+      saveFile(f);cardNote('Saved '+f.name+': '+BARS+' bars that loop seamlessly, for sampling'+(pat[MIC]&&pat[MIC]!==zero()?', with your recording':'')+'.');
+    }
+    wb.addEventListener('click',function(){
+      if(busy)return;
+      if(file&&file.name===fileName())return give(file);
+      busy=true;cardNote('Rendering '+BARS+' bars …');
+      renderLoop(function(blob){busy=false;
+        if(!blob){cardNote('That did not work in this browser.');return;}
+        file=new File([blob],fileName(),{type:'audio/wav'});give(file);});
+    });
+  })();
   /* „Share“ in der Karten-Ansicht: Ton offline rechnen, Video in Echtzeit aufnehmen (die Karten-Ansicht zeigt derweil die Aufnahme),
      dann teilen (Handy) oder sichern (Rechner). Ohne Video gibt es ein Bild. Dieselbe Datei wird beim zweiten Tipp sofort gegeben */
   var cb=$('shCardBtn'),ct=$('shCardT'),cardT=null,cfile=null,ckey='',busyC=false,cardGen=0,video=CARD.canVideo();
@@ -643,7 +642,7 @@ $('preName').addEventListener('click',function(){nameSheet();});
   /* Der Knopf heißt von Anfang an „Share video“ (Rechner: „Save video“), während der Erstellung „Generating · 12 s“ mit Füllstand;
      die Zeile darunter erklärt jeden Schritt (erst entsteht das Video, dann öffnet sich das Teilen-Menü). Ändert sich der Beat, fängt es von vorn an */
   function cardKey(){var o=cardOpts();return shareCode()+'|'+o.title+'|'+o.by;}
-  function cardNote(t){ct.textContent=t;ct.hidden=!t;}
+  function cardNote(t){ct.textContent=t;ct.hidden=!t||!molOn;}
   function cardLabel(){if(busyC)return;cb.classList.remove('gen');cb.style.removeProperty('--p');var ready=cfile&&ckey===cardKey(),mob=nativeShare(),secs=Math.round(CARD.clipLen(bpm));
     cb.textContent=video?(mob?'Share video':'Save video'):(mob?'Share image':'Save image');
     if(!video){cardNote(ready?'Ready. Tap to share it again.':'A picture of your orbit for Story and chats.');return;}
@@ -658,7 +657,7 @@ $('preName').addEventListener('click',function(){nameSheet();});
         if(e&&e.name==='AbortError')return;
         if(e&&e.name==='NotAllowedError'){cardNote('Tap Share video once more to open the share sheet.');return;}
         saveFile(f);cardNote('Sharing did not work here, saved '+f.name+' instead.');});return;}
-    saveFile(f);cardNote('Saved '+f.name+'. Add the link from ⋯ so friends can open the beat.');
+    saveFile(f);cardNote('Saved '+f.name+'. Copy the link too, so friends can open the beat.');
   }
   /* Abbruch: auch während der Ton noch gerechnet wird (dann verfällt das Ergebnis) */
   function cardStop(){cardGen++;if(cardT){cardT();cardT=null;}if(busyC){busyC=false;cb.disabled=false;cardLabel();}}
@@ -670,7 +669,7 @@ $('preName').addEventListener('click',function(){nameSheet();});
     renderClip(function(buf){
       if(gen!==cardGen)return;
       if(!buf){busyC=false;cb.disabled=false;cardLabel();cardNote('That did not work in this browser.');return;}
-      o.mirror=molC;o.mirrorBg=molDark()?'#0E0E0F':'#FFFFFF';cb.classList.add('gen');cardNote('Generating the video with sound. Keep this screen open until it is done, Grid cancels.');
+      o.mirror=molC;o.mirrorBg=molDark()?'#0E0E0F':'#FFFFFF';cb.classList.add('gen');cardNote('Generating the video with sound. Keep this screen open until it is done, the arrow cancels.');
       cardT=CARD.record(ac,buf,scene,o,function(t,tot){cb.style.setProperty('--p',Math.min(1,t/tot));cb.textContent='Generating · '+Math.ceil(tot-t)+' s';},function(f,why){
         busyC=false;cb.disabled=false;cardT=null;
         if(why==='abort'){cardLabel();return;}
@@ -689,8 +688,8 @@ $('preName').addEventListener('click',function(){nameSheet();});
 
   /* ---------- Farbschema ---------- */
   var TN={system:'system',light:'light',dark:'dark'};
-  function themeUI(){var t=applyTheme();if(molOn)forceDark();$('theme').setAttribute('aria-label','Theme: '+TN[t]);$('theme').title='Theme: '+TN[t];}
-  $('theme').addEventListener('click',function(){var t=THEMES.indexOf(S.theme);S.theme=THEMES[(t<0?1:t+1)%3];save();themeUI();});
+  /* Das Farbschema wohnt am Ende der Beat-Liste (drei Schalter), nicht mehr im Kopf der Seite */
+  function themeUI(){var t=applyTheme();if(molOn)forceDark();var sg=$('themeSeg');if(sg)[].forEach.call(sg.children,function(b){b.setAttribute('aria-pressed',b.dataset.t===t?'true':'false');});}
   if(window.matchMedia)try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',themeUI);}catch(e){}
 
   build();themeUI();fxUI();playB.innerHTML=I_PLAY;
@@ -723,9 +722,9 @@ $('preName').addEventListener('click',function(){nameSheet();});
     molS.fire({s:q,b:b,h:h,st:stu?1:0},performance.now());
     if(stu)setTimeout(function(){if(molOn&&playing)molS.fire({s:q,b:b,h:h,st:1},performance.now());},st()*500);}
   var transport=document.querySelector('.transport');
-  function molSet(on){molOn=!!on;if(!molOn)cardStop();app.classList.toggle('molecule',molOn);molC.hidden=!molOn;foot.hidden=!molOn;hueRow.hidden=!molOn;
+  var links=$('cardlinks');
+  function molSet(on){molOn=!!on;if(!molOn)cardStop();app.classList.toggle('molecule',molOn);molC.hidden=!molOn;foot.hidden=!molOn;hueRow.hidden=!molOn;links.hidden=!molOn;vGrid.hidden=!molOn;vCard.hidden=molOn;
     if(molOn){foot.insertBefore(playB,cb);foot.insertBefore(fxB,cb);cardLabel();forceDark();}else{transport.insertBefore(playB,transport.firstChild);transport.insertBefore(fxB,dropB);ct.hidden=true;themeUI();}
-    vGrid.setAttribute('aria-pressed',molOn?'false':'true');vCard.setAttribute('aria-pressed',molOn?'true':'false');
     S.view=molOn?'mol':'';save();if(molOn){molModel();molSize();molGo();}}
   vGrid.addEventListener('click',function(){molSet(false);});vCard.addEventListener('click',function(){molSet(true);});
   /* Unterer Streifen (Titel und Zeile) öffnet den Namen, der Rest spielt oder stoppt */

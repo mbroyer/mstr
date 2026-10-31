@@ -31,7 +31,9 @@ with sync_playwright() as p:
     assert pg.locator('#sheet').is_hidden()
     pg.click('#play')
     # Mute
-    pg.locator('.tracks .trk').nth(1).locator('.ms.m').click()
+    # Mute wohnt auf der Spurseite, nicht mehr im Raster
+    assert pg.locator('.tracks .ms').count()==0
+    pg.locator('.tracks .trk').nth(1).locator('.tn').click();pg.click('#kMute');pg.click('#sheet [data-close]')
     assert pg.locator('.tracks .trk.quiet').count()==1
     # Spur-Blatt
     pg.locator('.tracks .trk').first.locator('.tn').click()
@@ -57,9 +59,10 @@ with sync_playwright() as p:
     pg.reload();pg.wait_for_timeout(300)
     assert pg.locator('.dot.on').count()==on,'Stand verloren'
     assert pg.inner_text('#bpm')=='118' and pg.locator('.tracks .trk.quiet').count()==1
-    # Dunkel
-    pg.click('#theme');pg.click('#theme')
-    assert pg.evaluate('document.documentElement.dataset.theme')=='dark'
+    # Farbschema: drei Schalter am Ende der Beat-Liste
+    pg.click('#preBtn');pg.wait_for_timeout(200);pg.click('#themeSeg [data-t="light"]');assert pg.evaluate('document.documentElement.dataset.theme')=='light'
+    pg.click('#themeSeg [data-t="dark"]');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
+    assert pg.evaluate('document.documentElement.dataset.theme')=='dark' and pg.locator('#theme').count()==0
     assert 'Open' in pg.locator('.tracks .trk').first.locator('.tb').inner_text(),'Klangwahl verloren'
     pg.wait_for_timeout(400)
     pg.screenshot(path=H+'/tests/t1-dark.png',full_page=True)

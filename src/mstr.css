@@ -37,25 +37,31 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 
 .head{display:flex;flex-direction:column;gap:4px}
 .preset{margin:0;cursor:pointer;display:flex;align-items:center;gap:10px;min-width:0;font-family:var(--f-ed);font-size:clamp(42px,11vw,60px);font-weight:400;letter-spacing:-.01em;line-height:1}
-/* Beat wählen: gefüllter runder Knopf direkt neben dem Namen (im Dunkelmodus Weiß) */
+/* Share: der einzige farbige Knopf im Kopf, beim Spielen läuft darin ein winziger Orbit mit */
+.pill.share{background:var(--accent);color:var(--on-accent);border-color:var(--accent);height:40px;padding:0 16px 0 13px;font-size:14px;gap:7px}
+.pill.share svg{width:18px;height:18px}
+#miniOrb{width:22px;height:22px;display:none}
+.app.live #miniOrb{display:block}
+.app.live .pill.share .shi{display:none}
 .prow{display:flex;align-items:center;gap:14px}
 /* Stift: zeigt, dass der Titel antippbar ist */
 .preset .pen{width:18px;height:18px;flex:none;color:var(--mute)}
 .preset #preTxt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
-.ib.pick{width:44px;height:44px;background:var(--ink);color:var(--bg)}
-.ib.pick svg{width:20px;height:20px}
-/* Beat beschreiben: Sprechblase links neben der Beat-Wahl, das Feld kommt von oben */
-.prow .ib.say{width:44px;height:44px;flex:none;margin-left:-6px}
-.prow .ib.say svg{width:21px;height:21px}
+/* Textknöpfe: „Change beat“ unter dem Titel, Link und WAV im Orbit */
+.lnk{border:0;background:none;padding:4px 0;font:600 13px var(--f-ui);color:var(--ink);display:inline-flex;align-items:center;gap:5px;cursor:pointer}
+.lnk svg{width:13px;height:13px;flex:none;color:var(--mute)}
+/* Beat beschreiben: das Feld steht oben in der Beat-Liste */
 .sayf{display:flex;gap:10px;align-items:flex-end}
 .sayf textarea{flex:1;min-width:0;min-height:64px;resize:none;border-radius:14px;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:14px 16px;font-family:var(--f-ed);font-size:24px;line-height:1.15;outline:none;caret-color:var(--accent)}
 .sayf textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent)}
 .sayf textarea::placeholder{color:var(--mute)}
 .sayf .ib.go{width:52px;height:52px;flex:none;background:var(--accent);color:var(--on-accent)}
 .sayf .ib.go svg{width:22px;height:22px}
-.sub:empty{display:none}
 .pill svg{width:17px;height:17px;flex:none}
-.sub{margin:0;font-size:13px;color:var(--mute)}
+.sub{margin:0;font-size:13px;color:var(--mute);display:flex;align-items:center;gap:8px;min-height:24px}
+#sub:empty{display:none}
+#sub:not(:empty)::after{content:"·";margin-left:8px}
+.shnote.left{text-align:left}
 
 /* Raster: Name-Zeile über 16 Punkten; ab 640 px Name links */
 .tracks{display:flex;flex-direction:column;gap:clamp(12px,2.6vh,24px)}
@@ -65,8 +71,6 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .tn .nm{white-space:nowrap;font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;font-weight:500}
 .tn .tb{font-size:12px;color:var(--mute);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .tn .go{width:12px;height:12px;color:var(--mute);flex:none;align-self:center;margin-left:-4px}
-.ms{width:26px;height:22px;border-radius:6px;border:1px solid var(--line);background:transparent;font-family:var(--f-mono);font-size:10px;font-weight:500;cursor:pointer;color:var(--mute);padding:0;flex:none}
-.ms[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .trk.quiet .steps{opacity:.28}
 /* Die eigene Spur Aufnahme steht etwas abgesetzt unter den eingebauten */
 .trk.own{border-top:1px solid var(--line);padding-top:clamp(12px,2.6vh,24px)}
@@ -108,17 +112,14 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 #drop.on svg path{fill:currentColor}
 #drop.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .app.building #drop{animation:pulse .25s ease-in-out infinite alternate}
-#fxBtn{height:44px;padding:0 12px 0 10px;gap:6px;font-variant-numeric:tabular-nums}
-#share{width:44px;height:44px;padding:0;flex:none}
-#share svg{width:19px;height:19px}
-/* Schmale Handys: Platz für Teilen in der Leiste, der Pfeil am Tempo entfällt (die Zahl selbst öffnet das Blatt) */
-/* Handys: Effects und Drop nur als Symbol (Effects mit Zahl, wenn Effekte an sind), damit Teilen und Tempo Luft haben */
-@media (max-width:430px){.transport .fxl{display:none}#fxBtn,#drop{min-width:44px;padding:0 12px;justify-content:center;gap:4px}#drop{width:44px;padding:0}#fxBtn.on{padding:0 14px 0 12px}}
-@media (max-width:380px){.tempo .chev{display:none}}
+#fxBtn{height:44px;padding:0 14px 0 12px;gap:6px;font-variant-numeric:tabular-nums}
+/* Effects und Drop tragen ihr Wort; erst auf sehr schmalen Handys bleibt nur das Symbol, die Swing-Zeile fällt am Handy weg */
+@media (max-width:479px){.swt{display:none}}
+@media (max-width:399px){.transport{gap:6px}.tempo .big{font-size:36px}#fxBtn,#drop{padding:0 11px 0 10px;gap:5px}}
+@media (max-width:359px){.transport .fxl{display:none}#fxBtn,#drop{min-width:44px;padding:0 12px;justify-content:center;gap:4px}#drop{width:44px;padding:0}#fxBtn.on{padding:0 14px 0 12px}}
 #fxBtn.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .tempo{margin-left:auto;border:0;background:none;cursor:pointer;display:flex;align-items:center;gap:8px;padding:4px 0;line-height:1}
 .tv{display:flex;flex-direction:column;align-items:flex-end;gap:6px}
-.tempo .chev{width:30px;height:30px;padding:6px;border-radius:50%;background:var(--soft);color:var(--ink);flex:none}
 .big{font-weight:700;letter-spacing:-.04em;line-height:1;font-variant-numeric:tabular-nums;font-size:32px}
 .big small{font-size:.42em;color:var(--mute);font-weight:600;letter-spacing:0;margin-left:2px}
 .swt{font-family:var(--f-mono);font-size:10px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
@@ -205,6 +206,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .fxi i{width:26px;height:26px;border-radius:50%;background:var(--off);flex:none;transition:background .15s,transform .15s}
 .fxi[aria-pressed="true"] i{background:var(--accent);transform:scale(1.1)}
 .seg2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.seg2.three{grid-template-columns:repeat(3,1fr)}
 .seg2 button{height:42px;border-radius:999px;border:1px solid var(--line);background:transparent;font-size:13px;font-weight:600;cursor:pointer;color:var(--mute)}
 .seg2 button[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
 .seg2.sm{flex:1}
@@ -260,11 +262,12 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .mol{display:block;width:100%;flex:1 1 0;min-height:220px;border-radius:24px;cursor:pointer;touch-action:pan-y;-webkit-tap-highlight-color:transparent}
 .mol:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
 .app.molecule .tracks,.app.molecule .beatrow{display:none}
-/* Umschalter oben: Grid zum Bauen, Orbit zum Zusehen und Teilen */
-.seg{display:flex;background:var(--soft);border-radius:999px;padding:3px;gap:2px}
-.seg button{height:30px;padding:0 14px;border-radius:999px;border:0;background:none;color:var(--mute);font:600 13px var(--f-ui);cursor:pointer}
-.seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
+/* Im Orbit: Pfeil zurück links, die Marke bleibt in der Mitte (rechts ein gleich breiter Platzhalter) */
+.app.molecule .topr{width:36px}
 .cardfoot{display:flex;gap:8px;align-items:center}
+.cardlinks{display:flex;justify-content:center;gap:26px;margin-top:-6px}
+.cardlinks .lnk{font-size:14px}
+.cardlinks .lnk svg{width:15px;height:15px}
 /* Farbwahl im Orbit: fünf Punkte, der gewählte trägt einen Ring; die Orbit-Farbe färbt dort auch den Video-Knopf */
 /* Zurückhaltend wie die App: kleine graue Punkte, nur der gewählte trägt seine Farbe; die Tipp-Fläche bleibt groß */
 .hue{display:flex;justify-content:flex-start;gap:2px;height:0;position:relative;z-index:1}
@@ -277,7 +280,6 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .cardfoot .pill{flex:1;width:auto}
 .cardfoot .ib{width:48px;height:48px}
 .app.molecule .head{display:none}
-.app.molecule #theme{display:none}
 /* In der Karte gibt es keine Leiste: Tipp auf den Ring spielt und stoppt, Tipp auf den Titel benennt */
 .app.molecule .transport{display:none}
 /* Orbit füllt genau den sichtbaren Bereich, nichts rutscht unter die Safari-Leiste; Play und Effekte stehen in der Reihe beim Knopf */
@@ -287,7 +289,6 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .cardfoot #fxBtn{flex:none;height:48px;min-width:48px;width:48px;padding:0;border-radius:50%;justify-content:center;gap:4px}
 .cardfoot #fxBtn .fxl{display:none}
 .cardfoot #fxBtn.on{width:auto;padding:0 14px 0 12px;border-radius:999px}
-#shCardT{min-height:2.7em;padding-bottom:max(10px,env(safe-area-inset-bottom,0px))}
-#shCardT{margin-top:-8px;line-height:1.35}
+#shCardT{min-height:2.7em;padding-bottom:max(10px,env(safe-area-inset-bottom,0px));margin-top:-10px;line-height:1.35}
 /* Video entsteht: der Knopf füllt sich von links mit dem Fortschritt (--p 0..1) */
 .pill.go.gen,.pill.go.gen:disabled{opacity:1;color:var(--ink);border-color:transparent;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 60%,var(--bg)) calc(var(--p,0) * 100%),color-mix(in srgb,var(--accent) 18%,var(--bg)) calc(var(--p,0) * 100%));transition:background .2s linear}
