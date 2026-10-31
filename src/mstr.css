@@ -251,7 +251,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .mol{display:block;width:100%;flex:1 1 auto;min-height:300px;border-radius:24px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .mol:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
 .app.molecule .tracks,.app.molecule .beatrow{display:none}
-/* Umschalter oben: Raster zum Bauen, Karte zum Zusehen und Teilen */
+/* Umschalter oben: Grid zum Bauen, Orbit zum Zusehen und Teilen */
 .seg{display:flex;background:var(--soft);border-radius:999px;padding:3px;gap:2px}
 .seg button{height:30px;padding:0 14px;border-radius:999px;border:0;background:none;color:var(--mute);font:600 13px var(--f-ui);cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
@@ -262,4 +262,6 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 /* In der Karte gibt es keine Leiste: Tipp auf den Ring spielt und stoppt, Tipp auf den Titel benennt */
 .app.molecule .transport{display:none}
 .app.molecule .cardfoot{padding-bottom:max(12px,env(safe-area-inset-bottom,0px))}
-#shCardT{margin-top:-8px}
+#shCardT{margin-top:-8px;line-height:1.35}
+/* Aufnahme: der Knopf füllt sich von links mit dem Fortschritt (--p 0..1) */
+.pill.go.rec,.pill.go.rec:disabled{opacity:1;color:var(--ink);border-color:transparent;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 60%,var(--bg)) calc(var(--p,0) * 100%),color-mix(in srgb,var(--accent) 18%,var(--bg)) calc(var(--p,0) * 100%));transition:background .2s linear}
