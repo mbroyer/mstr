@@ -325,7 +325,38 @@
         b.addEventListener('click',function(){fromBeat(i);paint();persist();closeSheet();if(!playing)setPlay(true);});list.appendChild(b);});
     },'vorlagen');
   }
-  $('preBtn').addEventListener('click',presetSheet);$('preName').addEventListener('click',function(){nameSheet();});
+  $('preBtn').addEventListener('click',presetSheet);
+  /* ---------- Beat aus Worten: beschreiben, abschicken, der Beat ist da (Regeln in worte.js, alles im Browser).
+     Ersetzt die sieben eingebauten Spuren, Tempo, Swing und Effekte; die Spur Aufnahme bleibt. Die Beschreibung wird der Name.
+     Nochmal abschicken gibt eine Variante. Rückgängig über den Hinweis ---------- */
+  function beatRows(i){var Bt=BEATS[i],X=EXTRA[Bt.n],o=[],r;for(r=0;r<7;r++)o.push(r<3?rowFromBeat(Bt,TRACKS[r].id):dots(X?X[r-3]:COMMON[TRACKS[r].id][0]));return o;}
+  var SAY=['dusty slow hip hop with vinyl','dark fast techno, lots of echo','happy summer beat with cowbell','dreamy, minimal, a bit of swing','drum and bass without hats'];
+  function sayBeat(text){
+    text=String(text||'').trim();if(!text)return false;
+    var o=WORTE(text,{n:BEATS.map(function(b){return b.n;}),bpm:BEATS.map(function(b){return b.bpm;}),sw:BEATS.map(function(b){return b.sw;}),rows:beatRows});
+    var before=snap(),r;
+    for(r=0;r<7;r++)pat[r]=o.g[r];
+    bpm=o.bpm;sw=o.sw;pre=o.pre;edited=true;title=o.nm;
+    FXS.forEach(function(f){var id=f[0],x=o.fx[id];FX[id]=!!x;if(x){FXA[id]=x[0];if(f[4]&&f[4].some(function(q){return q[0]===x[1];}))FXO[id]=x[1];}});
+    fxSave();fxApply(false);fxUI();paint();persist();
+    if(!playing)setPlay(true);
+    showToast('New beat','Undo',function(){restore(before);});
+    return true;
+  }
+  function saySheet(){
+    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Describe a beat</span>'+XB+'</div>'+
+      '<form class="sayf" autocomplete="off"><textarea id="sayIn" rows="2" maxlength="200" enterkeyhint="send" aria-labelledby="sheetT" data-focus></textarea>'+
+      '<button type="submit" class="ib go" id="sayGo" aria-label="Make the beat" title="Make the beat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></form>'+
+      '<p class="shnote">Style, mood, tempo, sounds, effects. In your own words.</p>',function(el){
+      var inp=el.querySelector('#sayIn'),f=el.querySelector('form');
+      inp.value=typeof S.say==='string'?S.say:'';inp.placeholder=SAY[Math.floor(Math.random()*SAY.length)];
+      function go(){var v=inp.value.trim()||inp.placeholder;S.say=inp.value.trim();save();closeSheet();sayBeat(v);}
+      f.addEventListener('submit',function(e){e.preventDefault();go();});
+      inp.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();go();}});
+    },'beschreiben','top');
+  }
+  $('sayBtn').addEventListener('click',saySheet);
+$('preName').addEventListener('click',function(){nameSheet();});
 
   function tempoSheet(){
     var taps=[];
@@ -701,5 +732,5 @@
   document.addEventListener('visibilitychange',function(){if(!document.hidden)molGo();});window.addEventListener('pageshow',molGo);
   if(S.view==='mol')molSet(true);
 
-  window.MSTR={view:molSet,setPlay:setPlay,renderLoop:renderLoop,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,hue:setHue,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,col:col,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
+  window.MSTR={view:molSet,say:sayBeat,setPlay:setPlay,renderLoop:renderLoop,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,hue:setHue,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,col:col,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
 })();

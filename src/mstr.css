@@ -44,6 +44,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .preset #preTxt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ib.pick{width:44px;height:44px;background:var(--ink);color:var(--bg)}
 .ib.pick svg{width:20px;height:20px}
+/* Beat beschreiben: Sprechblase links neben der Beat-Wahl, das Feld kommt von oben */
+.prow .ib.say{width:44px;height:44px;flex:none;margin-left:-6px}
+.prow .ib.say svg{width:21px;height:21px}
+.sayf{display:flex;gap:10px;align-items:flex-end}
+.sayf textarea{flex:1;min-width:0;min-height:64px;resize:none;border-radius:14px;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:14px 16px;font-family:var(--f-ed);font-size:24px;line-height:1.15;outline:none;caret-color:var(--accent)}
+.sayf textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent)}
+.sayf textarea::placeholder{color:var(--mute)}
+.sayf .ib.go{width:52px;height:52px;flex:none;background:var(--accent);color:var(--on-accent)}
+.sayf .ib.go svg{width:22px;height:22px}
 .sub:empty{display:none}
 .pill svg{width:17px;height:17px;flex:none}
 .sub{margin:0;font-size:13px;color:var(--mute)}
