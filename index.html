@@ -57,6 +57,15 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .preset #preTxt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 .ib.pick{width:44px;height:44px;background:var(--ink);color:var(--bg)}
 .ib.pick svg{width:20px;height:20px}
+/* Beat beschreiben: Sprechblase links neben der Beat-Wahl, das Feld kommt von oben */
+.prow .ib.say{width:44px;height:44px;flex:none;margin-left:-6px}
+.prow .ib.say svg{width:21px;height:21px}
+.sayf{display:flex;gap:10px;align-items:flex-end}
+.sayf textarea{flex:1;min-width:0;min-height:64px;resize:none;border-radius:14px;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:14px 16px;font-family:var(--f-ed);font-size:24px;line-height:1.15;outline:none;caret-color:var(--accent)}
+.sayf textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent)}
+.sayf textarea::placeholder{color:var(--mute)}
+.sayf .ib.go{width:52px;height:52px;flex:none;background:var(--accent);color:var(--on-accent)}
+.sayf .ib.go svg{width:22px;height:22px}
 .sub:empty{display:none}
 .pill svg{width:17px;height:17px;flex:none}
 .sub{margin:0;font-size:13px;color:var(--mute)}
@@ -307,7 +316,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
     </div>
   </header>
   <div class="head">
-    <div class="prow"><h1 class="preset" id="preName" title="Name your beat"><span id="preTxt">Amapiano</span><svg class="pen" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></h1><button type="button" class="ib pick" id="preBtn" aria-haspopup="dialog" aria-label="Choose beat" title="Choose beat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button></div>
+    <div class="prow"><h1 class="preset" id="preName" title="Name your beat"><span id="preTxt">Amapiano</span><svg class="pen" viewBox="0 0 24 24" aria-hidden="true"><path d="M12 20h9M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></h1><button type="button" class="ib pick" id="preBtn" aria-haspopup="dialog" aria-label="Choose beat" title="Choose beat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 7h16M4 12h16M4 17h10" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"/></svg></button><button type="button" class="ib say" id="sayBtn" aria-haspopup="dialog" aria-label="Describe a beat" title="Describe a beat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 5h14a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 17h-8l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5v-9A1.5 1.5 0 0 1 5 5Z" fill="none" stroke="currentColor" stroke-width="2" stroke-linejoin="round"/><path d="M8 9.5h8M8 12.8h5" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg></button></div>
     <p class="sub" id="sub"></p>
   </div>
   <main class="tracks" id="tracks" aria-label="Tracks"></main>
@@ -895,6 +904,144 @@ var CARD=(function(){
   return {model:model,title:title,Scene:Scene,story:story,view:view,HUES:HUES,record:record,image:image,canVideo:canVideo,clipLen:clipLen,active:active,NBAR:NBAR,TAIL:TAIL};
 })();
 
+/* ===== Beat aus Worten: eine Beschreibung (Englisch oder Deutsch) wird zu einem Beat, ganz ohne Server.
+   Stichworte für Stil, Stimmung, Tempo, Swing, Dichte, Klänge und Effekte. Der Stil wählt die Vorlage als Grundlage,
+   der Rest verändert sie; dazu etwas Zufall, so gibt dieselbe Beschreibung beim nächsten Mal eine Variante.
+   WORTE(text, ctx) liefert {pre, bpm, sw, g (sieben Spuren), fx {id:[Stärke, Auswahl]}, nm}.
+   ctx: n (Namen der Vorlagen), bpm (ihr Tempo), sw (ihr Swing), rows(i) (ihre sieben Spuren), rnd (Zufall 0–1) ===== */
+var WORTE=(function(){
+  /* Stile in Reihenfolge der Vorlagen-Namen; was im Text zuerst steht, gewinnt */
+  var STYLE={
+    lofi:'lo-?fi|chill ?hop|hip ?hop|boom ?bap|jazzy|study|lernen|beats to',
+    house:'house|deep house|disco|club',
+    funk:'funk|funky|groovy|soul',
+    rock:'rock|punk|indie|band|garage rock|grunge',
+    techno:'techno|rave|warehouse|berlin|industrial|hard ?techno',
+    trap:'trap|drill|rap|808s',
+    onedrop:'reggae|dub|one ?drop|ska|jamaica',
+    pop80:'pop|80s|80er|eighties|beat it|michael jackson|synth ?pop',
+    dnb:"drum ?(and|n|'n'|&) ?bass|dnb|d&b|liquid",
+    afrobeats:'afro|afrobeat|afrobeats|nigeria|lagos|afropop',
+    reggaeton:'reggaeton|dembow|latin|perreo',
+    minimal:'minimal techno|minimal|microhouse|tech ?house',
+    twostep:'2 ?-?step|two ?-?step|uk garage|ukg|garage',
+    jungle:'jungle|breakbeat|breaks|amen',
+    electro:'electro|robot|kraftwerk|machine|maschine|roboter',
+    amapiano:'amapiano|log drum|south africa|piano'};
+  /* Stimmung, wenn kein Stil genannt ist */
+  var MOOD=[
+    ['dark|duester|finster|night|nacht|evil|horror|creepy|gruselig|underground|keller|cave|hoehle','techno','minimal'],
+    ['sad|traurig|melanchol|rain|regen|lonely|einsam|sleep|schlaf|mellow|sunday|sonntag|cozy|gemuetlich|coffee|kaffee','lofi','onedrop'],
+    ['happy|froehlich|sunny|sonnig|summer|sommer|beach|strand|holiday|urlaub|bright|hell','afrobeats','house'],
+    ['party|dance|tanz|tanzen|dancefloor|feier|wedding|hochzeit','house','amapiano'],
+    ['angry|wuetend|aggressive|aggressiv|hard|hart|brutal|heavy|schwer|metal','techno','trap'],
+    ['funny|lustig|silly|albern|bouncy|huepf|playful|verspielt','funk','reggaeton'],
+    ['epic|episch|stadium|stadion|huge|riesig|big room','rock','pop80'],
+    ['heart|heartbeat|herz|herzschlag|pulse|puls|hypnotic|hypnotisch|trance','minimal','techno'],
+    ['fast|schnell|frantic|hektisch|energy|energie|running|laufen|workout|sport','dnb','jungle'],
+    ['slow|langsam|lazy|faul|relaxed|entspannt|calm|ruhig','lofi','onedrop']];
+  /* Klänge: Spur, Zeichen, Muster (null: eigene Regel unten) */
+  var SOUND=[
+    ['clap|klatsch',2,'c'],['rim|rimshot|sidestick',2,'k'],
+    ['cowbell|kuhglocke',4,'..5.....5.....5.'],['shaker|rassel',4,'1.1.1.1.1.1.1.1.'],['conga|bongo|hand ?drum|percussion|perkussion',4,'4..4..4...4.4...'],
+    ['tambourine|tamburin',4,'....2.......2...'],['clave|wood|holz',4,'3..3..3...3.3...'],
+    ['ride',3,'r.r.r.r.r.r.r.r.'],['crash|becken|cymbal',3,'c...............'],['china',3,'..............h.'],
+    ['toms?|fill|wirbel',5,'..........t.p.b.'],
+    ['808|sub|bass|wobble',6,null],['snap|finger|schnips',6,'....m.......m...'],['riser|build|aufbau|rising',6,'............z...'],
+    ['reverse|rueckwaerts',6,'............s...'],['roll|drumroll',6,'............l...'],
+    ['open ?hats?|offene',0,null]];
+  /* Spuren für „ohne …“ */
+  var ROW=[['hats?|hi-?hats?|hihats?',0],['kicks?|bass ?drum|bassdrum',1],['snares?|claps?',2],['cymbals?|becken|crash|ride',3],['perc|percussion|perkussion|shaker|cowbell',4],['toms?',5],['fx|effects|effekte',6],['drums?',-1]];
+  /* Effekte: id, Wörter, Auswahl (Echo und Filter) */
+  var FXW=[
+    ['room','reverb|hall|room|raum|space|spacious|weit|cathedral|kirche|church|cave|hoehle|dreamy|traeum|ambient|ethereal|atmospher|wide|big room',0],
+    ['echo','echo|delay|dub|spacey|weltall|outer space|bouncing',3],
+    ['sweep','filter|sweep|underwater|unter ?wasser|muffled|dumpf|gedaempft|wobble|wobbly|breathing filter',2],
+    ['pump','pump|pumping|sidechain|side-chain|breath|atmen|atmend|ducking|pumpend',4],
+    ['stut','stutter|stotter|glitch|glitchy|chopped|broken|kaputt|stuttering',2],
+    ['lofi','vinyl|dust|dusty|staub|old|alt|retro|crackle|knister|tape|kassette|cassette|warm|grain|grainy|lo-?fi|record|schallplatte|platte']];
+  var MORE='very|super|lots of|lot of|loads of|tons of|heavy|massive|extreme|really|sehr|extrem|viel|voll|krass|ganz viel|mega|so much',
+      LESS='a bit|a little|little|slight|slightly|subtle|soft|light|leicht|etwas|wenig|bisschen|dezent|sanft|kaum';
+
+  function norm(t){return ' '+String(t||'').toLowerCase().replace(/ä/g,'ae').replace(/ö/g,'oe').replace(/ü/g,'ue').replace(/ß/g,'ss').replace(/[^a-z0-9&'\-]+/g,' ')+' ';}
+  /* Wortgrenzen; deutsche Endungen (langsamER, düsterE, schnellEN) zählen mit */
+  function re(w){return new RegExp('(^|[^a-z0-9])(?:'+w+')(?:e|er|es|en|em|ern|s|n|r)?(?=[^a-z0-9]|$)','g');}
+  function find(t,w){var m=re(w).exec(t);return m?m.index+m[1].length:-1;}
+  /* Ist das Wort an Stelle i verneint („no hats“, „ohne Kick“, „keine Becken“)? */
+  function neg(t,i){return /(^|\s)(no|not|without|ohne|kein|keine|keinen|keiner|less|weniger|zero|minus)\s+(\S+\s+)?$/.test(t.slice(Math.max(0,i-30),i));}
+  function amount(t,i){var b=t.slice(Math.max(0,i-26),i);return re(MORE).test(b)?82:re(LESS).test(b)?28:55;}
+  function set(row,k,ch){return row.slice(0,k)+ch+row.slice(k+1);}
+  function dots(s){return s.replace(/\./g,'0');}
+
+  return function(text,ctx){
+    var t=norm(text),rnd=ctx.rnd||Math.random,i,k,best=-1,bi=1e9,id;
+    function pick(a){return a[Math.floor(rnd()*a.length)];}
+    function idx(n){return ctx.n.indexOf(n);}
+    /* Stil: was zuerst im Text steht; „minimal techno“ zählt als Minimal */
+    for(id in STYLE){i=find(t,STYLE[id]);if(i>=0&&(i<bi||(i===bi&&id==='minimal'))&&!neg(t,i)){bi=i;best=idx(id);}}
+    if(best<0){var mi=1e9;MOOD.forEach(function(m){var j=find(t,m[0]);if(j>=0&&j<mi){mi=j;best=idx(rnd()<.6?m[1]:m[2]);}});}
+    /* Tempo als Zahl (nicht „80s“ oder „90er“) */
+    var num=/(^|\s)(\d{2,3})\s*(bpm)?(?=\s)/.exec(t.replace(/\b\d{2}(s|er|ies)\b/g,' ')),bpm=null;
+    if(num&&+num[2]>=60&&+num[2]<=180)bpm=+num[2];
+    if(best<0&&bpm){var d=1e9;ctx.bpm.forEach(function(b,j){var e=Math.abs(b-bpm)+rnd()*6;if(e<d){d=e;best=j;}});}
+    if(best<0)best=Math.floor(rnd()*ctx.n.length);
+    var g=ctx.rows(best).slice(0,7),sw=ctx.sw[best],base=ctx.bpm[best];
+
+    /* Tempo-Wörter */
+    if(!bpm){var f=1;
+      if(find(t,'very slow|super slow|sehr langsam|crawling|schleppend')>=0)f=.78;
+      else if(find(t,'slow|slower|langsam|lazy|faul|chill|chilled|relaxed|entspannt|laid ?back|calm|ruhig|sleepy|mellow')>=0)f=.88;
+      if(find(t,'very fast|super fast|sehr schnell|insane|wahnsinnig')>=0)f=1.22;
+      else if(find(t,'fast|faster|schnell|quick|hektisch|frantic|rush|uptempo|up-tempo|energetic|treibend|driving')>=0)f=1.1;
+      if(find(t,'half ?time|halftime')>=0)f*=.75;if(find(t,'double ?time')>=0)f*=1.3;
+      bpm=Math.round(base*f+(rnd()-.5)*4);}
+    bpm=Math.max(60,Math.min(180,bpm));
+    /* Swing */
+    if(find(t,'swing|swung|shuffle|wonky|drunk|betrunken|lazy|laid ?back|groovy|jazzy|bouncy|dilla|loose|locker')>=0)sw=Math.max(sw,find(t,'very|heavy|sehr|drunk|betrunken|dilla')>=0?.45:.3);
+    if(find(t,'straight|gerade|tight|exakt|robotic|mechanical|mechanisch|quantized|stiff|steif')>=0)sw=0;
+
+    /* Dichte */
+    var sparse=find(t,'minimal|sparse|empty|leer|simple|reduced|reduziert|sparsam|stripped|bare|nackt|quiet|leise|space|luftig|airy')>=0&&ctx.n[best]!=='minimal'||find(t,'very minimal|super minimal')>=0,
+        busy=find(t,'busy|dense|full|voll|wild|crazy|verrueckt|chaotic|chaos|energetic|driving|treibend|lots of drums|complex|komplex|intense|intensiv|frantic|hektisch')>=0;
+    if(sparse&&!busy){
+      g[0]=g[0].replace(/./g,function(c,j){return j%4===2?c:'0';});if(g[0]===dots('................'))g[0]=dots('..o...o...o...o.');
+      g[2]=g[2].replace(/k/g,'0');g[4]=dots('................');g[5]=dots('................');g[6]=dots('................');
+      g[1]=g[1].replace(/./g,function(c,j){return j%4===0||j===0?c:'0';});if(g[1].charAt(0)==='0')g[1]=set(g[1],0,'b');}
+    if(busy){
+      for(k=0;k<16;k++)if(g[0].charAt(k)==='0'&&(k%2===0||rnd()<.5))g[0]=set(g[0],k,k%2?'k':'x');
+      [7,10,15].forEach(function(s){if(g[2].charAt(s)==='0'&&rnd()<.6)g[2]=set(g[2],s,'k');});
+      [3,10,14].forEach(function(s){if(g[1].charAt(s)==='0'&&rnd()<.4)g[1]=set(g[1],s,'b');});
+      if(g[4]===dots('................'))g[4]=dots(pick(['1.1.1.1.1.1.1.1.','4..4..4...4.4...','..1...1...1...1.']));
+      if(g[5]===dots('................'))g[5]=dots('............tpb.');}
+
+    /* Etwas Zufall, damit jede Beschreibung leicht anders klingt: ein paar Hats tauschen, mal eine Ghost-Note */
+    for(k=0;k<16;k++){var c=g[0].charAt(k);if(c==='x'&&k%4===3&&rnd()<.2)g[0]=set(g[0],k,'k');}
+    if(!sparse&&rnd()<.5){var gs=pick([3,7,11,14,15]);if(g[2].charAt(gs)==='0')g[2]=set(g[2],gs,'k');}
+    if(!sparse&&rnd()<.3){var ks=pick([6,10,11,14]);if(g[1].charAt(ks)==='0')g[1]=set(g[1],ks,'b');}
+
+    /* Klänge, die genannt werden; „ohne …“ leert die Spur */
+    SOUND.forEach(function(s){i=find(t,s[0]);if(i<0||neg(t,i))return;var r=s[1];
+      if(s[0]==='808|sub|bass|wobble'){if(find(t.replace(/drum ?(and|n|'n'|&) ?bass|bass ?drum|bassdrum/g,' '),s[0])<0)return;
+        var o='';for(k=0;k<16;k++)o+=g[1].charAt(k)!=='0'&&(k%8===0||rnd()<.35)?'n':g[6].charAt(k);g[6]=o;return;}
+      if(s[0]==='open ?hats?|offene'){for(k=2;k<16;k+=4)g[0]=set(g[0],k,'o');return;}
+      if(r===2){g[2]=g[2].replace(/p/g,s[2]);if(g[2].indexOf(s[2])<0){g[2]=set(g[2],4,s[2]);g[2]=set(g[2],12,s[2]);}return;}
+      var p=dots(s[2]),o2='';for(k=0;k<16;k++)o2+=p.charAt(k)!=='0'?p.charAt(k):g[r].charAt(k);g[r]=o2;});
+    ROW.forEach(function(w){var j,rg=re(w[0]),m;while((m=rg.exec(t))){j=m.index+m[1].length;if(neg(t,j)){
+      if(w[1]<0){g[0]=g[1]=g[2]=g[3]=g[4]=g[5]=dots('................');}else g[w[1]]=dots('................');}}});
+
+    /* Effekte: alles aus, außer was gesagt wird; Lo-Fi und Dub bringen ihr Vinyl und Echo mit */
+    var fx={};
+    FXW.forEach(function(f){i=find(t,f[1]);if(i>=0&&!neg(t,i))fx[f[0]]=[amount(t,i),f[2]];});
+    if(ctx.n[best]==='lofi'&&!fx.lofi&&find(t,'vinyl|staub|dust')<0&&!/(no|without|ohne|kein)\s+(vinyl|crackle|knistern)/.test(t))fx.lofi=[45,0];
+    if(find(t,'dub')>=0&&!fx.echo)fx.echo=[60,3];
+    if(find(t,'dreamy|traeum|ambient|ethereal|floating|schweben')>=0&&!fx.echo)fx.echo=[35,3];
+    var nm=String(text||'').replace(/[\u0000-\u001f]/g,' ').replace(/\s+/g,' ').trim();
+    if(nm.length>40){nm=nm.slice(0,40);var sp=nm.lastIndexOf(' ');if(sp>20)nm=nm.slice(0,sp);}
+    nm=nm.charAt(0).toUpperCase()+nm.slice(1);
+    return {pre:best,bpm:bpm,sw:Math.max(0,Math.min(.6,sw)),g:g,fx:fx,nm:nm};
+  };
+})();
+
 /* ===== MSTR: Raster, Transport, Vorlagen, Spur-Einstellungen ===== */
 (function(){
   /* Vorschläge zum Würfeln für Becken, Perc, Toms, FX und die eigene Aufnahme (16 Schritte) */
@@ -1222,7 +1369,38 @@ var CARD=(function(){
         b.addEventListener('click',function(){fromBeat(i);paint();persist();closeSheet();if(!playing)setPlay(true);});list.appendChild(b);});
     },'vorlagen');
   }
-  $('preBtn').addEventListener('click',presetSheet);$('preName').addEventListener('click',function(){nameSheet();});
+  $('preBtn').addEventListener('click',presetSheet);
+  /* ---------- Beat aus Worten: beschreiben, abschicken, der Beat ist da (Regeln in worte.js, alles im Browser).
+     Ersetzt die sieben eingebauten Spuren, Tempo, Swing und Effekte; die Spur Aufnahme bleibt. Die Beschreibung wird der Name.
+     Nochmal abschicken gibt eine Variante. Rückgängig über den Hinweis ---------- */
+  function beatRows(i){var Bt=BEATS[i],X=EXTRA[Bt.n],o=[],r;for(r=0;r<7;r++)o.push(r<3?rowFromBeat(Bt,TRACKS[r].id):dots(X?X[r-3]:COMMON[TRACKS[r].id][0]));return o;}
+  var SAY=['dusty slow hip hop with vinyl','dark fast techno, lots of echo','happy summer beat with cowbell','dreamy, minimal, a bit of swing','drum and bass without hats'];
+  function sayBeat(text){
+    text=String(text||'').trim();if(!text)return false;
+    var o=WORTE(text,{n:BEATS.map(function(b){return b.n;}),bpm:BEATS.map(function(b){return b.bpm;}),sw:BEATS.map(function(b){return b.sw;}),rows:beatRows});
+    var before=snap(),r;
+    for(r=0;r<7;r++)pat[r]=o.g[r];
+    bpm=o.bpm;sw=o.sw;pre=o.pre;edited=true;title=o.nm;
+    FXS.forEach(function(f){var id=f[0],x=o.fx[id];FX[id]=!!x;if(x){FXA[id]=x[0];if(f[4]&&f[4].some(function(q){return q[0]===x[1];}))FXO[id]=x[1];}});
+    fxSave();fxApply(false);fxUI();paint();persist();
+    if(!playing)setPlay(true);
+    showToast('New beat','Undo',function(){restore(before);});
+    return true;
+  }
+  function saySheet(){
+    openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Describe a beat</span>'+XB+'</div>'+
+      '<form class="sayf" autocomplete="off"><textarea id="sayIn" rows="2" maxlength="200" enterkeyhint="send" aria-labelledby="sheetT" data-focus></textarea>'+
+      '<button type="submit" class="ib go" id="sayGo" aria-label="Make the beat" title="Make the beat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></form>'+
+      '<p class="shnote">Style, mood, tempo, sounds, effects. In your own words.</p>',function(el){
+      var inp=el.querySelector('#sayIn'),f=el.querySelector('form');
+      inp.value=typeof S.say==='string'?S.say:'';inp.placeholder=SAY[Math.floor(Math.random()*SAY.length)];
+      function go(){var v=inp.value.trim()||inp.placeholder;S.say=inp.value.trim();save();closeSheet();sayBeat(v);}
+      f.addEventListener('submit',function(e){e.preventDefault();go();});
+      inp.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();go();}});
+    },'beschreiben','top');
+  }
+  $('sayBtn').addEventListener('click',saySheet);
+$('preName').addEventListener('click',function(){nameSheet();});
 
   function tempoSheet(){
     var taps=[];
@@ -1607,7 +1785,7 @@ var CARD=(function(){
   document.addEventListener('visibilitychange',function(){if(!document.hidden)molGo();});window.addEventListener('pageshow',molGo);
   if(S.view==='mol')molSet(true);
 
-  window.MSTR={view:molSet,setPlay:setPlay,renderLoop:renderLoop,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,hue:setHue,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,col:col,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
+  window.MSTR={view:molSet,say:sayBeat,setPlay:setPlay,renderLoop:renderLoop,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,hue:setHue,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,col:col,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
 })();
 
 })();
