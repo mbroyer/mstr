@@ -600,14 +600,15 @@
      dann teilen (Handy) oder sichern (Rechner). Ohne Video gibt es ein Bild. Dieselbe Datei wird beim zweiten Tipp sofort gegeben */
   var cb=$('shCardBtn'),ct=$('shCardT'),cardT=null,cfile=null,ckey='',busyC=false,cardGen=0,video=CARD.canVideo();
   function cardOpts(){return {title:title||(pre>=0?NM[BEATS[pre].n]:'Your beat'),by:handle,preset:pre>=0?NM[BEATS[pre].n]:'',glass:GLASS,file:baseName()+'-'+bpm+'bpm'};}
-  /* Der Knopf erzählt den Ablauf: „Create video“ (noch keins da), „Generating · 12 s left“ mit Füllstand, dann „Share video“ bzw.
-     „Save video“; die Zeile darunter erklärt jeden Schritt. Ändert sich der Beat, fängt es von vorn an */
+  /* Der Knopf heißt von Anfang an „Share video“ (Rechner: „Save video“), während der Erstellung „Generating · 12 s“ mit Füllstand;
+     die Zeile darunter erklärt jeden Schritt (erst entsteht das Video, dann öffnet sich das Teilen-Menü). Ändert sich der Beat, fängt es von vorn an */
   function cardKey(){var o=cardOpts();return shareCode()+'|'+o.title+'|'+o.by;}
   function cardNote(t){ct.textContent=t;ct.hidden=!t;}
   function cardLabel(){if(busyC)return;cb.classList.remove('gen');cb.style.removeProperty('--p');var ready=cfile&&ckey===cardKey(),mob=nativeShare(),secs=Math.round(CARD.clipLen(bpm));
-    if(!video){cb.textContent=ready?(mob?'Share image':'Save image'):'Create image';cardNote(ready?'Ready. Tap to share it again.':'A picture of your orbit for Story and chats.');return;}
-    if(ready){cb.textContent=mob?'Share video':'Save video';cardNote('Ready, '+secs+' s with sound. Tap to share it again, it stays until you change the beat.');}
-    else{cb.textContent='Create video';cardNote(secs+' s with sound, for Story, Reels and chats. Recording takes as long as the video.');}}
+    cb.textContent=video?(mob?'Share video':'Save video'):(mob?'Share image':'Save image');
+    if(!video){cardNote(ready?'Ready. Tap to share it again.':'A picture of your orbit for Story and chats.');return;}
+    if(ready)cardNote('Ready, '+secs+' s with sound. Tap to share it again, it stays until you change the beat.');
+    else cardNote('Makes a '+secs+' s video with sound for Story, Reels and chats, then '+(mob?'opens the share sheet':'saves it')+'. Takes as long as the video.');}
   function giveCard(f){
     if(navigator.share&&matchMedia('(pointer: coarse)').matches&&canSendFile(f)){
       navigator.share({files:[f],title:cardOpts().title+' · MSTR'}).catch(function(e){if(e&&e.name==='NotAllowedError'){cb.textContent='Save '+f.name;}});return;}

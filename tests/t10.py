@@ -23,7 +23,7 @@ with sync_playwright() as p:
     # Karten-Ansicht: Share-Knopf und Mehr, kein Teilen-Knopf in der Leiste
     assert pg.locator('#share').count()==0
     pg.click('#vCard');pg.wait_for_timeout(200)
-    assert pg.locator('#shCardBtn').is_visible() and pg.locator('#more').is_visible() and pg.inner_text('#shCardBtn')=='Create video' and 'with sound' in pg.inner_text('#shCardT')
+    assert pg.locator('#shCardBtn').is_visible() and pg.locator('#more').is_visible() and pg.inner_text('#shCardBtn')=='Save video' and 'with sound' in pg.inner_text('#shCardT')
     assert pg.evaluate('document.documentElement.scrollWidth')<=390
     # Arrangement: Takt 1 nur Kick und Hats, Takt 7 ohne Kick, Takt 9 nichts (Schlussschlag kommt extra)
     assert pg.evaluate("[MSTR.card.active(1,0),MSTR.card.active(2,0),MSTR.card.active(1,6),MSTR.card.active(0,8)]")==[True,False,False,False]
