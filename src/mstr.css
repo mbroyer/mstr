@@ -256,6 +256,12 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .seg button{height:30px;padding:0 14px;border-radius:999px;border:0;background:none;color:var(--mute);font:600 13px var(--f-ui);cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
 .cardfoot{display:flex;gap:8px;align-items:center}
+/* Farbwahl im Orbit: fünf Punkte, der gewählte trägt einen Ring; die Orbit-Farbe färbt dort auch den Video-Knopf */
+.hue{display:flex;justify-content:center;gap:14px;padding:2px 0 10px}
+.hue button{width:22px;height:22px;border-radius:50%;border:0;padding:0;background:var(--c);cursor:pointer;transition:transform .15s}
+.hue button[aria-checked="true"]{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--c)}
+.hue button:active{transform:scale(.9)}
+.app.molecule{--accent:var(--orbit,#C7B3FF)}
 .cardfoot .pill{flex:1;width:auto}
 .cardfoot .ib{width:48px;height:48px}
 .app.molecule .head{display:none}
