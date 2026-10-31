@@ -27,8 +27,9 @@ with sync_playwright() as p:
     assert pg.get_attribute('#shName','placeholder')=='Amapiano'
     pg.fill('#shName','Mia\'s Groove 2.0 ü')
     assert pg.inner_text('#preName')=="Mia's Groove 2.0 ü" and pg.inner_text('#sub')=='based on Amapiano'
+    pg.evaluate("MSTR.hue('m')") # Orbit-Farbe Mint reist mit
     st=pg.evaluate('MSTR.state()')
-    code=pg.evaluate('MSTR.code()');print('code',len(code),code)
+    code=pg.evaluate('MSTR.code()');print('code',len(code),code);assert code.endswith('.m')
     link=pg.evaluate('MSTR.url()');assert link.startswith(SITE+'?b=') and '#' not in link
     # Link: in der Karten-Ansicht hinter dem Mehr-Knopf
     pg.keyboard.press('Escape');pg.wait_for_timeout(200);pg.click('#vCard');pg.click('#more');pg.wait_for_timeout(300)
@@ -53,6 +54,7 @@ with sync_playwright() as p:
     assert s2['bpm']==st['bpm'] and abs(s2['sw']-st['sw'])<.01 and s2['pre']==st['pre']
     assert s2['fx']==st['fx'] and s2['fxa']['lofi']==73 and s2['fxo']['echo']==4,(s2['fx'],s2['fxa'],s2['fxo'])
     assert q.inner_text('#preName')=="Mia's Groove 2.0 ü" and s2['pre']==st['pre']
+    assert s2['col']=='m','Orbit-Farbe kommt mit dem Link'
     assert q.locator('.tracks .trk').nth(4).locator('.ms.m').get_attribute('aria-pressed')=='true'
     assert '?b=' not in q.url,q.url
     assert "Mia's Groove 2.0 ü\u201d loaded" in q.inner_text('.toast'),q.inner_text('.toast')

@@ -65,7 +65,7 @@
   function num(x,lo,hi,d){x=+x;return isFinite(x)?Math.max(lo,Math.min(hi,x)):d;}
   function arr(a,f,d){var o=[],r;for(r=0;r<R;r++)o.push(Array.isArray(a)&&a.length===R?f(a[r]):d);return o;}
 
-  var P=S.pat;
+  var P=S.pat,col='f'; /* Farbe des Orbits je Beat: Schlüssel aus CARD.HUES (f Flieder, m Mint, k Koralle, b Bernstein, e Eisblau) */
   /* Alter Stand (vor v2): Spuren hats, beat, clap, snare, click, toms, fx. Die Clap wandert in die Snare,
      die Becken aus der Toms-Spur in die neue Becken-Spur an Stelle 3 */
   if(P&&!P.v&&Array.isArray(P.g)&&P.g.length===7){
@@ -84,13 +84,13 @@
   if(P&&P.v===3){if([0,6,10,12].indexOf(P.pre)>=0)P.pre=-1;P.v=4;}
   /* Stand v4: Bossa ist durch Beat It ersetzt, Shuffle durch Afrobeats */
   if(P&&P.v===4){if(P.pre===7||P.pre===9)P.pre=-1;P.v=5;}
-  if(P&&clean(P.g)){pat=clean(P.g);bpm=Math.round(num(P.bpm,60,180,100));sw=num(P.sw,0,.6,0);pre=P.pre|0;if(pre<-1||pre>=BEATS.length)pre=-1;edited=!!P.ed;title=typeof P.nm==='string'?P.nm.slice(0,40):'';}
+  if(P&&clean(P.g)){pat=clean(P.g);bpm=Math.round(num(P.bpm,60,180,100));sw=num(P.sw,0,.6,0);pre=P.pre|0;if(pre<-1||pre>=BEATS.length)pre=-1;edited=!!P.ed;title=typeof P.nm==='string'?P.nm.slice(0,40):'';if(P.col&&CARD.HUES[P.col])col=P.col;}
   else{pat=empty();fromBeat(START);}
   vol=arr(P&&P.vol,function(x){return num(x,0,1,.8);},.8);
   mute=arr(P&&P.mute,function(x){return !!x;},false);
   solo=arr(P&&P.solo,function(x){return !!x;},false);
   if(P&&Array.isArray(P.br)&&P.br.length===R)brush=brush.map(function(d,r){return sndIx(r,P.br[r])>=0?P.br[r]:d;});
-  function persist(){S.pat={v:5,g:pat,bpm:bpm,sw:sw,vol:vol,mute:mute,solo:solo,pre:pre,ed:edited,br:brush,nm:title};save();}
+  function persist(){S.pat={v:5,g:pat,bpm:bpm,sw:sw,vol:vol,mute:mute,solo:solo,pre:pre,ed:edited,br:brush,nm:title,col:col};save();}
   function anySolo(){return solo.some(Boolean);}
   /* ARR: beim Rechnen der Karte entscheidet das Arrangement je Takt mit, welche Spur klingt */
   var ARR=null,playT0=0;
@@ -437,6 +437,7 @@
      Läufe von Nullen als Großbuchstaben (A = 1 … P = 16). lautstärke: je Spur zwei Zeichen Base36 (leer, wenn alle 80 %).
      mute/solo: Bitmasken Base36. effekte: je eingeschaltetem Effekt Nummer, Stärke (2 Zeichen Base36) und Auswahl.
      Danach optional .<name>: der eigene Name, URL-kodiert (Punkte als %2E), höchstens 40 Zeichen.
+     Danach optional .<farbe>: ein Buchstabe für die Orbit-Farbe (f m k b e), fehlt er, ist es Flieder; dann steht der Name davor, notfalls leer.
      Die Spur Aufnahme fehlt absichtlich: die Aufnahme liegt nur auf dem eigenen Gerät, beim Empfänger bleibt seine Spur, wie sie ist ---------- */
   var SR=MIC<0?R:MIC; /* geteilt werden die Spuren vor der Aufnahme */
   function b36(v){return (v<36?'0':'')+v.toString(36);}
@@ -449,16 +450,16 @@
     for(r=0;r<SR;r++){if(mute[r])m|=1<<r;if(solo[r])so|=1<<r;}
     if(vol.slice(0,SR).some(function(x){return Math.round(x*100)!==80;}))for(r=0;r<SR;r++)v+=b36(Math.round(vol[r]*100));
     FXS.forEach(function(x,i){var id=x[0];if(FX[id])f+=i+b36(FXA[id])+(x[4]?FXO[id]:0);});
-    return ['1',bpm,Math.round(sw*100),pre>=0?BEATS[pre].n+(edited?'*':''):'',g,v,m||so?m.toString(36)+'_'+so.toString(36):'',f].concat(title?[encodeURIComponent(title).replace(/\./g,'%2E')]:[]).join('.');
+    return ['1',bpm,Math.round(sw*100),pre>=0?BEATS[pre].n+(edited?'*':''):'',g,v,m||so?m.toString(36)+'_'+so.toString(36):'',f].concat(title||col!=='f'?[encodeURIComponent(title).replace(/\./g,'%2E')]:[],col!=='f'?[col]:[]).join('.');
   }
   /* Liest einen Link-Code. Ungültig: null, dann bleibt alles, wie es ist */
   function readCode(s){
     var p=String(s||'').split('.').map(function(x){try{return decodeURIComponent(x);}catch(e){return '';}}),g='',k,c,r;
-    if((p.length!==8&&p.length!==9)||p[0]!=='1')return null;
+    if(p.length<8||p.length>10||p[0]!=='1')return null;
     for(k=0;k<p[4].length;k++){c=p[4].charAt(k);if(c>='A'&&c<='P')g+=new Array(c.charCodeAt(0)-63).join('0');else g+=c;}
     if(g.length!==SR*N)return null;
     var rows=[];for(r=0;r<SR;r++){var row=g.substr(r*N,N);for(k=0;k<N;k++)if(row.charAt(k)!=='0'&&sndIx(r,row.charAt(k))<0)return null;rows.push(row);}
-    var o={g:rows,bpm:Math.round(num(p[1],60,180,100)),sw:num(p[2],0,60,0)/100,pre:-1,ed:false,vol:null,mute:0,solo:0,fx:[],nm:(p[8]||'').replace(/[\u0000-\u001f]/g,'').trim().slice(0,40)};
+    var o={g:rows,bpm:Math.round(num(p[1],60,180,100)),sw:num(p[2],0,60,0)/100,pre:-1,ed:false,vol:null,mute:0,solo:0,fx:[],nm:(p[8]||'').replace(/[\u0000-\u001f]/g,'').trim().slice(0,40),col:CARD.HUES[p[9]]?p[9]:'f'};
     var nm=p[3].replace(/\*$/,''),ix=BEATS.map(function(b){return b.n;}).indexOf(nm);if(nm&&ix>=0){o.pre=ix;o.ed=/\*$/.test(p[3]);}
     if(p[5].length===SR*2){o.vol=[];for(r=0;r<SR;r++)o.vol.push(num(parseInt(p[5].substr(r*2,2),36),0,100,80)/100);}
     var ms=p[6].split('_');if(ms.length===2){o.mute=parseInt(ms[0],36)||0;o.solo=parseInt(ms[1],36)||0;}
@@ -466,13 +467,13 @@
       o.fx.push([F[0],num(parseInt(p[7].substr(k+1,2),36),0,100,50),+p[7].charAt(k+3)]);}
     return o;
   }
-  function snap(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,ed:edited,nm:title,vol:vol.slice(),mute:mute.slice(),solo:solo.slice(),
+  function snap(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,ed:edited,nm:title,col:col,vol:vol.slice(),mute:mute.slice(),solo:solo.slice(),
     fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}
-  function restore(z){pat=z.pat;bpm=z.bpm;sw=z.sw;pre=z.pre;edited=z.ed;title=z.nm;vol=z.vol;mute=z.mute;solo=z.solo;
+  function restore(z){pat=z.pat;bpm=z.bpm;sw=z.sw;pre=z.pre;edited=z.ed;title=z.nm;col=z.col||'f';hueUI();vol=z.vol;mute=z.mute;solo=z.solo;
     FXS.forEach(function(f){var id=f[0];FX[id]=z.fx[id];FXA[id]=z.fxa[id];FXO[id]=z.fxo[id];});fxSave();fxApply(false);fxUI();paint();persist();}
   function useCode(o){
     var r;for(r=0;r<SR;r++){pat[r]=o.g[r];mute[r]=!!(o.mute&1<<r);solo[r]=!!(o.solo&1<<r);if(o.vol)vol[r]=o.vol[r];}
-    bpm=o.bpm;sw=o.sw;pre=o.pre;edited=o.ed;title=o.nm;
+    bpm=o.bpm;sw=o.sw;pre=o.pre;edited=o.ed;title=o.nm;col=o.col||'f';hueUI();
     FXS.forEach(function(f){FX[f[0]]=false;});
     o.fx.forEach(function(x){var F=FXS.filter(function(f){return f[0]===x[0];})[0];FX[x[0]]=true;FXA[x[0]]=x[1];if(F[4]&&F[4].some(function(q){return q[0]===x[2];}))FXO[x[0]]=x[2];});
     fxSave();fxApply(false);persist();
@@ -549,7 +550,15 @@
   /* Karte: die eingeschalteten Effekte wandern mit ins Bild (Stärke 0–1 und Auswahl), GLASS ist die Durchsichtigkeit der Atome */
   var GLASS=0;
   function cardFx(){var o={};FXS.forEach(function(f){var id=f[0];if(FX[id])o[id]={a:FXA[id]/100,o:FXO[id]};});return o;}
-  function cardModel(){return CARD.model(pat.slice(0,7),bpm,sw,cardFx());}
+  function cardModel(){return CARD.model(pat.slice(0,7),bpm,sw,cardFx(),col);}
+  /* Farbwahl im Orbit: fünf Punkte, die Farbe gehört zum Beat, reist im Link mit und gilt für Orbit und Video (die App bleibt Flieder) */
+  var hueRow=$('hue');
+  function hueUI(){var on=hueRow.querySelector('[aria-checked="true"]');if(on&&on.dataset.hue===col)return;
+    hueRow.querySelectorAll('button').forEach(function(b){b.setAttribute('aria-checked',b.dataset.hue===col?'true':'false');});app.style.setProperty('--orbit',CARD.HUES[col]);}
+  function setHue(k){if(!CARD.HUES[k]||k===col)return;col=k;hueUI();persist();if(typeof cardLabel==='function')cardLabel();}
+  Object.keys(CARD.HUES).forEach(function(k){var b=document.createElement('button');b.type='button';b.setAttribute('role','radio');b.dataset.hue=k;b.style.setProperty('--c',CARD.HUES[k]);
+    b.setAttribute('aria-label',{f:'Lilac',m:'Mint',k:'Coral',b:'Amber',e:'Ice blue'}[k]);b.title=b.getAttribute('aria-label');b.addEventListener('click',function(){setHue(k);});hueRow.appendChild(b);});
+  hueUI();
   function setTitle(v){v=v.replace(/[\u0000-\u001f]/g,'').trim().slice(0,40);if(v!==title){title=v;paint();persist();}}
   function nameSheet(){
     openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Name your beat</span>'+XB+'</div>'+
@@ -680,7 +689,7 @@
     molS.fire({s:q,b:b,h:h,st:stu?1:0},performance.now());
     if(stu)setTimeout(function(){if(molOn&&playing)molS.fire({s:q,b:b,h:h,st:1},performance.now());},st()*500);}
   var transport=document.querySelector('.transport');
-  function molSet(on){molOn=!!on;if(!molOn)cardStop();app.classList.toggle('molecule',molOn);molC.hidden=!molOn;foot.hidden=!molOn;
+  function molSet(on){molOn=!!on;if(!molOn)cardStop();app.classList.toggle('molecule',molOn);molC.hidden=!molOn;foot.hidden=!molOn;hueRow.hidden=!molOn;
     if(molOn){foot.insertBefore(playB,cb);foot.insertBefore(fxB,cb);cardLabel();forceDark();}else{transport.insertBefore(playB,transport.firstChild);transport.insertBefore(fxB,dropB);ct.hidden=true;themeUI();}
     vGrid.setAttribute('aria-pressed',molOn?'false':'true');vCard.setAttribute('aria-pressed',molOn?'true':'false');
     S.view=molOn?'mol':'';save();if(molOn){molModel();molSize();molGo();}}
@@ -692,5 +701,5 @@
   document.addEventListener('visibilitychange',function(){if(!document.hidden)molGo();});window.addEventListener('pageshow',molGo);
   if(S.view==='mol')molSet(true);
 
-  window.MSTR={view:molSet,setPlay:setPlay,renderLoop:renderLoop,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
+  window.MSTR={view:molSet,setPlay:setPlay,renderLoop:renderLoop,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,hue:setHue,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,col:col,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
 })();

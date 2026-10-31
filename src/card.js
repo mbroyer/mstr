@@ -12,6 +12,10 @@
    Staub: bei manchen Schlägen bleiben kleine Körner zurück, die langsam nach außen und oben in die Atmosphäre gleiten */
 var CARD=(function(){
   var LIL='#C7B3FF',INK='#0F0F10',WHT='#F3F3F4',GRY='#7A7A81',ORDER=[1,2,0,4,5,3,6],NBAR=9,TAIL=2.4;
+  /* Akzentfarbe je Beat (m.col, Hex): fünf Töne auf Schwarz, Flieder ist der Standard. Das Molekül behält seine Form, nur die Farbe wechselt */
+  var HUES={f:'#C7B3FF',m:'#9FE8C8',k:'#FF9A8B',b:'#F5C56B',e:'#9FD3FF'},LILA='rgba(199,179,255,A)',RGB='199,179,255';
+  function accent(c){c=HUES[c]||(/^#[0-9a-f]{6}$/i.test(c||'')?c:HUES.f);if(c===LIL)return;LIL=c;
+    RGB=parseInt(c.slice(1,3),16)+','+parseInt(c.slice(3,5),16)+','+parseInt(c.slice(5,7),16);LILA='rgba('+RGB+',A)';}
   function hash(s){var h=2166136261,i;for(i=0;i<s.length;i++){h^=s.charCodeAt(i);h=Math.imul(h,16777619);}return h>>>0;}
   function rng(a){return function(){a|=0;a=a+0x6D2B79F5|0;var t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
   /* feste Zufallsabweichung je Atom (bricht jede Drehsymmetrie) */
@@ -23,11 +27,11 @@ var CARD=(function(){
   /* Effekte normiert: je id {a: Stärke 0–1, o: Auswahl}; Zahl = nur Stärke */
   function fxNorm(f){var o={},k,D={echo:3,sweep:2,pump:4,stut:2};if(!f)return o;
     for(k in f){var v=f[k];if(!v)continue;var a=typeof v==='number'?v:(v.a==null?.5:v.a);o[k]={a:Math.max(0,Math.min(1,a)),o:(v&&v.o)||D[k]||0};}return o;}
-  function model(rows,bpm,sw,fx){
+  function model(rows,bpm,sw,fx,col){
     var R=rows.slice(0,7).map(function(r){return (r||'').padEnd(16,'0').slice(0,16);}),cnt=[],tot=0,dom=0,i;
     R.forEach(function(r){var n=0;for(i=0;i<16;i++)if(r.charAt(i)!=='0')n++;cnt.push(n);tot+=n;});
     var TYP=[8,4,3,1,6,2,1];for(i=1;i<7;i++)if(cnt[i]/TYP[i]>cnt[dom]/TYP[dom])dom=i;
-    return {R:R,cnt:cnt,tot:tot,bpm:bpm,sw:sw,dom:dom,fx:fxNorm(fx),seed:hash(R.join('')+bpm)};
+    return {R:R,cnt:cnt,tot:tot,bpm:bpm,sw:sw,dom:dom,fx:fxNorm(fx),col:col||'f',seed:hash(R.join('')+bpm)};
   }
   /* Arrangement: welche Spur in welchem Takt klingt (Takt 0 = erster). Takt 8 ist der Schlussschlag */
   function active(tr,bar){if(bar===0)return tr===1||tr===0;if(bar===1)return tr!==3&&tr!==5&&tr!==6;if(bar===6)return tr!==1;if(bar===8)return false;return true;}
@@ -134,7 +138,7 @@ var CARD=(function(){
     x.moveTo((P[N-1][0]+P[0][0])/2,(P[N-1][1]+P[0][1])/2);
     for(k=0;k<N;k++){var q=P[(k+1)%N];x.quadraticCurveTo(P[k][0],P[k][1],(P[k][0]+q[0])/2,(P[k][1]+q[1])/2);}x.closePath();}
   function halo(x,px,py,R,col,al){var g=x.createRadialGradient(px,py,0,px,py,R);g.addColorStop(0,col.replace('A',al.toFixed(3)));g.addColorStop(1,col.replace('A','0'));x.fillStyle=g;x.beginPath();x.arc(px,py,R,0,7);x.fill();}
-  var LILA='rgba(199,179,255,A)',WHTA='rgba(243,243,244,A)';
+  var WHTA='rgba(243,243,244,A)';
   function atom(x,p,sc,fg,bg,kickStroke,glass,room){var tr=p.tr,v=p.v,px=p.x,py=p.y,va=(.3+.7*p.vis)*(1-.5*glass),k=(1+p.hp*.7)*(.35+.65*p.vis)*p.pk;
     /* Glas: nach jeder Füllung ein feiner Rand in derselben Farbe */
     var F=function(){x.fill();if(glass>.6){var a0=x.globalAlpha,s0=x.strokeStyle,w0=x.lineWidth;x.globalAlpha=.9*p.vis;x.strokeStyle=x.fillStyle;x.lineWidth=1.1*sc;x.stroke();x.globalAlpha=a0;x.strokeStyle=s0;x.lineWidth=w0;}};
@@ -160,7 +164,7 @@ var CARD=(function(){
     if(fx.sweep&&live){x.globalAlpha=1;halo(x,cx,cy,(60+S.open*180)*sc,LILA,.04+.07*fx.sweep.a*S.open);}
     x.strokeStyle=fg;x.globalAlpha=.07+(fx.sweep?.08*fx.sweep.a*S.open:0);x.lineWidth=1*sc;for(i=0;i<7;i++){x.beginPath();x.arc(cx,cy,(62+i*30)*sc,0,7);x.stroke();}x.globalAlpha=1;
     bonds(x,S,G,fg,sc,live);chains(x,S,G,fg,sc,live);
-    if(live)S.waves.forEach(function(w){var age=(performance.now()-w.t)/900;if(age>1||age<0)return;x.strokeStyle='rgba(199,179,255,'+(0.5*(1-age))+')';x.lineWidth=1.5*sc;x.beginPath();x.arc(cx,cy,(w.r+age*90)*sc,0,7);x.stroke();});
+    if(live)S.waves.forEach(function(w){var age=(performance.now()-w.t)/900;if(age>1||age<0)return;x.strokeStyle='rgba('+RGB+','+(0.5*(1-age))+')';x.lineWidth=1.5*sc;x.beginPath();x.arc(cx,cy,(w.r+age*90)*sc,0,7);x.stroke();});
     var ne=Math.min(7,2+m.cnt[3]+m.cnt[6]);for(i=0;i<ne;i++){var orb=(70+g()*190)*sc,sp=(0.3+g()*0.6)*(m.bpm/110)*(g()>.5?1:-1),ph=g()*7,ea=ph+(live||!reduce()?T*sp:0);
       x.fillStyle=LIL;x.globalAlpha=.85;x.beginPath();x.arc(cx+Math.cos(ea)*orb,cy+Math.sin(ea)*orb,2.6*sc,0,7);x.fill();x.globalAlpha=1;}
     if(live&&fx.echo)S.ghosts.forEach(function(gh){var age=(now-gh.t)/gh.dt;if(age<0||age>=1)return;var p=G.byId[gh.id];if(!p)return;
@@ -190,7 +194,7 @@ var CARD=(function(){
      alles Wichtige liegt zwischen y = 150 und y = 800 (Instagram: Kopfzeile bis etwa 12 %, Antwortfeld ab etwa 84 %) */
   /* Tiefe: leises Licht um die Mitte und wenige feine Sterne (fest je Beat, keine Bewegung), o.space:false lässt es weg */
   function space(x,W,H,S,cx,cy,sc){
-    var g=x.createRadialGradient(cx,cy,0,cx,cy,W*.95);g.addColorStop(0,'rgba(199,179,255,.09)');g.addColorStop(.45,'rgba(199,179,255,.025)');g.addColorStop(1,'rgba(0,0,0,0)');
+    var g=x.createRadialGradient(cx,cy,0,cx,cy,W*.95);g.addColorStop(0,'rgba('+RGB+',.09)');g.addColorStop(.45,'rgba('+RGB+',.025)');g.addColorStop(1,'rgba(0,0,0,0)');
     x.fillStyle=g;x.fillRect(0,0,W,H);
     var h=hash(S.m.bpm+':'+S.m.tot+':'+S.m.sw),i,r,n=110;
     for(i=0;i<n;i++){h=(Math.imul(h,1664525)+1013904223)>>>0;var px=(h%10000)/10000*W;h=(Math.imul(h,1664525)+1013904223)>>>0;var py=(h%10000)/10000*H;h=(Math.imul(h,1664525)+1013904223)>>>0;var q=(h%1000)/1000;
@@ -198,7 +202,7 @@ var CARD=(function(){
       r=(q<.85?.5+q*.7:1.1+q)*sc;x.fillStyle=(i%9===0?LILA:WHTA).replace('A',(.12+q*.35).toFixed(3));x.beginPath();x.arc(px,py,r,0,7);x.fill();}
   }
   function story(x,W,H,S,o){
-    var sc=W/540,fg=WHT,bg=INK,live=!!o.live&&S.live();x.setTransform(1,0,0,1,0,0);
+    var sc=W/540,fg=WHT,bg=INK,live=!!o.live&&S.live();accent(S.m.col);x.setTransform(1,0,0,1,0,0);
     x.fillStyle=bg;x.fillRect(0,0,W,H);if(o.space!==false)space(x,W,H,S,W/2,408*sc,sc);
     x.fillStyle=LIL;x.beginPath();x.arc(38*sc,164*sc,6*sc,0,7);x.fill();x.fillStyle=fg;x.font='700 '+(20*sc)+'px Figtree,sans-serif';x.textAlign='left';x.fillText('M S T R',52*sc,171*sc);
     if(o.by){x.font='600 '+(19*sc)+'px Figtree,sans-serif';x.textAlign='right';x.fillText('by '+(o.by.charAt(0)==='@'?o.by:'@'+o.by),W-32*sc,172*sc);x.textAlign='left';}
@@ -213,7 +217,7 @@ var CARD=(function(){
 
   /* Karte im Sequencer: füllt eine Fläche W×H in den Farben der App; o = {fg, bg, dark, title, by, preset}.
      Unten stehen Titel und Zeile wie auf der fertigen Karte, oben rechts „by @name“, oben links o.hint (etwa TAP TO PLAY), o.edit zeichnet einen kleinen Stift hinter den Titel. Läuft der Beat nicht, steht das Bild */
-  function view(x,W,H,S,o){var sc=Math.min(W/540,H/760),live=S.live(),txt=o.title?130*sc:0;x.setTransform(1,0,0,1,0,0);x.fillStyle=o.bg;x.fillRect(0,0,W,H);
+  function view(x,W,H,S,o){var sc=Math.min(W/540,H/760),live=S.live(),txt=o.title?130*sc:0;accent(S.m.col);x.setTransform(1,0,0,1,0,0);x.fillStyle=o.bg;x.fillRect(0,0,W,H);
     var rs=Math.min(sc,(H-txt-40*sc)/560);ring(x,S,W/2,(H-txt)/2,rs,o.fg,o.dark?INK:o.bg,live,0);if(S.m.fx.lofi&&o.dark)vinyl(x,W,H,S,S.m.fx.lofi.a,live,sc);
     if(o.hint)mono(x,o.hint,24*sc,34*sc,GRY,'left',sc);
     if(o.by){x.fillStyle=o.fg;x.font='600 '+(14*sc)+'px Figtree,sans-serif';x.textAlign='right';x.fillText('by '+(o.by.charAt(0)==='@'?o.by:'@'+o.by),W-24*sc,34*sc);x.textAlign='left';}
@@ -246,5 +250,5 @@ var CARD=(function(){
   /* Standbild als PNG */
   function image(S,o,done){var cv=document.createElement('canvas');cv.width=1080;cv.height=1920;S.reset();story(cv.getContext('2d'),1080,1920,S,o);
     cv.toBlob(function(b){done(b?new File([b],o.file+'.png',{type:'image/png'}):null);},'image/png');}
-  return {model:model,title:title,Scene:Scene,story:story,view:view,record:record,image:image,canVideo:canVideo,clipLen:clipLen,active:active,NBAR:NBAR,TAIL:TAIL};
+  return {model:model,title:title,Scene:Scene,story:story,view:view,HUES:HUES,record:record,image:image,canVideo:canVideo,clipLen:clipLen,active:active,NBAR:NBAR,TAIL:TAIL};
 })();
