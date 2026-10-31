@@ -183,6 +183,7 @@
     /* Eigener Name (beim Teilen vergeben) geht vor; sonst Name der Vorlage */
     $('preTxt').textContent=title||(pre>=0?NM[BEATS[pre].n]:'Your beat');
     $('sub').textContent=title&&pre>=0?'based on '+NM[BEATS[pre].n]:pre>=0&&edited?'edited':'';
+    if(cb&&molOn)cardLabel();
   }
   function changed(){edited=true;paint();persist();}
 
@@ -599,28 +600,38 @@
      dann teilen (Handy) oder sichern (Rechner). Ohne Video gibt es ein Bild. Dieselbe Datei wird beim zweiten Tipp sofort gegeben */
   var cb=$('shCardBtn'),ct=$('shCardT'),cardT=null,cfile=null,ckey='',busyC=false,cardGen=0,video=CARD.canVideo();
   function cardOpts(){return {title:title||(pre>=0?NM[BEATS[pre].n]:'Your beat'),by:handle,preset:pre>=0?NM[BEATS[pre].n]:'',glass:GLASS,file:baseName()+'-'+bpm+'bpm'};}
-  function cardLabel(){cb.textContent=video?(nativeShare()?'Share video':'Save video'):(nativeShare()?'Share image':'Save image');}
+  /* Der Knopf heißt von Anfang an „Share video“ (Rechner: „Save video“), während der Erstellung „Generating · 12 s“ mit Füllstand;
+     die Zeile darunter erklärt jeden Schritt (erst entsteht das Video, dann öffnet sich das Teilen-Menü). Ändert sich der Beat, fängt es von vorn an */
+  function cardKey(){var o=cardOpts();return shareCode()+'|'+o.title+'|'+o.by;}
+  function cardNote(t){ct.textContent=t;ct.hidden=!t;}
+  function cardLabel(){if(busyC)return;cb.classList.remove('gen');cb.style.removeProperty('--p');var ready=cfile&&ckey===cardKey(),mob=nativeShare(),secs=Math.round(CARD.clipLen(bpm));
+    cb.textContent=video?(mob?'Share video':'Save video'):(mob?'Share image':'Save image');
+    if(!video){cardNote(ready?'Ready. Tap to share it again.':'A picture of your orbit for Story and chats.');return;}
+    if(ready)cardNote('Ready, '+secs+' s with sound'+(mob?', the link to your beat comes along':'')+'. Tap to share it again, it stays until you change the beat.');
+    else cardNote('Makes a '+secs+' s video with sound for Story, Reels and chats, then '+(mob?'opens the share sheet with the link to your beat':'saves it')+'. Takes as long as the video.');}
+  /* Am Handy reist der Link als Text mit dem Video: in Chats kommt beides in einer Nachricht an, Instagram nimmt nur das Video */
   function giveCard(f){
     if(navigator.share&&matchMedia('(pointer: coarse)').matches&&canSendFile(f)){
-      navigator.share({files:[f],title:cardOpts().title+' · MSTR'}).catch(function(e){if(e&&e.name==='NotAllowedError'){cb.textContent='Save '+f.name;}});return;}
-    saveFile(f);ct.textContent='Saved '+f.name;ct.hidden=false;
+      var t=cardOpts().title;
+      navigator.share({files:[f],title:t+' · MSTR',text:t+' · open and remix the beat: '+shareUrl()}).catch(function(e){if(e&&e.name==='NotAllowedError'){cb.textContent='Save '+f.name;}});return;}
+    saveFile(f);cardNote('Saved '+f.name+'. Add the link from ⋯ so friends can open the beat.');
   }
   /* Abbruch: auch während der Ton noch gerechnet wird (dann verfällt das Ergebnis) */
-  function cardStop(){cardGen++;if(cardT){cardT();cardT=null;}if(busyC){busyC=false;cb.disabled=false;ct.hidden=true;cardLabel();}}
+  function cardStop(){cardGen++;if(cardT){cardT();cardT=null;}if(busyC){busyC=false;cb.disabled=false;cardLabel();}}
   cb.addEventListener('click',function(){
-    if(busyC)return;var o=cardOpts(),key=shareCode()+'|'+o.title+'|'+o.by,scene=new CARD.Scene(cardModel());
+    if(busyC)return;var o=cardOpts(),key=cardKey(),scene=new CARD.Scene(cardModel());
     if(cfile&&ckey===key)return giveCard(cfile);
-    if(!video){CARD.image(scene,o,function(f){if(!f){ct.textContent='That did not work in this browser.';ct.hidden=false;return;}cfile=f;ckey=key;giveCard(f);});return;}
-    busyC=true;setPlay(false);cb.disabled=true;ct.hidden=false;ct.textContent='Rendering sound …';var gen=++cardGen;
+    if(!video){CARD.image(scene,o,function(f){if(!f){cardNote('That did not work in this browser.');return;}cfile=f;ckey=key;cardLabel();giveCard(f);});return;}
+    busyC=true;setPlay(false);cb.disabled=true;cb.textContent='Preparing sound …';cardNote('One moment.');var gen=++cardGen;
     renderClip(function(buf){
       if(gen!==cardGen)return;
-      if(!buf){busyC=false;cb.disabled=false;ct.textContent='That did not work in this browser.';return;}
-      o.mirror=molC;o.mirrorBg=molDark()?'#0E0E0F':'#FFFFFF';
-      cardT=CARD.record(ac,buf,scene,o,function(t,tot){ct.textContent='Recording '+Math.ceil(tot-t)+' s … stay on this screen';},function(f,why){
-        busyC=false;cb.disabled=false;cardT=null;cardLabel();
-        if(why==='abort'){ct.hidden=true;return;}
-        if(!f){ct.textContent='Recording did not work here. Saving a picture instead.';CARD.image(scene,o,function(f2){if(f2){cfile=f2;ckey=key;giveCard(f2);}});return;}
-        cfile=f;ckey=key;ct.textContent=f.name+', '+Math.round(CARD.clipLen(bpm))+' s';giveCard(f);});
+      if(!buf){busyC=false;cb.disabled=false;cardLabel();cardNote('That did not work in this browser.');return;}
+      o.mirror=molC;o.mirrorBg=molDark()?'#0E0E0F':'#FFFFFF';cb.classList.add('gen');cardNote('Generating the video with sound. Keep this screen open until it is done, Grid cancels.');
+      cardT=CARD.record(ac,buf,scene,o,function(t,tot){cb.style.setProperty('--p',Math.min(1,t/tot));cb.textContent='Generating · '+Math.ceil(tot-t)+' s';},function(f,why){
+        busyC=false;cb.disabled=false;cardT=null;
+        if(why==='abort'){cardLabel();return;}
+        if(!f){cardLabel();cardNote('Recording did not work here. Saving a picture instead.');CARD.image(scene,o,function(f2){if(f2){cfile=f2;ckey=key;giveCard(f2);}});return;}
+        cfile=f;ckey=key;cardLabel();giveCard(f);});
     });
   });
   cardLabel();
@@ -662,7 +673,9 @@
     if(!drop)for(r=0;r<7;r++)if(pat[r].charAt(q)!=='0'&&audible(r))h.push(r);
     molS.fire({s:q,b:b,h:h,st:stu?1:0},performance.now());
     if(stu)setTimeout(function(){if(molOn&&playing)molS.fire({s:q,b:b,h:h,st:1},performance.now());},st()*500);}
-  function molSet(on){molOn=!!on;if(!molOn)cardStop();app.classList.toggle('molecule',molOn);molC.hidden=!molOn;foot.hidden=!molOn;if(!molOn)ct.hidden=true;
+  var transport=document.querySelector('.transport');
+  function molSet(on){molOn=!!on;if(!molOn)cardStop();app.classList.toggle('molecule',molOn);molC.hidden=!molOn;foot.hidden=!molOn;
+    if(molOn){foot.insertBefore(playB,cb);foot.insertBefore(fxB,cb);cardLabel();}else{transport.insertBefore(playB,transport.firstChild);transport.insertBefore(fxB,dropB);ct.hidden=true;}
     vGrid.setAttribute('aria-pressed',molOn?'false':'true');vCard.setAttribute('aria-pressed',molOn?'true':'false');
     S.view=molOn?'mol':'';save();if(molOn){molModel();molSize();molGo();}}
   vGrid.addEventListener('click',function(){molSet(false);});vCard.addEventListener('click',function(){molSet(true);});

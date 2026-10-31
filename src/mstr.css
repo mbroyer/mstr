@@ -248,10 +248,10 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .vpick .opt.off{color:var(--mute);padding:0 13px}
 
 /* Molekül-Ansicht: ersetzt Raster und Taktzeile, füllt die Höhe bis zum Transport */
-.mol{display:block;width:100%;flex:1 1 auto;min-height:300px;border-radius:24px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
+.mol{display:block;width:100%;flex:1 1 0;min-height:220px;border-radius:24px;cursor:pointer;touch-action:manipulation;-webkit-tap-highlight-color:transparent}
 .mol:focus-visible{outline:2px solid var(--accent);outline-offset:4px}
 .app.molecule .tracks,.app.molecule .beatrow{display:none}
-/* Umschalter oben: Raster zum Bauen, Karte zum Zusehen und Teilen */
+/* Umschalter oben: Grid zum Bauen, Orbit zum Zusehen und Teilen */
 .seg{display:flex;background:var(--soft);border-radius:999px;padding:3px;gap:2px}
 .seg button{height:30px;padding:0 14px;border-radius:999px;border:0;background:none;color:var(--mute);font:600 13px var(--f-ui);cursor:pointer}
 .seg button[aria-pressed="true"]{background:var(--ink);color:var(--bg)}
@@ -261,5 +261,14 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .app.molecule .head{display:none}
 /* In der Karte gibt es keine Leiste: Tipp auf den Ring spielt und stoppt, Tipp auf den Titel benennt */
 .app.molecule .transport{display:none}
-.app.molecule .cardfoot{padding-bottom:max(12px,env(safe-area-inset-bottom,0px))}
-#shCardT{margin-top:-8px}
+/* Orbit füllt genau den sichtbaren Bereich, nichts rutscht unter die Safari-Leiste; Play und Effekte stehen in der Reihe beim Knopf */
+.app.molecule{height:100%;height:100dvh;min-height:0;overflow:hidden;box-sizing:border-box}
+.app.molecule .cardfoot{padding-bottom:0}
+.cardfoot .play{width:48px;height:48px}
+.cardfoot #fxBtn{flex:none;height:48px;min-width:48px;width:48px;padding:0;border-radius:50%;justify-content:center;gap:4px}
+.cardfoot #fxBtn .fxl{display:none}
+.cardfoot #fxBtn.on{width:auto;padding:0 14px 0 12px;border-radius:999px}
+#shCardT{min-height:2.7em;padding-bottom:max(10px,env(safe-area-inset-bottom,0px))}
+#shCardT{margin-top:-8px;line-height:1.35}
+/* Video entsteht: der Knopf füllt sich von links mit dem Fortschritt (--p 0..1) */
+.pill.go.gen,.pill.go.gen:disabled{opacity:1;color:var(--ink);border-color:transparent;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 60%,var(--bg)) calc(var(--p,0) * 100%),color-mix(in srgb,var(--accent) 18%,var(--bg)) calc(var(--p,0) * 100%));transition:background .2s linear}
