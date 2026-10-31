@@ -34,7 +34,11 @@ with sync_playwright() as p:
         if s1['pat']!=s0['pat']:break
     assert s1['pat']!=s0['pat'] and s1['playing'] and pg.text_content('#vibeTxt')=='dark · spacey · fast' and pg.locator('.toast').count()==0
     # Change vibe: Blatt mit X und dem alten Satz, Chips markiert; X schließt ohne Änderung
-    pg.evaluate('MSTR.setPlay(false)');pg.click('#vibeBtn');pg.wait_for_timeout(300)
+    # Rückmeldung: der Knopf zeigt kurz „Take N“ und blitzt, danach wieder „Another take“
+    assert 'hit' in pg.get_attribute('#takeBtn','class') and pg.inner_text('#takeBtn').startswith('Take '),pg.inner_text('#takeBtn')
+    pg.wait_for_timeout(1300);assert pg.inner_text('#takeBtn')=='Another take' and 'hit' not in pg.get_attribute('#takeBtn','class')
+    # Change vibe hält den Beat an
+    pg.evaluate('MSTR.setPlay(true)');pg.click('#vibeBtn');pg.wait_for_timeout(300);assert not pg.evaluate('MSTR.state().playing'),'Change vibe stoppt'
     assert pg.locator('#sheet [data-close]').count()==1 and pg.input_value('#sayIn')=='dark · spacey · fast' and pg.get_attribute('.chip[data-w="dark"]','aria-pressed')=='true'
     pg.click('#sheet [data-close]');pg.wait_for_timeout(200);assert pg.locator('#sheet').is_hidden() and pg.evaluate('MSTR.state()')['pat']==s1['pat'] and pg.evaluate('location.hash')==''
     # Eigene Wörter per Feld und Enter

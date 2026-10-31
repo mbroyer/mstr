@@ -292,6 +292,11 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .takes .play{width:56px;height:56px;flex:none}
 .takes .pill{flex:1;height:44px;padding:0 10px;font-size:13px}
 .takes .pill svg{width:15px;height:15px;flex:none}
+/* Another take: kurzer Blitz in der Akzentfarbe, Symbol dreht sich einmal */
+.takes .pill.hit{animation:takehit 1.1s ease-out}
+.takes .pill.hit svg{animation:takespin .55s cubic-bezier(.3,.7,.4,1)}
+@keyframes takehit{0%{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}60%{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}100%{background:transparent}}
+@keyframes takespin{to{transform:rotate(360deg)}}
 .machine{margin:0;padding:0 0 max(8px,env(safe-area-inset-bottom,0px));text-align:center;font-size:13px;color:var(--mute);display:flex;justify-content:center;gap:6px;align-items:center;flex-wrap:wrap}
 .machine .lnk{font-size:13px}
 .machine[hidden]{display:none}
@@ -1091,9 +1096,9 @@ var WORTE=(function(){
     if(find(t,DRY)<0){
       if(!Object.keys(fx).length){var sf=STYLEFX[ctx.n[best]]||[['room',30,0]];fx[sf[0][0]]=[sf[0][1],sf[0][2]];if(sf[1]&&rnd()<.5)fx[sf[1][0]]=[sf[1][1],sf[1][2]];}
       MOODFX.forEach(function(m){if(!fx[m[1]]&&Object.keys(fx).length<3&&find(t,m[0])>=0&&!neg(t,find(t,m[0])))fx[m[1]]=[m[2],m[3]];});
-      /* Ein Take würfelt auch die Effekte: Stärken streuen (genannte behalten ihre Stärke), manchmal kommt einer dazu */
+      /* Ein Take würfelt auch die Effekte: Stärken streuen (genannte behalten ihre Stärke), manchmal kommt einer dazu, aber nur, wenn keiner genannt ist */
       var POOL=[['room',35,0],['echo',30,3],['sweep',35,4],['pump',35,4],['stut',30,2],['lofi',35,0]];
-      if(Object.keys(fx).length<3&&rnd()<.45){var ex=pick(POOL);if(!fx[ex[0]])fx[ex[0]]=[ex[1],ex[2]];}
+      if(!said.length&&Object.keys(fx).length<3&&rnd()<.45){var ex=pick(POOL);if(!fx[ex[0]])fx[ex[0]]=[ex[1],ex[2]];}
       for(id in fx)if(said.indexOf(id)<0)fx[id]=[Math.max(15,Math.min(95,Math.round(fx[id][0]*(.75+rnd()*.55)))),fx[id][1]];}
     return {pre:best,bpm:bpm,sw:Math.max(0,Math.min(.6,sw)),g:g,fx:fx};
   };
@@ -1824,7 +1829,16 @@ var WORTE=(function(){
     S.view=molOn?'':'grid';save();if(molOn){molModel();molSize();molGo();}}
   function vibeUI(){var t=typeof S.say==='string'?S.say.trim():'';vibeTxt.textContent=t.length>26?t.slice(0,25).trim()+'…':t;}
   vMachine.addEventListener('click',function(){molSet(false);});vOrbit.addEventListener('click',function(){molSet(true);});
-  $('takeBtn').addEventListener('click',anotherTake);$('vibeBtn').addEventListener('click',function(){vibe();});
+  /* Another take antwortet sichtbar: der Knopf blitzt in der Akzentfarbe, das Symbol dreht sich einmal, kurz steht „Take 2“, „Take 3“ … darin
+     (zählt pro Vibe); am Handy ein kurzes Tippen. Change vibe hält den Beat an, solange man neue Wörter sucht */
+  var takeB=$('takeBtn'),takeL=takeB.lastChild,takeN=1,takeSay='',takeT=0;
+  takeB.addEventListener('click',function(){
+    var cur=typeof S.say==='string'?S.say.trim():'';if(cur!==takeSay){takeSay=cur;takeN=1;}
+    anotherTake();if(!cur&&pre<0)return;takeN++;
+    takeB.classList.remove('hit');void takeB.offsetWidth;takeB.classList.add('hit');takeL.textContent='Take '+takeN;
+    try{if(navigator.vibrate)navigator.vibrate(12);}catch(e){}
+    clearTimeout(takeT);takeT=setTimeout(function(){takeB.classList.remove('hit');takeL.textContent='Another take';},1100);});
+  $('vibeBtn').addEventListener('click',function(){setPlay(false);vibe();});
   /* Unterer Streifen (Titel und Zeile) öffnet den Namen, der Rest spielt oder stoppt */
   function molTitleHit(e){var r=molC.getBoundingClientRect(),sc=Math.min(r.width/540,r.height/760);return e.clientY-r.top>r.height-130*sc;}
   /* Wischen über den Orbit (links/rechts) schaltet die Farbe weiter, ein Tipp bleibt ein Tipp: erst ab 40 px quer, und mehr quer als längs */

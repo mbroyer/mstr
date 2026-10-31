@@ -723,7 +723,16 @@
     S.view=molOn?'':'grid';save();if(molOn){molModel();molSize();molGo();}}
   function vibeUI(){var t=typeof S.say==='string'?S.say.trim():'';vibeTxt.textContent=t.length>26?t.slice(0,25).trim()+'…':t;}
   vMachine.addEventListener('click',function(){molSet(false);});vOrbit.addEventListener('click',function(){molSet(true);});
-  $('takeBtn').addEventListener('click',anotherTake);$('vibeBtn').addEventListener('click',function(){vibe();});
+  /* Another take antwortet sichtbar: der Knopf blitzt in der Akzentfarbe, das Symbol dreht sich einmal, kurz steht „Take 2“, „Take 3“ … darin
+     (zählt pro Vibe); am Handy ein kurzes Tippen. Change vibe hält den Beat an, solange man neue Wörter sucht */
+  var takeB=$('takeBtn'),takeL=takeB.lastChild,takeN=1,takeSay='',takeT=0;
+  takeB.addEventListener('click',function(){
+    var cur=typeof S.say==='string'?S.say.trim():'';if(cur!==takeSay){takeSay=cur;takeN=1;}
+    anotherTake();if(!cur&&pre<0)return;takeN++;
+    takeB.classList.remove('hit');void takeB.offsetWidth;takeB.classList.add('hit');takeL.textContent='Take '+takeN;
+    try{if(navigator.vibrate)navigator.vibrate(12);}catch(e){}
+    clearTimeout(takeT);takeT=setTimeout(function(){takeB.classList.remove('hit');takeL.textContent='Another take';},1100);});
+  $('vibeBtn').addEventListener('click',function(){setPlay(false);vibe();});
   /* Unterer Streifen (Titel und Zeile) öffnet den Namen, der Rest spielt oder stoppt */
   function molTitleHit(e){var r=molC.getBoundingClientRect(),sc=Math.min(r.width/540,r.height/760);return e.clientY-r.top>r.height-130*sc;}
   /* Wischen über den Orbit (links/rechts) schaltet die Farbe weiter, ein Tipp bleibt ein Tipp: erst ab 40 px quer, und mehr quer als längs */
