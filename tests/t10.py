@@ -10,13 +10,18 @@ with sync_playwright() as p:
     pg.goto('file://'+H+'/index.html');pg.evaluate("MSTR.welcome(false)");pg.wait_for_timeout(300)
     pg.evaluate("document.querySelector('#tempoBtn').click()");pg.wait_for_timeout(200)
     pg.fill('#tBpm','160');pg.dispatch_event('#tBpm','change');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
-    # Namens-Blatt über den Titel: Würfel zweimal verschieden, steht sofort oben als Name; danach von Hand änderbar; By bleibt gespeichert
+    # Unveränderte Vorlage: kein Stift, Titel öffnet kein Namens-Blatt
+    assert pg.evaluate("document.querySelector('#preName').classList.contains('fixed')") and pg.locator('#preName .pen').is_hidden()
+    pg.click('#preName');pg.wait_for_timeout(300);assert pg.locator('#sheet').is_hidden(),'Vorlage bekommt keinen eigenen Namen'
+    # Nach einer Änderung: Namens-Blatt ohne Eingabefeld, der Name wird nur erzeugt; beim Öffnen gleich einer, „Another name“ gibt den nächsten
+    pg.locator('.tracks .trk').nth(1).locator('.dot').nth(2).click();pg.wait_for_timeout(100)
+    assert not pg.evaluate("document.querySelector('#preName').classList.contains('fixed')")
     pg.click('#preName');pg.wait_for_timeout(300)
-    assert pg.locator('#shName').is_visible() and pg.locator('#shDice').is_visible() and pg.evaluate('document.activeElement.id')=='shName'
-    pg.click('#shDice');t1=pg.input_value('#shName');pg.click('#shDice');t2=pg.input_value('#shName')
-    print('titel',t1,'|',t2);assert t1 and t2 and t1!=t2 and pg.inner_text('#preName')==t2
+    assert pg.locator('#shName').is_visible() and pg.locator('#shDice').is_visible() and pg.locator('#sheet input:not(#shBy)').count()==0,'kein Eingabefeld für den Namen'
+    t1=pg.inner_text('#shName');assert t1 and pg.inner_text('#preName')==t1
     assert pg.evaluate("MSTR.card.title(MSTR.card.model(MSTR.state().pat,160,0),0)")==t1,'gleicher Beat, gleicher Vorschlag'
-    pg.fill('#shName','Card Test');assert pg.inner_text('#preName')=='Card Test'
+    pg.click('#shDice');t2=pg.inner_text('#shName')
+    print('titel',t1,'|',t2);assert t2 and t1!=t2 and pg.inner_text('#preName')==t2
     pg.fill('#shBy','@mark');pg.wait_for_timeout(100)
     assert pg.evaluate("JSON.parse(localStorage.getItem('mstr-v1')).by")=='@mark'
     pg.keyboard.press('Enter');pg.wait_for_timeout(200);assert pg.locator('#sheet').is_hidden()
@@ -42,14 +47,15 @@ with sync_playwright() as p:
     pg.click('#mol',position={'x':180,'y':120});pg.wait_for_timeout(300);assert pg.evaluate('MSTR.state().playing'),'Tipp auf den Ring spielt'
     with pg.expect_download(timeout=60000) as dl:pg.click('#shCardBtn')
     f=dl.value;print('datei',f.suggested_filename,os.path.getsize(f.path()))
-    assert f.suggested_filename in ('Card-Test-160bpm.mp4','Card-Test-160bpm.webm') and os.path.getsize(f.path())>200000
-    assert 'Saved Card-Test-160bpm' in pg.inner_text('#shCardT')
+    import re;base=re.sub(r'[^A-Za-z0-9]+','-',t2).strip('-')+'-160bpm'
+    assert f.suggested_filename in (base+'.mp4',base+'.webm') and os.path.getsize(f.path())>200000,(f.suggested_filename,base)
+    assert 'Saved '+base in pg.inner_text('#shCardT')
     assert not pg.evaluate('MSTR.state().playing')
     # Noch einmal tippen ohne Änderung: dieselbe Datei sofort, ohne neue Aufnahme
     with pg.expect_download(timeout=3000) as dl2:pg.click('#shCardBtn')
     assert dl2.value.suggested_filename==f.suggested_filename
     # Zurück zum Raster während der Aufnahme: Aufnahme bricht ab, kein Download, Knopf wieder frei
-    bx=pg.locator('#mol').bounding_box();pg.click('#mol',position={'x':60,'y':bx['height']-40});pg.wait_for_timeout(300);pg.fill('#shName','Other');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
+    bx=pg.locator('#mol').bounding_box();pg.click('#mol',position={'x':60,'y':bx['height']-40});pg.wait_for_timeout(300);pg.click('#shDice');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
     pg.click('#shCardBtn');pg.wait_for_timeout(1500);pg.click('#vGrid');pg.wait_for_timeout(600)
     assert pg.locator('#tracks').is_visible() and pg.locator('#shCardBtn').is_hidden()
     pg.click('#vCard');pg.wait_for_timeout(100);assert pg.evaluate("document.querySelector('#shCardBtn').disabled")==False

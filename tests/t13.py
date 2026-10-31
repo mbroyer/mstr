@@ -23,9 +23,9 @@ with sync_playwright() as p:
     assert pg.locator('.pitem').count()==17;pg.click('.pitem:has-text("House")');pg.wait_for_timeout(300)
     assert pg.locator('#sheet').is_hidden() and pg.inner_text('#preName')=='House' and pg.evaluate('MSTR.state().playing')
     pg.reload();pg.wait_for_timeout(300);assert pg.locator('#sheet').is_hidden() and pg.inner_text('#preName')=='House'
-    # Beschreiben per Beispiel-Chip: Beat läuft, Name ist der Text
+    # Beschreiben per Beispiel-Chip: Beat läuft, Name wird erzeugt (nicht der Text)
     pg=fresh();t=pg.locator('#sheet .chip').nth(1).inner_text();pg.locator('#sheet .chip').nth(1).click();pg.wait_for_timeout(400)
-    assert pg.locator('#sheet').is_hidden() and pg.inner_text('#preName').lower()==t.lower() and pg.evaluate('MSTR.state().playing'),(pg.inner_text('#preName'),t)
+    nm=pg.inner_text('#preName');assert pg.locator('#sheet').is_hidden() and nm and nm.lower()!=t.lower() and nm!='Your beat' and pg.evaluate('MSTR.state().playing'),(nm,t)
     # Beschreiben per Feld und Enter
     pg=fresh();pg.fill('#sayIn','dark fast techno');pg.keyboard.press('Enter');pg.wait_for_timeout(400)
     assert pg.inner_text('#sub')=='based on Techno' and pg.locator('#sheet').is_hidden()

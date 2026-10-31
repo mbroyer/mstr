@@ -59,6 +59,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .prow{display:flex;align-items:center;gap:14px}
 /* Stift: zeigt, dass der Titel antippbar ist */
 .preset .pen{width:18px;height:18px;flex:none;color:var(--mute)}
+.preset.fixed{cursor:default}.preset.fixed .pen{display:none}
 .preset #preTxt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Textknöpfe: „Change beat“ unter dem Titel, Link und WAV im Orbit */
 .lnk{border:0;background:none;padding:4px 0;font:600 13px var(--f-ui);color:var(--ink);display:inline-flex;align-items:center;gap:5px;cursor:pointer}
@@ -218,11 +219,9 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .fxi b{font-size:17px;font-weight:600;letter-spacing:-.01em}
 .fxi small{font-size:13px;color:var(--mute)}
 .namef{display:flex;flex-direction:column;gap:8px}
-.namef input{height:52px;border-radius:14px;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:0 16px;font-family:var(--f-ed);font-size:26px;outline:none;width:100%}
-.namef input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent)}
-.namef input::placeholder{color:var(--mute)}
-.namer{display:flex;gap:8px;align-items:center}
-.namer .ib{width:44px;height:44px;flex:none}
+.nameo{flex:1;min-width:0;font-family:var(--f-ed);font-weight:400;font-size:28px;line-height:1.1;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis}
+.namer{display:flex;gap:12px;align-items:center}
+.pill.dice{flex:none;height:40px;padding:0 14px 0 12px}.pill.dice svg{width:16px;height:16px}
 /* Karte: Vorschau links, Name und Knopf rechts */
 .cardrow{display:flex;gap:16px;align-items:stretch}
 .cardrow canvas{width:126px;height:224px;border-radius:12px;flex:none;background:#0F0F10}
@@ -925,7 +924,8 @@ var CARD=(function(){
 /* ===== Beat aus Worten: eine Beschreibung (Englisch oder Deutsch) wird zu einem Beat, ganz ohne Server.
    Stichworte für Stil, Stimmung, Tempo, Swing, Dichte, Klänge und Effekte. Der Stil wählt die Vorlage als Grundlage,
    der Rest verändert sie; dazu etwas Zufall, so gibt dieselbe Beschreibung beim nächsten Mal eine Variante.
-   WORTE(text, ctx) liefert {pre, bpm, sw, g (sieben Spuren), fx {id:[Stärke, Auswahl]}, nm}.
+   WORTE(text, ctx) liefert {pre, bpm, sw, g (sieben Spuren), fx {id:[Stärke, Auswahl]}}.
+   Jeder Beat bekommt Effekte: genannte zuerst, sonst die, die zum Stil passen (außer „dry“/„trocken“).
    ctx: n (Namen der Vorlagen), bpm (ihr Tempo), sw (ihr Swing), rows(i) (ihre sieben Spuren), rnd (Zufall 0–1) ===== */
 var WORTE=(function(){
   /* Stile in Reihenfolge der Vorlagen-Namen; was im Text zuerst steht, gewinnt */
@@ -978,6 +978,17 @@ var WORTE=(function(){
     ['pump','pump|pumping|sidechain|side-chain|breath|atmen|atmend|ducking|pumpend',4],
     ['stut','stutter|stotter|glitch|glitchy|chopped|broken|kaputt|stuttering',2],
     ['lofi','vinyl|dust|dusty|staub|old|alt|retro|crackle|knister|tape|kassette|cassette|warm|grain|grainy|lo-?fi|record|schallplatte|platte']];
+  /* Effekte, die zum Stil gehören, wenn keine genannt sind: der erste immer, der zweite zur Hälfte */
+  var STYLEFX={
+    lofi:[['lofi',45,0],['room',30,0]],house:[['pump',40,4],['sweep',35,4]],funk:[['room',25,0],['stut',30,2]],rock:[['room',45,0]],
+    techno:[['sweep',45,2],['pump',45,4]],trap:[['room',45,0],['stut',35,4]],onedrop:[['echo',55,3],['room',30,0]],pop80:[['room',60,0],['echo',25,2]],
+    dnb:[['room',30,0],['echo',30,2]],afrobeats:[['room',30,0],['echo',25,3]],reggaeton:[['echo',30,2],['room',25,0]],minimal:[['sweep',35,4],['echo',25,3]],
+    twostep:[['sweep',35,2],['pump',35,2]],jungle:[['echo',35,2],['stut',35,4]],electro:[['sweep',40,2],['stut',30,2]],amapiano:[['room',35,0],['echo',30,3]]};
+  /* Stimmung bringt ihren Effekt mit, wenn er nicht schon dabei ist */
+  var MOODFX=[['dark|duester|finster|night|nacht|underground|keller|cave|hoehle','sweep',40,4],['sad|traurig|melanchol|rain|regen|lonely|einsam|sleep|schlaf','room',50,0],
+    ['party|dance|tanz|tanzen|dancefloor|feier|club','pump',40,4],['angry|wuetend|aggressive|aggressiv|hard|hart|brutal|heavy','stut',40,2],
+    ['happy|froehlich|sunny|sonnig|summer|sommer|beach|strand','echo',25,3],['epic|episch|stadium|stadion|huge|riesig','room',70,0]];
+  var DRY='dry|trocken|clean|sauber|no effects|without effects|ohne effekte|keine effekte|pur|pure|raw|roh';
   var MORE='very|super|lots of|lot of|loads of|tons of|heavy|massive|extreme|really|sehr|extrem|viel|voll|krass|ganz viel|mega|so much',
       LESS='a bit|a little|little|slight|slightly|subtle|soft|light|leicht|etwas|wenig|bisschen|dezent|sanft|kaum';
 
@@ -1053,10 +1064,11 @@ var WORTE=(function(){
     if(ctx.n[best]==='lofi'&&!fx.lofi&&find(t,'vinyl|staub|dust')<0&&!/(no|without|ohne|kein)\s+(vinyl|crackle|knistern)/.test(t))fx.lofi=[45,0];
     if(find(t,'dub')>=0&&!fx.echo)fx.echo=[60,3];
     if(find(t,'dreamy|traeum|ambient|ethereal|floating|schweben')>=0&&!fx.echo)fx.echo=[35,3];
-    var nm=String(text||'').replace(/[\u0000-\u001f]/g,' ').replace(/\s+/g,' ').trim();
-    if(nm.length>40){nm=nm.slice(0,40);var sp=nm.lastIndexOf(' ');if(sp>20)nm=nm.slice(0,sp);}
-    nm=nm.charAt(0).toUpperCase()+nm.slice(1);
-    return {pre:best,bpm:bpm,sw:Math.max(0,Math.min(.6,sw)),g:g,fx:fx,nm:nm};
+    /* Nichts genannt: der Stil bringt seine Effekte mit, die Stimmung legt einen dazu; „dry“ lässt alles aus */
+    if(find(t,DRY)<0){
+      if(!Object.keys(fx).length){var sf=STYLEFX[ctx.n[best]]||[['room',30,0]];fx[sf[0][0]]=[sf[0][1],sf[0][2]];if(sf[1]&&rnd()<.5)fx[sf[1][0]]=[sf[1][1],sf[1][2]];}
+      MOODFX.forEach(function(m){if(!fx[m[1]]&&Object.keys(fx).length<3&&find(t,m[0])>=0&&!neg(t,find(t,m[0])))fx[m[1]]=[m[2],m[3]];});}
+    return {pre:best,bpm:bpm,sw:Math.max(0,Math.min(.6,sw)),g:g,fx:fx};
   };
 })();
 
@@ -1240,9 +1252,13 @@ var WORTE=(function(){
     /* Eigener Name (beim Teilen vergeben) geht vor; sonst Name der Vorlage */
     $('preTxt').textContent=title||(pre>=0?NM[BEATS[pre].n]:'Your beat');
     $('sub').textContent=title&&pre>=0?'based on '+NM[BEATS[pre].n]:pre>=0&&edited?'edited':'';
+    /* Eine unveränderte Vorlage behält ihren Namen: kein Stift, kein Namens-Blatt */
+    $('preName').classList.toggle('fixed',!canName());$('preName').title=canName()?'Name your beat':'';
     if(cb&&molOn)cardLabel();
   }
   function changed(){edited=true;paint();persist();}
+  /* Benennen geht nur bei eigenen oder veränderten Beats; Namen werden nur erzeugt, nie getippt */
+  function canName(){return pre<0||edited;}
 
   /* ---------- Wiedergabe ---------- */
   function head(s,b){
@@ -1447,14 +1463,16 @@ var WORTE=(function(){
     var o=WORTE(text,{n:BEATS.map(function(b){return b.n;}),bpm:BEATS.map(function(b){return b.bpm;}),sw:BEATS.map(function(b){return b.sw;}),rows:beatRows});
     var before=snap(),r;
     for(r=0;r<7;r++)pat[r]=o.g[r];
-    bpm=o.bpm;sw=o.sw;pre=o.pre;edited=true;title=o.nm;
+    bpm=o.bpm;sw=o.sw;pre=o.pre;edited=true;
     FXS.forEach(function(f){var id=f[0],x=o.fx[id];FX[id]=!!x;if(x){FXA[id]=x[0];if(f[4]&&f[4].some(function(q){return q[0]===x[1];}))FXO[id]=x[1];}});
-    fxSave();fxApply(false);fxUI();paint();persist();
+    fxSave();fxApply(false);fxUI();
+    /* Der Name kommt aus dem Beat selbst, nicht aus dem getippten Text */
+    title=CARD.title(cardModel(),Math.floor(Math.random()*8));paint();persist();
     if(!playing)setPlay(true);
     showToast('New beat','Undo',function(){restore(before);});
     return true;
   }
-$('preName').addEventListener('click',function(){nameSheet();});
+$('preName').addEventListener('click',function(){if(canName())nameSheet();});
 
   function tempoSheet(){
     var taps=[];
@@ -1691,15 +1709,14 @@ $('preName').addEventListener('click',function(){nameSheet();});
   function setTitle(v){v=v.replace(/[\u0000-\u001f]/g,'').trim().slice(0,40);if(v!==title){title=v;paint();persist();}}
   function nameSheet(){
     openSheet('<div class="sh-top"><span class="eyebrow" id="sheetT">Name your beat</span>'+XB+'</div>'+
-      '<label class="namef"><span class="lbl">Name</span><span class="namer"><input id="shName" type="text" maxlength="40" autocomplete="off" enterkeyhint="done" data-focus>'+
-      '<button type="button" class="ib" id="shDice" aria-label="Suggest a title" title="Suggest a title"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></span></label>'+
+      '<div class="namef"><span class="lbl">Name</span><div class="namer"><strong class="nameo" id="shName"></strong>'+
+      '<button type="button" class="pill dice" id="shDice"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 12a8 8 0 0 1 14-5.3M20 12a8 8 0 0 1-14 5.3M18 3v4h-4M6 21v-4h4" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/></svg>Another name</button></div></div>'+
       '<label class="byf"><span class="lbl">By</span><input id="shBy" type="text" maxlength="24" autocomplete="off" placeholder="@you"></label>'+
-      '<p class="shnote">Both appear on your card. The name also travels with the link.</p>',function(el){
-      var inp=el.querySelector('#shName'),dice=el.querySelector('#shDice'),diceN=0,m=cardModel();
-      inp.value=title;inp.placeholder=pre>=0?NM[BEATS[pre].n]:'Your beat';
-      inp.addEventListener('input',function(){setTitle(inp.value);});
-      inp.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();closeSheet();}});
-      dice.addEventListener('click',function(){inp.value=CARD.title(m,diceN++);setTitle(inp.value);});
+      '<p class="shnote">Names come from the beat itself: tempo, swing and the loudest track. Both appear on your card, the name also travels with the link.</p>',function(el){
+      var out=el.querySelector('#shName'),dice=el.querySelector('#shDice'),diceN=0,m=cardModel();
+      /* Ohne Namen bekommt der Beat gleich einen; „Another name“ geht die Vorschläge durch */
+      if(!title)setTitle(CARD.title(m,diceN));diceN++;out.textContent=title;
+      dice.addEventListener('click',function(){setTitle(CARD.title(m,diceN++));out.textContent=title;});
       var by=el.querySelector('#shBy');by.value=handle;
       by.addEventListener('input',function(){handle=by.value.replace(/[\u0000-\u001f\s]/g,'').slice(0,24);S.by=handle;save();});
       by.addEventListener('keydown',function(e){if(e.key==='Enter'){e.preventDefault();closeSheet();}});
@@ -1808,7 +1825,7 @@ $('preName').addEventListener('click',function(){nameSheet();});
   function molDraw(){molRaf=0;if(!molOn)return;molLast=performance.now();
     try{if(!(molTick++%12))molModel();molSize();
       if(playing)molS.time(ac.currentTime-playT0,performance.now());else if(molS.ct>=0)molS.reset();
-      var d=molDark(),o=cardOpts();if(!busyC)CARD.view(molX,molC.width,molC.height,molS,{fg:d?'#F3F3F4':'#0F0F10',bg:d?'#0E0E0F':'#FFFFFF',dark:d,title:o.title,by:o.by,preset:o.preset,hint:playing?'':'TAP TO PLAY',edit:true});
+      var d=molDark(),o=cardOpts();if(!busyC)CARD.view(molX,molC.width,molC.height,molS,{fg:d?'#F3F3F4':'#0F0F10',bg:d?'#0E0E0F':'#FFFFFF',dark:d,title:o.title,by:o.by,preset:o.preset,hint:playing?'':'TAP TO PLAY',edit:canName()});
     }catch(e){}
     molRaf=requestAnimationFrame(molDraw);}
   function molGo(){if(!molOn)return;if(molRaf)cancelAnimationFrame(molRaf);molRaf=requestAnimationFrame(molDraw);}
@@ -1830,8 +1847,8 @@ $('preName').addEventListener('click',function(){nameSheet();});
   molC.addEventListener('pointerdown',function(e){swX=e.clientX;swY=e.clientY;swOn=true;swiped=false;});
   molC.addEventListener('pointermove',function(e){if(!swOn||swiped||busyC)return;var dx=e.clientX-swX,dy=e.clientY-swY;if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(dy)*1.5){swiped=true;hueStep(dx<0?1:-1);}});
   molC.addEventListener('pointerup',function(){swOn=false;});molC.addEventListener('pointercancel',function(){swOn=false;swiped=false;});
-  molC.addEventListener('click',function(e){if(swiped){swiped=false;return;}if(busyC)return;if(molTitleHit(e))nameSheet();else setPlay(!playing);});
-  molC.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();if(!busyC)nameSheet();}});
+  molC.addEventListener('click',function(e){if(swiped){swiped=false;return;}if(busyC)return;if(molTitleHit(e)){if(canName())nameSheet();}else setPlay(!playing);});
+  molC.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();if(!busyC&&canName())nameSheet();}});
   document.addEventListener('visibilitychange',function(){if(!document.hidden)molGo();});window.addEventListener('pageshow',molGo);
   if(S.view==='mol')molSet(true);
 

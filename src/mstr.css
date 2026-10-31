@@ -46,6 +46,7 @@ button:focus-visible,input:focus-visible{outline:2px solid var(--accent);outline
 .prow{display:flex;align-items:center;gap:14px}
 /* Stift: zeigt, dass der Titel antippbar ist */
 .preset .pen{width:18px;height:18px;flex:none;color:var(--mute)}
+.preset.fixed{cursor:default}.preset.fixed .pen{display:none}
 .preset #preTxt{min-width:0;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
 /* Textknöpfe: „Change beat“ unter dem Titel, Link und WAV im Orbit */
 .lnk{border:0;background:none;padding:4px 0;font:600 13px var(--f-ui);color:var(--ink);display:inline-flex;align-items:center;gap:5px;cursor:pointer}
@@ -205,11 +206,9 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .fxi b{font-size:17px;font-weight:600;letter-spacing:-.01em}
 .fxi small{font-size:13px;color:var(--mute)}
 .namef{display:flex;flex-direction:column;gap:8px}
-.namef input{height:52px;border-radius:14px;border:1px solid var(--line);background:var(--soft);color:var(--ink);padding:0 16px;font-family:var(--f-ed);font-size:26px;outline:none;width:100%}
-.namef input:focus{border-color:var(--accent);box-shadow:0 0 0 3px color-mix(in srgb,var(--accent) 35%,transparent)}
-.namef input::placeholder{color:var(--mute)}
-.namer{display:flex;gap:8px;align-items:center}
-.namer .ib{width:44px;height:44px;flex:none}
+.nameo{flex:1;min-width:0;font-family:var(--f-ed);font-weight:400;font-size:28px;line-height:1.1;letter-spacing:-.01em;overflow:hidden;text-overflow:ellipsis}
+.namer{display:flex;gap:12px;align-items:center}
+.pill.dice{flex:none;height:40px;padding:0 14px 0 12px}.pill.dice svg{width:16px;height:16px}
 /* Karte: Vorschau links, Name und Knopf rechts */
 .cardrow{display:flex;gap:16px;align-items:stretch}
 .cardrow canvas{width:126px;height:224px;border-radius:12px;flex:none;background:#0F0F10}
