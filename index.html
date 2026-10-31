@@ -272,6 +272,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .cardfoot .pill{flex:1;width:auto}
 .cardfoot .ib{width:48px;height:48px}
 .app.molecule .head{display:none}
+.app.molecule #theme{display:none}
 /* In der Karte gibt es keine Leiste: Tipp auf den Ring spielt und stoppt, Tipp auf den Titel benennt */
 .app.molecule .transport{display:none}
 /* Orbit füllt genau den sichtbaren Bereich, nichts rutscht unter die Safari-Leiste; Play und Effekte stehen in der Reihe beim Knopf */
@@ -1489,13 +1490,17 @@ var CARD=(function(){
   function cardLabel(){if(busyC)return;cb.classList.remove('gen');cb.style.removeProperty('--p');var ready=cfile&&ckey===cardKey(),mob=nativeShare(),secs=Math.round(CARD.clipLen(bpm));
     cb.textContent=video?(mob?'Share video':'Save video'):(mob?'Share image':'Save image');
     if(!video){cardNote(ready?'Ready. Tap to share it again.':'A picture of your orbit for Story and chats.');return;}
-    if(ready)cardNote('Ready, '+secs+' s with sound'+(mob?', the link to your beat comes along':'')+'. Tap to share it again, it stays until you change the beat.');
+    if(ready)cardNote(mob?'Ready, '+secs+' s with sound. Tap to open the share sheet, the link to your beat comes along. It stays until you change the beat.':'Ready, '+secs+' s with sound. Tap to save it again, it stays until you change the beat.');
     else cardNote('Makes a '+secs+' s video with sound for Story, Reels and chats, then '+(mob?'opens the share sheet with the link to your beat':'saves it')+'. Takes as long as the video.');}
   /* Am Handy reist der Link als Text mit dem Video: in Chats kommt beides in einer Nachricht an, Instagram nimmt nur das Video */
+  /* Am Handy öffnet erst ein frischer Tipp das Teilen-Menü (iOS verweigert es ohne Geste); verweigert es trotzdem, wird die Datei gesichert */
   function giveCard(f){
     if(navigator.share&&matchMedia('(pointer: coarse)').matches&&canSendFile(f)){
       var t=cardOpts().title;
-      navigator.share({files:[f],title:t+' · MSTR',text:t+' · open and remix the beat: '+shareUrl()}).catch(function(e){if(e&&e.name==='NotAllowedError'){cb.textContent='Save '+f.name;}});return;}
+      navigator.share({files:[f],title:t+' · MSTR',text:t+' · open and remix the beat: '+shareUrl()}).catch(function(e){
+        if(e&&e.name==='AbortError')return;
+        if(e&&e.name==='NotAllowedError'){cardNote('Tap Share video once more to open the share sheet.');return;}
+        saveFile(f);cardNote('Sharing did not work here, saved '+f.name+' instead.');});return;}
     saveFile(f);cardNote('Saved '+f.name+'. Add the link from ⋯ so friends can open the beat.');
   }
   /* Abbruch: auch während der Ton noch gerechnet wird (dann verfällt das Ergebnis) */
@@ -1513,7 +1518,7 @@ var CARD=(function(){
         busyC=false;cb.disabled=false;cardT=null;
         if(why==='abort'){cardLabel();return;}
         if(!f){cardLabel();cardNote('Recording did not work here. Saving a picture instead.');CARD.image(scene,o,function(f2){if(f2){cfile=f2;ckey=key;giveCard(f2);}});return;}
-        cfile=f;ckey=key;cardLabel();giveCard(f);});
+        cfile=f;ckey=key;cardLabel();if(!nativeShare())giveCard(f);});
     });
   });
   cardLabel();
@@ -1527,7 +1532,7 @@ var CARD=(function(){
 
   /* ---------- Farbschema ---------- */
   var TN={system:'system',light:'light',dark:'dark'};
-  function themeUI(){var t=applyTheme();$('theme').setAttribute('aria-label','Theme: '+TN[t]);$('theme').title='Theme: '+TN[t];}
+  function themeUI(){var t=applyTheme();if(molOn)forceDark();$('theme').setAttribute('aria-label','Theme: '+TN[t]);$('theme').title='Theme: '+TN[t];}
   $('theme').addEventListener('click',function(){var t=THEMES.indexOf(S.theme);S.theme=THEMES[(t<0?1:t+1)%3];save();themeUI();});
   if(window.matchMedia)try{matchMedia('(prefers-color-scheme: dark)').addEventListener('change',themeUI);}catch(e){}
 
@@ -1537,7 +1542,9 @@ var CARD=(function(){
      Schläge kommen aus head() (Schritt, Takt), Mute, Solo und Drop entscheiden mit; steht der Beat, steht das Bild.
      Ein Tipp aufs Molekül bringt das Raster zurück, bearbeitet wird nur dort ---------- */
   var molC=$('mol'),molX=molC.getContext('2d'),vGrid=$('vGrid'),vCard=$('vCard'),foot=$('cardfoot'),molS=null,molKey='',molRaf=0,molOn=false,molTick=0,molLast=0;
-  function molDark(){var t=document.documentElement.getAttribute('data-theme');return t==='dark'||(!t&&!!window.matchMedia&&matchMedia('(prefers-color-scheme: dark)').matches);}
+  /* Der Orbit ist immer schwarz, auch wenn das Grid hell ist: solange er an ist, steht die Seite auf dunkel */
+  function molDark(){return true;}
+  function forceDark(){document.documentElement.setAttribute('data-theme','dark');var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content','#0E0E0F');}
   function molModel(){var k=shareCode();if(k===molKey&&molS)return;molKey=k;var m=cardModel();
     if(molS)molS.m=m;else{molS=new CARD.Scene(m);molS.clip=false;molS.act=function(r){return audible(r)&&!drop;};}}
   function molSize(){var b=molC.getBoundingClientRect(),d=Math.min(2,window.devicePixelRatio||1),w=Math.round(b.width*d),h=Math.round(b.height*d);
@@ -1557,7 +1564,7 @@ var CARD=(function(){
     if(stu)setTimeout(function(){if(molOn&&playing)molS.fire({s:q,b:b,h:h,st:1},performance.now());},st()*500);}
   var transport=document.querySelector('.transport');
   function molSet(on){molOn=!!on;if(!molOn)cardStop();app.classList.toggle('molecule',molOn);molC.hidden=!molOn;foot.hidden=!molOn;
-    if(molOn){foot.insertBefore(playB,cb);foot.insertBefore(fxB,cb);cardLabel();}else{transport.insertBefore(playB,transport.firstChild);transport.insertBefore(fxB,dropB);ct.hidden=true;}
+    if(molOn){foot.insertBefore(playB,cb);foot.insertBefore(fxB,cb);cardLabel();forceDark();}else{transport.insertBefore(playB,transport.firstChild);transport.insertBefore(fxB,dropB);ct.hidden=true;themeUI();}
     vGrid.setAttribute('aria-pressed',molOn?'false':'true');vCard.setAttribute('aria-pressed',molOn?'true':'false');
     S.view=molOn?'mol':'';save();if(molOn){molModel();molSize();molGo();}}
   vGrid.addEventListener('click',function(){molSet(false);});vCard.addEventListener('click',function(){molSet(true);});
