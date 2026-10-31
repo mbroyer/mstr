@@ -23,7 +23,7 @@ with sync_playwright() as p:
     SITE='https://asimplemanslab.com/mstr/app/'
     # Punkt setzen (erst dann ist der Beat benennbar), Titel antippen: Namens-Blatt, erzeugter Name steht sofort als Titel oben
     pg.locator('.tracks .trk').nth(4).locator('.dot').nth(5).click();pg.wait_for_timeout(100)
-    pg.click('#preName');pg.wait_for_timeout(300)
+    pg.evaluate('MSTR.name()');pg.wait_for_timeout(300)
     assert pg.locator('#shName').is_visible() and pg.locator('#sheet input:not(#shBy)').count()==0
     NAME=pg.inner_text('#shName');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
     assert NAME and pg.inner_text('#preName')==NAME and pg.inner_text('#sub')=='based on Amapiano'
@@ -31,14 +31,14 @@ with sync_playwright() as p:
     st=pg.evaluate('MSTR.state()')
     code=pg.evaluate('MSTR.code()');print('code',len(code),code);assert code.endswith('.m')
     link=pg.evaluate('MSTR.url()');assert link.startswith(SITE+'?b=') and '#' not in link
-    # Link: im Orbit als Textzeile unter dem Video-Knopf
+    # Link: im Orbit als runder Knopf neben dem Video-Knopf
     pg.keyboard.press('Escape');pg.wait_for_timeout(200);pg.click('#vOrbit');pg.wait_for_timeout(300);assert pg.locator('#more').count()==0
-    assert pg.inner_text('#shSend')=='Copy link'
+    assert pg.get_attribute('#shSend','aria-label')=='Copy link'
     pg.click('#shSend');pg.wait_for_timeout(300)
     assert pg.evaluate('navigator.clipboard.readText()')==link
-    # Rechner: der Knopf heißt Copy link und bestätigt das Kopieren, die Hinweiszeile erklärt
-    assert pg.inner_text('#shSend')=='\u2713 Link copied' and 'Paste it' in pg.inner_text('#shCardT')
-    pg.wait_for_timeout(2700);assert pg.inner_text('#shSend')=='Copy link'
+    # Rechner: der Knopf bestätigt das Kopieren, die Hinweiszeile sagt es kurz und verschwindet wieder
+    assert pg.get_attribute('#shSend','aria-label')=='Link copied' and 'Link copied' in pg.inner_text('#shCardT')
+    pg.wait_for_timeout(2700);assert pg.get_attribute('#shSend','aria-label')=='Copy link' and pg.locator('#shCardT').is_hidden()
     pg.click('#vMachine')
     pg.reload();pg.wait_for_timeout(300);assert pg.inner_text('#preName')==NAME,'Name bleibt gespeichert'
     link=link.replace(SITE,url)
@@ -77,7 +77,7 @@ with sync_playwright() as p:
     mp.add_init_script("navigator.share=d=>{window.__shared=d;return Promise.resolve();}")
     mp.goto(url);mp.evaluate("MSTR.welcome(false);MSTR.view(false)");mp.wait_for_timeout(300)
     mp.click('#vOrbit');mp.wait_for_timeout(300)
-    assert mp.inner_text('#shSend')=='Send link'
+    assert mp.get_attribute('#shSend','aria-label')=='Send link'
     mp.click('#shSend');mp.wait_for_timeout(300)
     d=mp.evaluate('window.__shared');assert d['url'].startswith(SITE+'?b=') and 'Amapiano' in d['text'],d
     # Leiste am Handy: Effects und Drop tragen ihr Wort (erst unter 360 px nur das Symbol), alles passt ohne Scrollen

@@ -60,9 +60,7 @@ with sync_playwright() as p:
     pg.fill('#sayIn','reggae with lots of dub echo');pg.keyboard.press('Enter');pg.wait_for_timeout(300)
     assert pg.locator('#sheet').is_hidden()
     s=pg.evaluate('MSTR.state()');assert s['playing'] and pg.inner_text('#sub')=='based on One Drop' and s['fx']['echo'],s
-    assert 'New beat' in pg.inner_text('.toast')
-    pg.click('.toast button');pg.wait_for_timeout(200)
-    s=pg.evaluate('MSTR.state()');assert s['pat']==before['pat'] and s['bpm']==before['bpm'],'Rückgängig'
+    assert pg.locator('.toast').count()==0,'kein „New beat / Undo“ mehr'
     # Leeres Feld nimmt das Beispiel; der Pfeil schickt ab; die letzte Beschreibung steht beim nächsten Mal drin
     pg.click('#preBtn');pg.wait_for_timeout(300);pg.fill('#sayIn','');ph=pg.get_attribute('#sayIn','placeholder');p0=pg.evaluate('MSTR.state()')['pat']
     pg.click('#sayGo');pg.wait_for_timeout(300)

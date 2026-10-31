@@ -10,13 +10,17 @@ with sync_playwright() as p:
     pg.goto('file://'+H+'/index.html');pg.evaluate("MSTR.welcome(false);MSTR.view(false)");pg.wait_for_timeout(300)
     pg.evaluate("document.querySelector('#tempoBtn').click()");pg.wait_for_timeout(200)
     pg.fill('#tBpm','160');pg.dispatch_event('#tBpm','change');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
-    # Unveränderte Vorlage: kein Stift, Titel öffnet kein Namens-Blatt
-    assert pg.evaluate("document.querySelector('#preName').classList.contains('fixed')") and pg.locator('#preName .pen').is_hidden()
-    pg.click('#preName');pg.wait_for_timeout(300);assert pg.locator('#sheet').is_hidden(),'Vorlage bekommt keinen eigenen Namen'
+    # In der Maschine ist der Titel nur Anzeige (kein Stift, kein Blatt), daneben steht nur „Change beat“; benannt wird im Orbit
+    assert pg.locator('#preName .pen').count()==0
+    pg.click('#preName');pg.wait_for_timeout(300);assert pg.locator('#sheet').is_hidden(),'Titel in der Maschine öffnet nichts'
+    # Unveränderte Vorlage: auch der Titel im Orbit öffnet kein Namens-Blatt
+    pg.click('#vOrbit');pg.wait_for_timeout(300);bx=pg.locator('#mol').bounding_box()
+    pg.click('#mol',position={'x':60,'y':bx['height']-40});pg.wait_for_timeout(300);assert pg.locator('#sheet').is_hidden(),'Vorlage bekommt keinen eigenen Namen'
+    pg.evaluate('MSTR.setPlay(false)');pg.click('#vMachine');pg.wait_for_timeout(200)
     # Nach einer Änderung: Namens-Blatt ohne Eingabefeld, der Name wird nur erzeugt; beim Öffnen gleich einer, „Another name“ gibt den nächsten
     pg.locator('.tracks .trk').nth(1).locator('.dot').nth(2).click();pg.wait_for_timeout(100)
-    assert not pg.evaluate("document.querySelector('#preName').classList.contains('fixed')")
-    pg.click('#preName');pg.wait_for_timeout(300)
+    pg.click('#vOrbit');pg.wait_for_timeout(300);bx=pg.locator('#mol').bounding_box()
+    pg.click('#mol',position={'x':60,'y':bx['height']-40});pg.wait_for_timeout(300)
     assert pg.locator('#shName').is_visible() and pg.locator('#shDice').is_visible() and pg.locator('#sheet input:not(#shBy)').count()==0,'kein Eingabefeld für den Namen'
     t1=pg.inner_text('#shName');assert t1 and pg.inner_text('#preName')==t1
     assert pg.evaluate("MSTR.card.title(MSTR.card.model(MSTR.state().pat,160,0),0)")==t1,'gleicher Beat, gleicher Vorschlag'
@@ -27,8 +31,11 @@ with sync_playwright() as p:
     pg.keyboard.press('Enter');pg.wait_for_timeout(200);assert pg.locator('#sheet').is_hidden()
     # Karten-Ansicht: Share-Knopf und Mehr, kein Teilen-Knopf in der Leiste
     assert pg.locator('#share').count()==0
-    pg.click('#vOrbit');pg.wait_for_timeout(200)
-    assert pg.locator('#shCardBtn').is_visible() and pg.locator('#shSend').is_visible() and pg.inner_text('#shCardBtn')=='Save video' and 'with sound' in pg.inner_text('#shCardT')
+    pg.evaluate('MSTR.setPlay(false)');pg.wait_for_timeout(200)
+    # Orbit kompakt: Video-Knopf mit rundem Link-Knopf daneben, kein Dauer-Hinweis darunter, keine Rückgängig-Meldung
+    assert pg.locator('#shCardBtn').is_visible() and pg.locator('#shSend').is_visible() and pg.inner_text('#shCardBtn')=='Save video' and pg.locator('#shCardT').is_hidden()
+    a=pg.locator('#shCardBtn').bounding_box();l=pg.locator('#shSend').bounding_box();assert abs(a['y']+a['height']/2-l['y']-l['height']/2)<2 and l['x']>a['x']+a['width']
+    assert pg.locator('.toast').count()==0
     assert pg.evaluate('document.documentElement.scrollWidth')<=390
     # Arrangement: Takt 1 nur Kick und Hats, Takt 7 ohne Kick, Takt 9 nichts (Schlussschlag kommt extra)
     assert pg.evaluate("[MSTR.card.active(1,0),MSTR.card.active(2,0),MSTR.card.active(1,6),MSTR.card.active(0,8)]")==[True,False,False,False]
