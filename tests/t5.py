@@ -11,7 +11,7 @@ with sync_playwright() as p:
     pg=b.new_page(viewport={'width':390,'height':844})
     pg.add_init_script(TAP)
     pg.on('pageerror',lambda e:err.append(str(e)))
-    pg.goto('file://'+H+'/index.html');pg.wait_for_timeout(300)
+    pg.goto('file://'+H+'/index.html');pg.evaluate("MSTR.welcome(false)");pg.wait_for_timeout(300)
     assert pg.locator('#fxBtn').is_visible()
     # Transport passt in 390 px
     bx=pg.locator('#tempoBtn').bounding_box();assert bx['x']+bx['width']<=390,bx

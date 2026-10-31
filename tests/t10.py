@@ -7,7 +7,7 @@ err=[]
 with sync_playwright() as p:
     b=p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'],**({'executable_path':os.environ['PW_CHROME']} if os.environ.get('PW_CHROME') else {}))
     ctx=b.new_context(viewport={'width':390,'height':844},accept_downloads=True);pg=ctx.new_page();pg.on('pageerror',lambda e:err.append(str(e)))
-    pg.goto('file://'+H+'/index.html');pg.wait_for_timeout(300)
+    pg.goto('file://'+H+'/index.html');pg.evaluate("MSTR.welcome(false)");pg.wait_for_timeout(300)
     pg.evaluate("document.querySelector('#tempoBtn').click()");pg.wait_for_timeout(200)
     pg.fill('#tBpm','160');pg.dispatch_event('#tBpm','change');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
     # Namens-Blatt über den Titel: Würfel zweimal verschieden, steht sofort oben als Name; danach von Hand änderbar; By bleibt gespeichert

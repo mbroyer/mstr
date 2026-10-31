@@ -9,7 +9,7 @@ with sync_playwright() as p:
     b=p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'],**({'executable_path':os.environ['PW_CHROME']} if os.environ.get('PW_CHROME') else {}))
     pg=b.new_page(viewport={'width':390,'height':844});pg.add_init_script(TAP)
     pg.on('pageerror',lambda e:err.append(str(e)))
-    pg.goto('file://'+H+'/index.html');pg.wait_for_timeout(300)
+    pg.goto('file://'+H+'/index.html');pg.evaluate("MSTR.welcome(false)");pg.wait_for_timeout(300)
     for name in ['Lo-Fi','House','Drum\'n\'Bass']:
         pg.click('#preBtn');pg.click('.pitem:has-text("%s")'%name);pg.wait_for_timeout(1200)
         base=pg.evaluate('__rms()')

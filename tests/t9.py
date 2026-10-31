@@ -16,13 +16,13 @@ REC=base64.b64encode(buf.getvalue()).decode()
 with sync_playwright() as p:
     b=p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'],**({'executable_path':os.environ['PW_CHROME']} if os.environ.get('PW_CHROME') else {}))
     for vw in (360,390):
-        pg=b.new_page(viewport={'width':vw,'height':800});pg.goto('file://'+H+'/index.html');pg.wait_for_timeout(300)
+        pg=b.new_page(viewport={'width':vw,'height':800});pg.goto('file://'+H+'/index.html');pg.evaluate("MSTR.welcome(false)");pg.wait_for_timeout(300)
         assert pg.evaluate('document.documentElement.scrollWidth')<=vw,vw
         assert pg.locator('#share').count()==0;pg.click('#vCard');pg.wait_for_timeout(100)
         r=pg.locator('#shWav').bounding_box();assert r['x']+r['width']<=vw and pg.locator('#shCardBtn').is_visible() and pg.locator('#shSend').is_visible()
         pg.close()
     ctx=b.new_context(viewport={'width':390,'height':844},accept_downloads=True);pg=ctx.new_page();pg.on('pageerror',lambda e:err.append(str(e)))
-    pg.goto('file://'+H+'/index.html');pg.wait_for_timeout(300)
+    pg.goto('file://'+H+'/index.html');pg.evaluate("MSTR.welcome(false)");pg.wait_for_timeout(300)
     pg.evaluate("document.querySelector('#tempoBtn').click()");pg.wait_for_timeout(200)
     pg.fill('#tBpm','120');pg.dispatch_event('#tBpm','change');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
     pg.click('#play');pg.wait_for_timeout(300)

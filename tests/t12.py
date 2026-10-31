@@ -10,7 +10,7 @@ with sync_playwright() as p:
     b=p.chromium.launch(**({'executable_path':os.environ['PW_CHROME']} if os.environ.get('PW_CHROME') else {}))
     pg=b.new_page(viewport={'width':390,'height':844})
     pg.on('pageerror',lambda e:err.append(str(e)))
-    pg.goto(url);pg.wait_for_timeout(300)
+    pg.goto(url);pg.evaluate("MSTR.welcome(false)");pg.wait_for_timeout(300)
     pg.evaluate("localStorage.setItem('mstr-v1',JSON.stringify({pat:{v:5,g:Array(8).fill('0'.repeat(16)).map((x,i)=>i==7?'a'+'0'.repeat(15):x),bpm:100,sw:0,pre:-1}}))")
     pg.reload();pg.wait_for_timeout(300)
     assert pg.locator('#sayBtn').count()==0 and pg.locator('#preBtn').is_visible(),'Beschreiben wohnt in der Beat-Liste'

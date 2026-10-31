@@ -6,7 +6,7 @@ err=[]
 with sync_playwright() as p:
     b=p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'],**({'executable_path':os.environ['PW_CHROME']} if os.environ.get('PW_CHROME') else {}))
     ctx=b.new_context(viewport={'width':390,'height':760});pg=ctx.new_page();pg.on('pageerror',lambda e:err.append(str(e)))
-    pg.goto('file://'+H+'/index.html');pg.wait_for_timeout(300)
+    pg.goto('file://'+H+'/index.html');pg.evaluate("MSTR.welcome(false)");pg.wait_for_timeout(300)
     assert pg.locator('#mol').is_hidden() and pg.locator('#tracks').is_visible() and pg.locator('#vGrid').is_hidden() and pg.locator('#vCard').is_visible()
     assert pg.locator('#shCardT').is_hidden() and pg.locator('#cardlinks').is_hidden(),'im Raster kein Orbit-Hinweis'
     assert pg.locator('#miniOrb').is_hidden();pg.click('#play');pg.wait_for_timeout(300);assert pg.locator('#miniOrb').is_visible(),'Mini-Orbit läuft im Share-Knopf mit';pg.click('#play')

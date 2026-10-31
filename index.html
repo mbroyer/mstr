@@ -189,6 +189,24 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .opts{display:flex;gap:6px;flex-wrap:wrap}
 .opt{height:34px;border-radius:999px;border:1px solid var(--line);background:transparent;padding:0 14px;font-size:13px;font-weight:600;cursor:pointer}
 .opt[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+/* Willkommen: drei Karten, das Beschreiben-Feld steckt in der dritten */
+.wcards{display:flex;flex-direction:column;gap:12px}
+.wcard{border:1px solid var(--line);border-radius:22px;padding:18px 18px 18px 16px;display:flex;gap:14px;align-items:center;background:transparent;cursor:pointer;text-align:left;width:100%}
+.wcard:active{background:var(--soft)}
+.wic{width:40px;height:40px;border-radius:50%;background:var(--soft);display:grid;place-items:center;flex:none}
+.wic svg{width:20px;height:20px;fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.wtx{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
+.wtx b{font-size:17px;font-weight:600;letter-spacing:-.01em}
+.wtx small{font-size:13px;color:var(--mute);line-height:1.35}
+.wcard .go{width:14px;height:14px;color:var(--mute);flex:none}
+.wcard.say{flex-direction:column;align-items:stretch;gap:12px;padding:18px 16px 16px;cursor:default}
+.wcard.say:active{background:transparent}
+.wh{display:flex;gap:14px;align-items:center}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:transparent;font:600 12px var(--f-ui);color:var(--mute);cursor:pointer}
+.chip:active{color:var(--ink)}
+.wnote{margin-top:auto}
+.wnote b{color:var(--ink);font-weight:600}
 /* Effekte: eine Zeile je Effekt, rechts ein Punkt wie im Raster (grau aus, Flieder an) */
 .fxlist{display:flex;flex-direction:column}
 .fxrow{border-top:1px solid var(--line)}
@@ -1350,13 +1368,17 @@ var WORTE=(function(){
   var catcher=document.createElement('div');catcher.className='catcher';catcher.hidden=true;document.body.appendChild(catcher);
   catcher.addEventListener('click',function(){closeSheet();});
   function openSheet(html,init,name,half){
-    lastFocus=document.activeElement;sheet.innerHTML=(half?'<div class="grab" aria-hidden="true"></div>':BACK)+html;sheet.hidden=false;sheet.scrollTop=0;
+    /* page: ganze Seite ohne Zurück-Pfeil (Willkommen), nur die Marke oben */
+    var page=half==='page';if(page)half=false;
+    lastFocus=document.activeElement;sheet.innerHTML=(half?'<div class="grab" aria-hidden="true"></div>':page?'<div class="pnav"><span class="mark"><i aria-hidden="true"></i>MSTR</span></div>':BACK)+html;sheet.hidden=false;sheet.scrollTop=0;
     sheet.classList.toggle('half',!!half);sheet.classList.toggle('top',half==='top');catcher.hidden=!half;
     if(!half)document.body.classList.add('noscroll');
-    sheet.querySelector('[data-close]').addEventListener('click',closeSheet);
+    var xb=sheet.querySelector('[data-close]');if(xb)xb.addEventListener('click',closeSheet);
     if(init)init(sheet);
-    var f=sheet.querySelector('[data-focus]')||sheet.querySelector('button');if(f)f.focus({preventScroll:true});
-    pageName=name;if(location.hash!=='#'+name){pushed=true;location.hash=name;}
+    var f=sheet.querySelector('[data-focus]')||(page?null:sheet.querySelector('button'));if(f)f.focus({preventScroll:true});
+    /* Willkommen öffnet ohne Geste: ein Hash dort würde den Verlaufseintrag ersetzen (Chrome), darum kein eigener Eintrag */
+    pageName=name;if(page){pushed=false;return;}
+    if(location.hash!=='#'+name){pushed=true;location.hash=name;}
   }
   function hideSheet(){if(sheet.__stop){sheet.__stop();sheet.__stop=null;}sheet.hidden=true;catcher.hidden=true;sheet.innerHTML='';document.body.classList.remove('noscroll');if(lastFocus&&lastFocus.focus)lastFocus.focus({preventScroll:true});}
   function closeSheet(){if(sheet.hidden)return;hideSheet();if(pushed){pushed=false;ignoreHash=true;history.back();}}
@@ -1371,11 +1393,7 @@ var WORTE=(function(){
       '<h2 class="ed">or pick one<br><em>'+BEATS.length+' beats by tempo</em></h2><div class="plist" role="listbox" aria-label="Beats"></div>'+
       '<div class="field"><span class="lbl">Theme</span><div class="seg2 three" id="themeSeg"><button type="button" data-t="system">System</button><button type="button" data-t="light">Light</button><button type="button" data-t="dark">Dark</button></div></div>'+
       '<a class="lab" href="https://asimplemanslab.com/" aria-label="Made with love by A Simple Man\u2019s Lab"><span>Made with love by</span><i aria-hidden="true"></i></a>',function(el){
-      var inp=el.querySelector('#sayIn'),f=el.querySelector('form');
-      inp.value=typeof S.say==='string'?S.say:'';inp.placeholder=SAY[Math.floor(Math.random()*SAY.length)];
-      function go(){var v=inp.value.trim()||inp.placeholder;S.say=inp.value.trim();save();closeSheet();sayBeat(v);}
-      f.addEventListener('submit',function(e){e.preventDefault();go();});
-      inp.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();go();}});
+      sayInit(el);
       el.querySelectorAll('#themeSeg button').forEach(function(b){b.addEventListener('click',function(){S.theme=b.dataset.t;save();themeUI();});});
       themeUI();
       var list=el.querySelector('.plist'),e=document.createElement('button');e.type='button';e.id='clr';e.className='pitem'+(pre<0&&pat.slice(0,7).join('')===empty().slice(0,7).join('')?' sel':'');e.setAttribute('role','option');
@@ -1392,6 +1410,38 @@ var WORTE=(function(){
      Nochmal abschicken gibt eine Variante. Rückgängig über den Hinweis ---------- */
   function beatRows(i){var Bt=BEATS[i],X=EXTRA[Bt.n],o=[],r;for(r=0;r<7;r++)o.push(r<3?rowFromBeat(Bt,TRACKS[r].id):dots(X?X[r-3]:COMMON[TRACKS[r].id][0]));return o;}
   var SAY=['dusty slow hip hop with vinyl','dark fast techno, lots of echo','happy summer beat with cowbell','dreamy, minimal, a bit of swing','drum and bass without hats'];
+  var SAYF='<form class="sayf" autocomplete="off"><textarea id="sayIn" rows="2" maxlength="200" enterkeyhint="send" aria-label="Describe a beat"></textarea>'+
+      '<button type="submit" class="ib go" id="sayGo" aria-label="Make the beat" title="Make the beat"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></form>';
+  /* Das Feld „Describe a beat“ (Beat-Liste und Willkommen): Enter oder Pfeil schickt ab, leer nimmt das Beispiel, die letzte Beschreibung steht wieder drin */
+  function sayInit(el,after){
+    var inp=el.querySelector('#sayIn'),f=el.querySelector('form.sayf');
+    var used=[].map.call(el.querySelectorAll('.chip'),function(c){return c.textContent;}),pool=SAY.filter(function(x){return used.indexOf(x)<0;});
+    inp.value=typeof S.say==='string'?S.say:'';inp.placeholder=pool[Math.floor(Math.random()*pool.length)];
+    function go(v){v=v||inp.value.trim()||inp.placeholder;S.say=v===inp.placeholder?inp.value.trim():v;if(after)after();save();closeSheet();sayBeat(v);}
+    f.addEventListener('submit',function(e){e.preventDefault();go();});
+    inp.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();go();}});
+    el.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){go(c.textContent);});});
+  }
+  /* ---------- Willkommen: nur beim allerersten Besuch (kein Stand, kein geteilter Link) die Frage, wie es losgehen soll.
+     Drei Karten: leeres Raster, Beat-Liste, Beat beschreiben (Feld und drei Beispiele). Danach nie wieder (S.seen), alles bleibt unter „Change beat“ erreichbar ---------- */
+  var ICO_W={grid:'<circle cx="6" cy="8" r="2.2"/><circle cx="12" cy="8" r="2.2"/><circle cx="18" cy="8" r="2.2"/><circle cx="6" cy="16" r="2.2"/><circle cx="12" cy="16" r="2.2"/><circle cx="18" cy="16" r="2.2"/>',
+    list:'<path d="M4 7h16M4 12h16M4 17h10"/>',say:'<path d="M5 5h14a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 17h-8l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5v-9A1.5 1.5 0 0 1 5 5Z"/><path d="M8 9.5h8M8 12.8h5"/>'};
+  function wcard(id,ico,t,d){return '<button type="button" class="wcard" id="'+id+'"><span class="wic"><svg viewBox="0 0 24 24" aria-hidden="true">'+ICO_W[ico]+'</svg></span><span class="wtx"><b>'+t+'</b><small>'+d+'</small></span><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';}
+  function welcome(on){
+    if(on===false){S.seen=1;save();if(pageName==='welcome'&&!sheet.hidden)closeSheet();return;}
+    var ex=SAY.slice().sort(function(){return Math.random()-.5;}).slice(0,3);
+    openSheet('<div><span class="eyebrow">Welcome</span><h2 class="ed" id="sheetT">How do you want<br>to start?<br><em>Pick one.</em></h2></div>'+
+      '<div class="wcards">'+wcard('wScratch','grid','Start from scratch','An empty grid. Tap dots, press play.')+wcard('wPick','list','Pick a beat',BEATS.length+' beats from Lo-Fi to Jungle, ready to play and remix.')+
+      '<div class="wcard say"><div class="wh"><span class="wic"><svg viewBox="0 0 24 24" aria-hidden="true">'+ICO_W.say+'</svg></span><span class="wtx"><b>Describe a beat</b><small>In your own words, English or German.</small></span></div>'+SAYF+
+      '<div class="chips">'+ex.map(function(x){return '<button type="button" class="chip">'+x+'</button>';}).join('')+'</div></div></div>'+
+      '<p class="shnote wnote">You can switch any time under <b>Change beat</b>.</p>',function(el){
+      function done(){S.seen=1;save();}
+      el.querySelector('#wScratch').addEventListener('click',function(){done();pat=empty();pre=-1;edited=false;title='';paint();persist();closeSheet();});
+      el.querySelector('#wPick').addEventListener('click',function(){done();presetSheet();});
+      sayInit(el,done);
+    },'welcome','page');
+    S.seen=1;save();
+  }
   function sayBeat(text){
     text=String(text||'').trim();if(!text)return false;
     var o=WORTE(text,{n:BEATS.map(function(b){return b.n;}),bpm:BEATS.map(function(b){return b.bpm;}),sw:BEATS.map(function(b){return b.sw;}),rows:beatRows});
@@ -1738,6 +1788,7 @@ $('preName').addEventListener('click',function(){nameSheet();});
 
   build();themeUI();fxUI();playB.innerHTML=I_PLAY;
   if(shared){var before=shared;showToast(title?'“'+title+'” loaded':'Shared beat loaded','Undo',function(){restore(before);});}
+  else if(!P&&!S.seen&&!location.hash)welcome();
   /* ---------- Molekül-Ansicht: das Raster gegen das Ring-Molekül der Karte tauschen, live mit dem Beat.
      Schläge kommen aus head() (Schritt, Takt), Mute, Solo und Drop entscheiden mit; steht der Beat, steht das Bild.
      Ein Tipp aufs Molekül bringt das Raster zurück, bearbeitet wird nur dort ---------- */
@@ -1784,7 +1835,7 @@ $('preName').addEventListener('click',function(){nameSheet();});
   document.addEventListener('visibilitychange',function(){if(!document.hidden)molGo();});window.addEventListener('pageshow',molGo);
   if(S.view==='mol')molSet(true);
 
-  window.MSTR={view:molSet,say:sayBeat,setPlay:setPlay,renderLoop:renderLoop,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,hue:setHue,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,col:col,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
+  window.MSTR={welcome:welcome,view:molSet,say:sayBeat,setPlay:setPlay,renderLoop:renderLoop,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,hue:setHue,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,col:col,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
 })();
 
 })();

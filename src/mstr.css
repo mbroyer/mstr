@@ -176,6 +176,24 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .opts{display:flex;gap:6px;flex-wrap:wrap}
 .opt{height:34px;border-radius:999px;border:1px solid var(--line);background:transparent;padding:0 14px;font-size:13px;font-weight:600;cursor:pointer}
 .opt[aria-pressed="true"]{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+/* Willkommen: drei Karten, das Beschreiben-Feld steckt in der dritten */
+.wcards{display:flex;flex-direction:column;gap:12px}
+.wcard{border:1px solid var(--line);border-radius:22px;padding:18px 18px 18px 16px;display:flex;gap:14px;align-items:center;background:transparent;cursor:pointer;text-align:left;width:100%}
+.wcard:active{background:var(--soft)}
+.wic{width:40px;height:40px;border-radius:50%;background:var(--soft);display:grid;place-items:center;flex:none}
+.wic svg{width:20px;height:20px;fill:none;stroke:var(--ink);stroke-width:1.6;stroke-linecap:round;stroke-linejoin:round}
+.wtx{flex:1;display:flex;flex-direction:column;gap:3px;min-width:0}
+.wtx b{font-size:17px;font-weight:600;letter-spacing:-.01em}
+.wtx small{font-size:13px;color:var(--mute);line-height:1.35}
+.wcard .go{width:14px;height:14px;color:var(--mute);flex:none}
+.wcard.say{flex-direction:column;align-items:stretch;gap:12px;padding:18px 16px 16px;cursor:default}
+.wcard.say:active{background:transparent}
+.wh{display:flex;gap:14px;align-items:center}
+.chips{display:flex;gap:6px;flex-wrap:wrap}
+.chip{height:30px;padding:0 12px;border-radius:999px;border:1px solid var(--line);background:transparent;font:600 12px var(--f-ui);color:var(--mute);cursor:pointer}
+.chip:active{color:var(--ink)}
+.wnote{margin-top:auto}
+.wnote b{color:var(--ink);font-weight:600}
 /* Effekte: eine Zeile je Effekt, rechts ein Punkt wie im Raster (grau aus, Flieder an) */
 .fxlist{display:flex;flex-direction:column}
 .fxrow{border-top:1px solid var(--line)}

@@ -8,7 +8,7 @@ with sync_playwright() as p:
     pg=b.new_page(viewport={'width':390,'height':844})
     pg.on('pageerror',lambda e:err.append(str(e)))
     pg.on('console',lambda m:m.type=='error' and err.append(m.text))
-    pg.goto('file://'+H+'/index.html');pg.wait_for_timeout(300)
+    pg.goto('file://'+H+'/index.html');pg.evaluate("MSTR.welcome(false)");pg.wait_for_timeout(300)
     want=[['Closed','Open','Tick'],None,['Snare','Rim','Noise','Clap'],['Crash','Ride','China'],['Shaker','Tambourine','Clave','Conga','Cowbell'],['Low','Mid','High'],['Snap','Sub','Reverse','Roll','Riser']]
     for r,w in enumerate(want):
         pg.locator('.tracks .trk').nth(r).locator('.tn').click();pg.wait_for_timeout(100)
