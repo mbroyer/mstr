@@ -279,6 +279,11 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .takes .play{width:56px;height:56px;flex:none}
 .takes .pill{flex:1;height:44px;padding:0 10px;font-size:13px}
 .takes .pill svg{width:15px;height:15px;flex:none}
+/* Another take: kurzer Blitz in der Akzentfarbe, Symbol dreht sich einmal */
+.takes .pill.hit{animation:takehit 1.1s ease-out}
+.takes .pill.hit svg{animation:takespin .55s cubic-bezier(.3,.7,.4,1)}
+@keyframes takehit{0%{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}60%{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}100%{background:transparent}}
+@keyframes takespin{to{transform:rotate(360deg)}}
 .machine{margin:0;padding:0 0 max(8px,env(safe-area-inset-bottom,0px));text-align:center;font-size:13px;color:var(--mute);display:flex;justify-content:center;gap:6px;align-items:center;flex-wrap:wrap}
 .machine .lnk{font-size:13px}
 .machine[hidden]{display:none}

@@ -171,9 +171,9 @@ var WORTE=(function(){
     if(find(t,DRY)<0){
       if(!Object.keys(fx).length){var sf=STYLEFX[ctx.n[best]]||[['room',30,0]];fx[sf[0][0]]=[sf[0][1],sf[0][2]];if(sf[1]&&rnd()<.5)fx[sf[1][0]]=[sf[1][1],sf[1][2]];}
       MOODFX.forEach(function(m){if(!fx[m[1]]&&Object.keys(fx).length<3&&find(t,m[0])>=0&&!neg(t,find(t,m[0])))fx[m[1]]=[m[2],m[3]];});
-      /* Ein Take würfelt auch die Effekte: Stärken streuen (genannte behalten ihre Stärke), manchmal kommt einer dazu */
+      /* Ein Take würfelt auch die Effekte: Stärken streuen (genannte behalten ihre Stärke), manchmal kommt einer dazu, aber nur, wenn keiner genannt ist */
       var POOL=[['room',35,0],['echo',30,3],['sweep',35,4],['pump',35,4],['stut',30,2],['lofi',35,0]];
-      if(Object.keys(fx).length<3&&rnd()<.45){var ex=pick(POOL);if(!fx[ex[0]])fx[ex[0]]=[ex[1],ex[2]];}
+      if(!said.length&&Object.keys(fx).length<3&&rnd()<.45){var ex=pick(POOL);if(!fx[ex[0]])fx[ex[0]]=[ex[1],ex[2]];}
       for(id in fx)if(said.indexOf(id)<0)fx[id]=[Math.max(15,Math.min(95,Math.round(fx[id][0]*(.75+rnd()*.55)))),fx[id][1]];}
     return {pre:best,bpm:bpm,sw:Math.max(0,Math.min(.6,sw)),g:g,fx:fx};
   };
