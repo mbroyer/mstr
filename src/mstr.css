@@ -259,6 +259,7 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .cardfoot .pill{flex:1;width:auto}
 .cardfoot .ib{width:48px;height:48px}
 .app.molecule .head{display:none}
+.app.molecule #theme{display:none}
 /* In der Karte gibt es keine Leiste: Tipp auf den Ring spielt und stoppt, Tipp auf den Titel benennt */
 .app.molecule .transport{display:none}
 /* Orbit füllt genau den sichtbaren Bereich, nichts rutscht unter die Safari-Leiste; Play und Effekte stehen in der Reihe beim Knopf */
