@@ -957,7 +957,17 @@ var WORTE=(function(){
     ['epic|episch|stadium|stadion|huge|riesig|big room','rock','pop80'],
     ['heart|heartbeat|herz|herzschlag|pulse|puls|hypnotic|hypnotisch|trance','minimal','techno'],
     ['fast|schnell|frantic|hektisch|energy|energie|running|laufen|workout|sport','dnb','jungle'],
-    ['slow|langsam|lazy|faul|relaxed|entspannt|calm|ruhig','lofi','onedrop']];
+    ['slow|langsam|lazy|faul|relaxed|entspannt|calm|ruhig','lofi','onedrop'],
+    ['dreamy|traeum|ambient|ethereal|floating|schweben','lofi','onedrop'],
+    ['dusty|dust|staub|warm|vinyl|crackle|knister|tape|kassette|cassette|retro|old school|oldschool','lofi','lofi'],
+    ['nervous|nervoes|anxious|restless|unruhig|jittery|zappelig','minimal','electro'],
+    ['romantic|romantisch|love|liebe|kiss|kuss|date|candle|kerze','lofi','onedrop'],
+    ['festival|crowd|menge|stage|buehne|open air|openair|big stage','house','afrobeats'],
+    ['focus|fokus|concentrat|konzentr|deep work|work|arbeit|homework|hausaufgaben','lofi','minimal'],
+    ['tired|muede|exhausted|erschoepft|hopeful|hoffnung|gentle|zart|soft|sanft','lofi','onedrop'],
+    ['drive|driving|road|strasse|autobahn|highway|cruise|cruising|roadtrip|road trip','techno','house'],
+    ['spacey|cosmic|kosmisch|galaxy|galaxie|planet|moon|mond','minimal','techno'],
+    ['glitchy|glitch|broken|kaputt|chopped|stutter','electro','jungle']];
   /* Klänge: Spur, Zeichen, Muster (null: eigene Regel unten) */
   var SOUND=[
     ['clap|klatsch',2,'c'],['rim|rimshot|sidestick',2,'k'],
@@ -1019,7 +1029,7 @@ var WORTE=(function(){
     /* Tempo-Wörter */
     if(!bpm){var f=1;
       if(find(t,'very slow|super slow|sehr langsam|crawling|schleppend')>=0)f=.78;
-      else if(find(t,'slow|slower|langsam|lazy|faul|chill|chilled|relaxed|entspannt|laid ?back|calm|ruhig|sleepy|mellow')>=0)f=.88;
+      else if(find(t,'slow|slower|langsam|lazy|faul|chill|chilled|relaxed|entspannt|laid ?back|calm|ruhig|sleepy|mellow|dreamy|traeum|tired|muede|romantic|romantisch')>=0)f=.88;
       if(find(t,'very fast|super fast|sehr schnell|insane|wahnsinnig')>=0)f=1.22;
       else if(find(t,'fast|faster|schnell|quick|hektisch|frantic|rush|uptempo|up-tempo|energetic|treibend|driving')>=0)f=1.1;
       if(find(t,'half ?time|halftime')>=0)f*=.75;if(find(t,'double ?time')>=0)f*=1.3;

@@ -32,6 +32,15 @@ with sync_playwright() as p:
     s=say('schneller treibender Techno mit Stottern');assert pg.inner_text('#sub')=='based on Techno' and s['bpm']>138 and s['fx']['stut'],s
     s=say('something at 90 bpm');assert s['bpm']==90
     s=say('80s pop');assert pg.inner_text('#sub')=='based on Beat It' and s['bpm']!=80
+    # Stimmungs-Wörter (die Chips der Vibe-Seite) landen stabil bei passenden Vorlagen, nie beim Zufall
+    CH={'calm':['Lo-Fi','One Drop'],'dark':['Techno','Minimal'],'happy':['Afrobeats','House'],'sad':['Lo-Fi','One Drop'],'party':['House','Amapiano'],
+        'angry':['Techno','Trap'],'dreamy':['Lo-Fi','One Drop'],'epic':['Rock','Beat It'],'playful':['Funk','Reggaeton'],'slow':['Lo-Fi','One Drop'],
+        'fast':["Drum'n'Bass",'Jungle'],'dusty':['Lo-Fi'],'warm':['Lo-Fi'],'spacey':['Minimal','Techno'],'dub':['One Drop'],'glitchy':['Electro','Jungle'],
+        'nervous':['Minimal','Electro'],'romantic':['Lo-Fi','One Drop'],'festival':['House','Afrobeats'],'focus':['Lo-Fi','Minimal'],'tired':['Lo-Fi','One Drop'],'late night drive':['Techno','Minimal']}
+    for w,ok in CH.items():
+        for i in range(4):
+            s=say(w);bs=pg.inner_text('#sub').replace('based on ','');assert bs in ok,(w,bs,ok)
+    s=say('dreamy');assert s['bpm']<80,s['bpm']
     # Klänge und ohne …
     s=say('happy summer beat with cowbell');assert '5' in s['pat'][4],s['pat']
     s=say('drum and bass without hats');assert pg.inner_text('#sub')=="based on Drum'n'Bass" and s['pat'][0]==Z and 'n' not in s['pat'][6],s['pat']
