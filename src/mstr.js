@@ -673,8 +673,11 @@
   function forceDark(){document.documentElement.setAttribute('data-theme','dark');var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content','#0E0E0F');}
   function molModel(){var k=shareCode();if(k===molKey&&molS)return;molKey=k;var m=cardModel();
     if(molS)molS.m=m;else{molS=new CARD.Scene(m);molS.clip=false;molS.act=function(r){return audible(r)&&!drop;};}}
+  /* Die Farbpunkte sitzen im Bild direkt über dem Titel, bündig mit ihm (Titelstreifen = untere 130 Einheiten) */
+  var hueY=0;
   function molSize(){var b=molC.getBoundingClientRect(),d=Math.min(2,window.devicePixelRatio||1),w=Math.round(b.width*d),h=Math.round(b.height*d);
-    if(w&&h&&(molC.width!==w||molC.height!==h)){molC.width=w;molC.height=h;}}
+    if(w&&h&&(molC.width!==w||molC.height!==h)){molC.width=w;molC.height=h;}
+    var sc=Math.min(b.width/540,b.height/760),y=Math.round(130*sc+48);if(y!==hueY){hueY=y;hueRow.style.transform='translateY(-'+y+'px)';hueRow.style.paddingLeft=Math.round(24*sc-11)+'px';}}
   /* Die Schleife läuft, solange die Ansicht an ist. Ein Fehler beim Zeichnen bricht sie nicht ab, und molGo startet sie
      immer frisch, damit ein liegen gebliebener Frame (etwa nach dem Sperren des Handys) sie nicht blockiert */
   function molDraw(){molRaf=0;if(!molOn)return;molLast=performance.now();
@@ -696,7 +699,13 @@
   vGrid.addEventListener('click',function(){molSet(false);});vCard.addEventListener('click',function(){molSet(true);});
   /* Unterer Streifen (Titel und Zeile) öffnet den Namen, der Rest spielt oder stoppt */
   function molTitleHit(e){var r=molC.getBoundingClientRect(),sc=Math.min(r.width/540,r.height/760);return e.clientY-r.top>r.height-130*sc;}
-  molC.addEventListener('click',function(e){if(busyC)return;if(molTitleHit(e))nameSheet();else setPlay(!playing);});
+  /* Wischen über den Orbit (links/rechts) schaltet die Farbe weiter, ein Tipp bleibt ein Tipp: erst ab 40 px quer, und mehr quer als längs */
+  var swX=0,swY=0,swOn=false,swiped=false,HK=Object.keys(CARD.HUES);
+  function hueStep(d){setHue(HK[(HK.indexOf(col)+d+HK.length)%HK.length]);}
+  molC.addEventListener('pointerdown',function(e){swX=e.clientX;swY=e.clientY;swOn=true;swiped=false;});
+  molC.addEventListener('pointermove',function(e){if(!swOn||swiped||busyC)return;var dx=e.clientX-swX,dy=e.clientY-swY;if(Math.abs(dx)>40&&Math.abs(dx)>Math.abs(dy)*1.5){swiped=true;hueStep(dx<0?1:-1);}});
+  molC.addEventListener('pointerup',function(){swOn=false;});molC.addEventListener('pointercancel',function(){swOn=false;swiped=false;});
+  molC.addEventListener('click',function(e){if(swiped){swiped=false;return;}if(busyC)return;if(molTitleHit(e))nameSheet();else setPlay(!playing);});
   molC.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();if(!busyC)nameSheet();}});
   document.addEventListener('visibilitychange',function(){if(!document.hidden)molGo();});window.addEventListener('pageshow',molGo);
   if(S.view==='mol')molSet(true);

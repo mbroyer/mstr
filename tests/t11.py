@@ -9,7 +9,7 @@ with sync_playwright() as p:
     pg.goto('file://'+H+'/index.html');pg.wait_for_timeout(300)
     assert pg.locator('#mol').is_hidden() and pg.locator('#tracks').is_visible()
     assert pg.evaluate('document.documentElement.dataset.theme')=='dark','neue Nutzer starten dunkel'
-    assert pg.locator('#hue').is_hidden()
+    assert pg.locator('#hue button').first.is_hidden()
     pg.click('#vCard');pg.wait_for_timeout(200)
     assert pg.locator('#mol').is_visible() and pg.locator('#tracks').is_hidden() and pg.get_attribute('#vCard','aria-pressed')=='true' and pg.get_attribute('#vGrid','aria-pressed')=='false'
     assert pg.locator('.transport').is_hidden() and pg.locator('#shCardBtn').is_visible(),'in der Karte keine Leiste'
@@ -37,14 +37,19 @@ with sync_playwright() as p:
     pg.click('#vCard');pg.click('#vGrid');pg.click('#vCard');pg.wait_for_timeout(1200)
     c1=pg.evaluate(snap);pg.wait_for_timeout(300);c2=pg.evaluate(snap);assert c1!=c2,'läuft nach dem zweiten Umschalten'
     # Farbwahl: fünf Punkte im Orbit, Koralle färbt Orbit und Link, bleibt nach dem Neuladen, Grid blendet die Punkte aus
-    assert pg.locator('#hue button').count()==5 and pg.locator('#hue').is_visible()
-    assert pg.locator('#hue').bounding_box()['height']<=32,'Farbwahl bleibt klein'
+    assert pg.locator('#hue button').count()==5 and pg.locator('#hue button').first.is_visible()
+    hb=pg.locator('#hue button').first.bounding_box();mb=pg.locator('#mol').bounding_box()
+    assert hb['y']+hb['height']<mb['y']+mb['height']-60 and hb['y']>mb['y']+mb['height']-130,'Farbpunkte sitzen im Bild über dem Titel'
     assert pg.get_attribute('#hue button[data-hue="f"]','aria-checked')=='true' and not pg.evaluate('MSTR.code()').endswith('.k')
     pg.wait_for_timeout(300);d1=pg.evaluate(snap);pg.click('#hue button[data-hue="k"]');pg.wait_for_timeout(300)
     assert pg.evaluate('MSTR.state().col')=='k' and pg.get_attribute('#hue button[data-hue="k"]','aria-checked')=='true' and pg.evaluate('MSTR.code()').endswith('.k')
     assert pg.evaluate("getComputedStyle(document.getElementById('shCardBtn')).backgroundColor")=='rgb(255, 154, 139)','Video-Knopf trägt die Orbit-Farbe'
+    # Wischen über den Orbit schaltet weiter (links = nächste, rechts = vorige), ohne Play umzuschalten
+    was=pg.evaluate('MSTR.state().playing');pg.mouse.move(250,300);pg.mouse.down();pg.mouse.move(200,305,steps=5);pg.mouse.move(150,310,steps=5);pg.mouse.up();pg.wait_for_timeout(200)
+    assert pg.evaluate('MSTR.state().col')=='b' and pg.evaluate('MSTR.state().playing')==was,'Wisch nach links: Bernstein, Play bleibt'
+    pg.mouse.move(150,300);pg.mouse.down();pg.mouse.move(250,300,steps=8);pg.mouse.up();pg.wait_for_timeout(200);assert pg.evaluate('MSTR.state().col')=='k','Wisch nach rechts zurück'
     pg.reload();pg.wait_for_timeout(500);assert pg.evaluate('MSTR.state().col')=='k' and pg.get_attribute('#hue button[data-hue="k"]','aria-checked')=='true'
-    pg.click('#vGrid');pg.wait_for_timeout(200);assert pg.locator('#hue').is_hidden()
+    pg.click('#vGrid');pg.wait_for_timeout(200);assert pg.locator('#hue button').first.is_hidden()
     assert pg.evaluate("getComputedStyle(document.getElementById('play')).backgroundColor")!='rgb(255, 154, 139)','im Grid bleibt die App Flieder'
     b.close()
 assert not err,err
