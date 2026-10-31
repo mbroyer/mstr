@@ -13,7 +13,7 @@ with sync_playwright() as p:
     pg.goto(url);pg.wait_for_timeout(300)
     pg.evaluate("localStorage.setItem('mstr-v1',JSON.stringify({pat:{v:5,g:Array(8).fill('0'.repeat(16)).map((x,i)=>i==7?'a'+'0'.repeat(15):x),bpm:100,sw:0,pre:-1}}))")
     pg.reload();pg.wait_for_timeout(300)
-    assert pg.locator('#sayBtn').is_visible()
+    assert pg.locator('#sayBtn').count()==0 and pg.locator('#preBtn').is_visible(),'Beschreiben wohnt in der Beat-Liste'
     assert pg.evaluate('document.documentElement.scrollWidth')<=390,'waagerechtes Scrollen'
     def say(t):
         pg.evaluate('MSTR.say('+json.dumps(t)+')');return pg.evaluate('MSTR.state()')
@@ -37,11 +37,11 @@ with sync_playwright() as p:
     s=say('straight robotic electro');assert s['sw']==0 and pg.inner_text('#sub')=='based on Electro'
     # Unsinn gibt trotzdem einen Beat
     s=say('asdf qwer');assert any(r!=Z for r in s['pat'][:7])
-    # Über die Oberfläche: Sprechblase, Text, Enter. Läuft danach, Rückgängig stellt den vorherigen Beat her
+    # Über die Oberfläche: Beat-Liste, Feld oben, Text, Enter. Läuft danach, Rückgängig stellt den vorherigen Beat her
     before=pg.evaluate('MSTR.state()')
     pg.evaluate('MSTR.setPlay(false)')
-    pg.click('#sayBtn');pg.wait_for_timeout(300)
-    assert pg.locator('#sayIn').is_visible() and pg.evaluate('document.activeElement.id')=='sayIn'
+    pg.click('#preBtn');pg.wait_for_timeout(300)
+    assert pg.locator('#sayIn').is_visible() and pg.locator('.pitem').count()==17;pg.click('#sayIn')
     assert pg.get_attribute('#sayIn','placeholder')
     pg.fill('#sayIn','reggae with lots of dub echo');pg.keyboard.press('Enter');pg.wait_for_timeout(300)
     assert pg.locator('#sheet').is_hidden()
@@ -50,14 +50,14 @@ with sync_playwright() as p:
     pg.click('.toast button');pg.wait_for_timeout(200)
     s=pg.evaluate('MSTR.state()');assert s['pat']==before['pat'] and s['bpm']==before['bpm'],'Rückgängig'
     # Leeres Feld nimmt das Beispiel; der Pfeil schickt ab; die letzte Beschreibung steht beim nächsten Mal drin
-    pg.click('#sayBtn');pg.wait_for_timeout(300);pg.fill('#sayIn','');ph=pg.get_attribute('#sayIn','placeholder')
+    pg.click('#preBtn');pg.wait_for_timeout(300);pg.fill('#sayIn','');ph=pg.get_attribute('#sayIn','placeholder')
     pg.click('#sayGo');pg.wait_for_timeout(300)
     assert pg.inner_text('#preName').lower()==ph.lower(),(pg.inner_text('#preName'),ph)
-    pg.click('#sayBtn');pg.wait_for_timeout(300);pg.fill('#sayIn','minimal techno with ride');pg.click('#sayGo');pg.wait_for_timeout(300)
+    pg.click('#preBtn');pg.wait_for_timeout(300);pg.fill('#sayIn','minimal techno with ride');pg.click('#sayGo');pg.wait_for_timeout(300)
     s=pg.evaluate('MSTR.state()');pg.evaluate('MSTR.setPlay(false)')
     pg.reload();pg.wait_for_timeout(300)
     assert pg.inner_text('#preName')=='Minimal techno with ride' and pg.evaluate('MSTR.state()')['pat']==s['pat']
-    pg.click('#sayBtn');pg.wait_for_timeout(300);assert pg.input_value('#sayIn')=='minimal techno with ride'
+    pg.click('#preBtn');pg.wait_for_timeout(300);assert pg.input_value('#sayIn')=='minimal techno with ride'
     pg.keyboard.press('Escape')
     assert not err,err
     b.close()
