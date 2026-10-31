@@ -357,7 +357,7 @@
   /* ---------- Vibe: die Frage „What's the vibe?“ ist der Einstieg (erster Besuch) und „Change vibe“ im Orbit.
      Drei Reihen Wörter (Stimmung, Energie, Farbe), die der Parser sicher kennt; Tippen baut den Satz im Feld, Tippen ins Feld erlaubt
      eigene Wörter. „Make the beat“ schickt ab, „Surprise me“ würfelt. Beim ersten Besuch ohne X (S.seen danach), sonst mit X ---------- */
-  var VIBE=[['Mood',['calm','dark','happy','sad','party','angry','dreamy','epic','playful']],['Energy',['slow','steady','fast','minimal','busy','swing']],['Colour',['dusty','warm','clean','spacey','dub','glitchy']]];
+  var VIBE=[['Mood',['calm','dark','happy','sad','party','angry','dreamy','epic','playful']],['Energy',['slow','steady','fast','minimal','busy','swing']],['Colour',['dusty','warm','clean','spacey','dub','glitchy']],['Style',['funk','hip hop','house','reggae','rock','80s','afro','latin','trap','garage','jungle','techno']]];
   function vibe(on){
     if(on===false){S.seen=1;save();if(pageName==='vibe'&&!sheet.hidden)closeSheet();return;}
     var first=!S.seen;S.seen=1;save();
@@ -370,7 +370,7 @@
       function has(w){return new RegExp('(^|[^a-z])'+w+'(?=[^a-z]|$)','i').test(inp.value);}
       function mark(){chips.forEach(function(c){var on=has(c.dataset.w);c.classList.toggle('on',on);c.setAttribute('aria-pressed',on?'true':'false');});}
       function go(v){v=String(v||inp.value).trim();if(!v)v=surprise();S.say=v;save();closeSheet();sayBeat(v);molSet(true);}
-      function surprise(){var p=function(a){return a[Math.floor(Math.random()*a.length)];},w=[p(VIBE[0][1]),p(VIBE[1][1])];if(Math.random()<.5)w.push(p(VIBE[2][1]));return w.join(' · ');}
+      function surprise(){var p=function(a){return a[Math.floor(Math.random()*a.length)];},w=[p(VIBE[0][1]),p(VIBE[1][1])];var r=Math.random();if(r<.35)w.push(p(VIBE[3][1]));else if(r<.7)w.push(p(VIBE[2][1]));return w.join(' · ');}
       chips.forEach(function(c){c.addEventListener('click',function(){var w=c.dataset.w;
         if(has(w))inp.value=inp.value.replace(new RegExp('(^|[^a-z])'+w+'(?=[^a-z]|$)','i'),'$1').replace(/\s*·\s*·\s*/g,' · ').replace(/^\s*·\s*|\s*·\s*$/g,'').trim();
         else inp.value=inp.value.trim()?inp.value.trim()+' · '+w:w;
