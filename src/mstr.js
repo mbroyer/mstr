@@ -607,12 +607,14 @@
   function cardLabel(){if(busyC)return;cb.classList.remove('gen');cb.style.removeProperty('--p');var ready=cfile&&ckey===cardKey(),mob=nativeShare(),secs=Math.round(CARD.clipLen(bpm));
     cb.textContent=video?(mob?'Share video':'Save video'):(mob?'Share image':'Save image');
     if(!video){cardNote(ready?'Ready. Tap to share it again.':'A picture of your orbit for Story and chats.');return;}
-    if(ready)cardNote('Ready, '+secs+' s with sound. Tap to share it again, it stays until you change the beat.');
-    else cardNote('Makes a '+secs+' s video with sound for Story, Reels and chats, then '+(mob?'opens the share sheet':'saves it')+'. Takes as long as the video.');}
+    if(ready)cardNote('Ready, '+secs+' s with sound'+(mob?', the link to your beat comes along':'')+'. Tap to share it again, it stays until you change the beat.');
+    else cardNote('Makes a '+secs+' s video with sound for Story, Reels and chats, then '+(mob?'opens the share sheet with the link to your beat':'saves it')+'. Takes as long as the video.');}
+  /* Am Handy reist der Link als Text mit dem Video: in Chats kommt beides in einer Nachricht an, Instagram nimmt nur das Video */
   function giveCard(f){
     if(navigator.share&&matchMedia('(pointer: coarse)').matches&&canSendFile(f)){
-      navigator.share({files:[f],title:cardOpts().title+' · MSTR'}).catch(function(e){if(e&&e.name==='NotAllowedError'){cb.textContent='Save '+f.name;}});return;}
-    saveFile(f);cardNote('Saved '+f.name+'. Tap to save it again.');
+      var t=cardOpts().title;
+      navigator.share({files:[f],title:t+' · MSTR',text:t+' · open and remix the beat: '+shareUrl()}).catch(function(e){if(e&&e.name==='NotAllowedError'){cb.textContent='Save '+f.name;}});return;}
+    saveFile(f);cardNote('Saved '+f.name+'. Add the link from ⋯ so friends can open the beat.');
   }
   /* Abbruch: auch während der Ton noch gerechnet wird (dann verfällt das Ergebnis) */
   function cardStop(){cardGen++;if(cardT){cardT();cardT=null;}if(busyC){busyC=false;cb.disabled=false;cardLabel();}}
