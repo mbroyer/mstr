@@ -16,20 +16,20 @@ REC=base64.b64encode(buf.getvalue()).decode()
 with sync_playwright() as p:
     b=p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'],**({'executable_path':os.environ['PW_CHROME']} if os.environ.get('PW_CHROME') else {}))
     for vw in (360,390):
-        pg=b.new_page(viewport={'width':vw,'height':800});pg.goto('file://'+H+'/index.html');pg.evaluate("MSTR.welcome(false)");pg.wait_for_timeout(300)
+        pg=b.new_page(viewport={'width':vw,'height':800});pg.goto('file://'+H+'/index.html');pg.evaluate("MSTR.welcome(false);MSTR.view(false)");pg.wait_for_timeout(300)
         assert pg.evaluate('document.documentElement.scrollWidth')<=vw,vw
-        assert pg.locator('#share').count()==0;pg.click('#vCard');pg.wait_for_timeout(100)
+        assert pg.locator('#share').count()==0;pg.click('#vOrbit');pg.wait_for_timeout(100)
         r=pg.locator('#shWav').bounding_box();assert r['x']+r['width']<=vw and pg.locator('#shCardBtn').is_visible() and pg.locator('#shSend').is_visible()
         pg.close()
     ctx=b.new_context(viewport={'width':390,'height':844},accept_downloads=True);pg=ctx.new_page();pg.on('pageerror',lambda e:err.append(str(e)))
-    pg.goto('file://'+H+'/index.html');pg.evaluate("MSTR.welcome(false)");pg.wait_for_timeout(300)
+    pg.goto('file://'+H+'/index.html');pg.evaluate("MSTR.welcome(false);MSTR.view(false)");pg.wait_for_timeout(300)
     pg.evaluate("document.querySelector('#tempoBtn').click()");pg.wait_for_timeout(200)
     pg.fill('#tBpm','120');pg.dispatch_event('#tBpm','change');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
     pg.click('#play');pg.wait_for_timeout(300)
     pg.locator('.tracks .trk').nth(4).locator('.dot').nth(5).click();pg.wait_for_timeout(100)
     pg.click('#preName');pg.wait_for_timeout(200);name=pg.inner_text('#shName');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
     import re;base=re.sub(r'[^A-Za-z0-9]+','-',name).strip('-')
-    pg.click('#vCard');pg.wait_for_timeout(200)
+    pg.click('#vOrbit');pg.wait_for_timeout(200)
     with pg.expect_download(timeout=15000) as d:pg.click('#shWav')
     dl=d.value;print(dl.suggested_filename);assert dl.suggested_filename==base+'-120bpm.wav',(dl.suggested_filename,base)
     assert pg.evaluate('MSTR.state().playing'),'Wiedergabe läuft weiter'
@@ -47,9 +47,10 @@ with sync_playwright() as p:
     with pg.expect_download(timeout=15000) as d:pg.click('#shWav')
     pg.wait_for_timeout(200);assert 'with your recording' in pg.inner_text('#shCardT')
     ch,sr,n,smp=wav(d.value.path())
-    six=60/120/4;first=rms(smp[:int(sr*.15)*ch]);last=rms(smp[int(14*six*sr)*ch:int((14*six+.15)*sr)*ch]);quiet=rms(smp[int(sr*1.0)*ch:int(sr*1.2)*ch])
+    # Echo 1/4 = 0,5 s: der Schlag des Vorlauf-Takts (Schritt 14, 1,76 s) wiederholt sich bei 2,26 s, also 0,26 s nach Dateianfang
+    six=60/120/4;first=rms(smp[int(sr*.26)*ch:int(sr*.40)*ch]);last=rms(smp[int(14*six*sr)*ch:int((14*six+.15)*sr)*ch]);quiet=rms(smp[int(sr*1.0)*ch:int(sr*1.2)*ch])
     print('Echo am Anfang',round(first,4),'Mic-Schlag',round(last,4))
-    assert last>.05,'eigene Aufnahme hörbar';assert first>.01,'Echo des letzten Takts liegt am Anfang (nahtlos)'
+    assert last>.05,'eigene Aufnahme hörbar';assert first>.05,'Echo des letzten Takts liegt am Anfang (nahtlos)'
     b.close()
 assert not err,err
 print('ok')

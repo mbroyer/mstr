@@ -190,21 +190,12 @@
   function head(s,b){
     var r;
     if(shown>=0)for(r=0;r<R;r++)cells[r][shown].classList.remove('ph');
-    shown=s;if(s>=0){molHit(s,b);miniDraw(s);}
+    shown=s;if(s>=0)molHit(s,b);
     if(s>=0)for(r=0;r<R;r++){cells[r][s].classList.add('ph');if(pat[r].charAt(s)!=='0'&&audible(r)&&!drop)flash(r);}
     /* Taktzähler und Fortschrittslinie folgen dem laufenden Schritt */
     for(r=0;r<beats.length;r++)beats[r].classList.toggle('cur',s>=0&&r===Math.floor(s/4));
     app.style.setProperty('--prog',s<0?0:(s+1)/N);
   }
-  /* Winziger Orbit im Share-Knopf: läuft beim Spielen mit (je Schritt ein Bild), zeigt, wohin der Beat am Ende geht */
-  var mo=$('miniOrb'),mx=mo.getContext('2d');
-  function miniDraw(s){var W=mo.width,c=W/2,r,k;mx.clearRect(0,0,W,W);
-    mx.strokeStyle='rgba(15,15,16,.28)';mx.lineWidth=1;
-    for(k=0;k<3;k++){mx.beginPath();mx.arc(c,c,7+k*6,0,Math.PI*2);mx.stroke();}
-    mx.fillStyle='#0F0F10';
-    for(r=0;r<7;r++){if(pat[r].charAt(s)==='0'||!audible(r))continue;var a=s/N*Math.PI*2-Math.PI/2,rad=6+r*2.3,d=r===1?3:2.1;
-      mx.beginPath();mx.arc(c+Math.cos(a)*rad,c+Math.sin(a)*rad,d,0,Math.PI*2);mx.fill();}
-    mx.beginPath();mx.arc(c,c,2,0,Math.PI*2);mx.fill();}
   /* Das Spur-Icon blinkt kurz in Flieder, wenn die Spur klingt */
   function flash(r){var ic=rows[r].querySelector('.ic');ic.classList.remove('hit');void ic.offsetWidth;ic.classList.add('hit');clearTimeout(ic._t);ic._t=setTimeout(function(){ic.classList.remove('hit');},140);}
   function loop(){
@@ -364,26 +355,36 @@
     inp.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();go();}});
     el.querySelectorAll('.chip').forEach(function(c){c.addEventListener('click',function(){go(c.textContent);});});
   }
-  /* ---------- Willkommen: nur beim allerersten Besuch (kein Stand, kein geteilter Link) die Frage, wie es losgehen soll.
-     Drei Karten: leeres Raster, Beat-Liste, Beat beschreiben (Feld und drei Beispiele). Danach nie wieder (S.seen), alles bleibt unter „Change beat“ erreichbar ---------- */
-  var ICO_W={grid:'<circle cx="6" cy="8" r="2.2"/><circle cx="12" cy="8" r="2.2"/><circle cx="18" cy="8" r="2.2"/><circle cx="6" cy="16" r="2.2"/><circle cx="12" cy="16" r="2.2"/><circle cx="18" cy="16" r="2.2"/>',
-    list:'<path d="M4 7h16M4 12h16M4 17h10"/>',say:'<path d="M5 5h14a1.5 1.5 0 0 1 1.5 1.5v9A1.5 1.5 0 0 1 19 17h-8l-4.5 3.5V17H5a1.5 1.5 0 0 1-1.5-1.5v-9A1.5 1.5 0 0 1 5 5Z"/><path d="M8 9.5h8M8 12.8h5"/>'};
-  function wcard(id,ico,t,d){return '<button type="button" class="wcard" id="'+id+'"><span class="wic"><svg viewBox="0 0 24 24" aria-hidden="true">'+ICO_W[ico]+'</svg></span><span class="wtx"><b>'+t+'</b><small>'+d+'</small></span><svg class="go" viewBox="0 0 24 24" aria-hidden="true"><path d="M9 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round" stroke-linejoin="round"/></svg></button>';}
-  function welcome(on){
-    if(on===false){S.seen=1;save();if(pageName==='welcome'&&!sheet.hidden)closeSheet();return;}
-    var ex=SAY.slice().sort(function(){return Math.random()-.5;}).slice(0,3);
-    openSheet('<div><span class="eyebrow">Welcome</span><h2 class="ed" id="sheetT">How do you want<br>to start?<br><em>Pick one.</em></h2></div>'+
-      '<div class="wcards">'+wcard('wScratch','grid','Start from scratch','An empty grid. Tap dots, press play.')+wcard('wPick','list','Pick a beat',BEATS.length+' beats from Lo-Fi to Jungle, ready to play and remix.')+
-      '<div class="wcard say"><div class="wh"><span class="wic"><svg viewBox="0 0 24 24" aria-hidden="true">'+ICO_W.say+'</svg></span><span class="wtx"><b>Describe a beat</b><small>In your own words, English or German.</small></span></div>'+SAYF+
-      '<div class="chips">'+ex.map(function(x){return '<button type="button" class="chip">'+x+'</button>';}).join('')+'</div></div></div>'+
-      '<p class="shnote wnote">You can switch any time under <b>Change beat</b>.</p>',function(el){
-      function done(){S.seen=1;save();}
-      el.querySelector('#wScratch').addEventListener('click',function(){done();pat=empty();pre=-1;edited=false;title='';paint();persist();closeSheet();});
-      el.querySelector('#wPick').addEventListener('click',function(){done();presetSheet();});
-      sayInit(el,done);
-    },'welcome','page');
-    S.seen=1;save();
+  /* ---------- Vibe: die Frage „What's the vibe?“ ist der Einstieg (erster Besuch) und „Change vibe“ im Orbit.
+     Drei Reihen Wörter (Stimmung, Energie, Farbe), die der Parser sicher kennt; Tippen baut den Satz im Feld, Tippen ins Feld erlaubt
+     eigene Wörter. „Make the beat“ schickt ab, „Surprise me“ würfelt. Beim ersten Besuch ohne X (S.seen danach), sonst mit X ---------- */
+  var VIBE=[['Mood',['calm','dark','happy','sad','party','angry','dreamy','epic','playful']],['Energy',['slow','steady','fast','minimal','busy','swing']],['Colour',['dusty','warm','clean','spacey','dub','glitchy']]];
+  function vibe(on){
+    if(on===false){S.seen=1;save();if(pageName==='vibe'&&!sheet.hidden)closeSheet();return;}
+    var first=!S.seen;S.seen=1;save();
+    openSheet('<div class="sh-top"><span class="eyebrow">'+(first?'Your beat starts here':'New beat')+'</span>'+(first?'':XB)+'</div><h2 class="ed" id="sheetT">What\u2019s the vibe?</h2>'+
+      '<form class="sayf vibef" autocomplete="off"><textarea id="sayIn" rows="2" maxlength="200" enterkeyhint="send" aria-labelledby="sheetT" placeholder="Tap words, or type"></textarea></form>'+
+      VIBE.map(function(g){return '<div class="vgrp"><span class="lbl">'+g[0]+'</span><div class="chips">'+g[1].map(function(w){return '<button type="button" class="chip" data-w="'+w+'" aria-pressed="false">'+w+'</button>';}).join('')+'</div></div>';}).join('')+
+      '<div class="vgo"><button type="button" class="lnk" id="vSurprise">Surprise me</button><button type="button" class="pill go big" id="sayGo">Make the beat<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M5 12h13M13 6l6 6-6 6" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"/></svg></button></div>',function(el){
+      var inp=el.querySelector('#sayIn'),chips=[].slice.call(el.querySelectorAll('.chip'));
+      inp.value=typeof S.say==='string'?S.say:'';
+      function has(w){return new RegExp('(^|[^a-z])'+w+'(?=[^a-z]|$)','i').test(inp.value);}
+      function mark(){chips.forEach(function(c){var on=has(c.dataset.w);c.classList.toggle('on',on);c.setAttribute('aria-pressed',on?'true':'false');});}
+      function go(v){v=String(v||inp.value).trim();if(!v)v=surprise();S.say=v;save();closeSheet();sayBeat(v);molSet(true);}
+      function surprise(){var p=function(a){return a[Math.floor(Math.random()*a.length)];},w=[p(VIBE[0][1]),p(VIBE[1][1])];if(Math.random()<.5)w.push(p(VIBE[2][1]));return w.join(' · ');}
+      chips.forEach(function(c){c.addEventListener('click',function(){var w=c.dataset.w;
+        if(has(w))inp.value=inp.value.replace(new RegExp('(^|[^a-z])'+w+'(?=[^a-z]|$)','i'),'$1').replace(/\s*·\s*·\s*/g,' · ').replace(/^\s*·\s*|\s*·\s*$/g,'').trim();
+        else inp.value=inp.value.trim()?inp.value.trim()+' · '+w:w;
+        mark();});});
+      inp.addEventListener('input',mark);mark();
+      el.querySelector('form').addEventListener('submit',function(e){e.preventDefault();go();});
+      inp.addEventListener('keydown',function(e){if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();go();}});
+      el.querySelector('#sayGo').addEventListener('click',function(){go();});
+      el.querySelector('#vSurprise').addEventListener('click',function(){inp.value=surprise();mark();go();});
+    },'vibe','page');
   }
+  /* „Another take“: dieselbe Beschreibung noch einmal (der Parser würfelt leicht); ohne Beschreibung nimmt er den Stil der Vorlage, ohne beides fragt er nach dem Vibe */
+  function anotherTake(){var t=typeof S.say==='string'&&S.say.trim()?S.say:pre>=0?BEATS[pre].n:'';if(!t){vibe();return;}sayBeat(t);}
   function sayBeat(text){
     text=String(text||'').trim();if(!text)return false;
     var o=WORTE(text,{n:BEATS.map(function(b){return b.n;}),bpm:BEATS.map(function(b){return b.bpm;}),sw:BEATS.map(function(b){return b.sw;}),rows:beatRows});
@@ -731,11 +732,11 @@ $('preName').addEventListener('click',function(){if(canName())nameSheet();});
 
   build();themeUI();fxUI();playB.innerHTML=I_PLAY;
   if(shared){var before=shared;showToast(title?'“'+title+'” loaded':'Shared beat loaded','Undo',function(){restore(before);});}
-  else if(!P&&!S.seen&&!location.hash)welcome();
+  else if(!P&&!S.seen&&!location.hash)vibe();
   /* ---------- Molekül-Ansicht: das Raster gegen das Ring-Molekül der Karte tauschen, live mit dem Beat.
      Schläge kommen aus head() (Schritt, Takt), Mute, Solo und Drop entscheiden mit; steht der Beat, steht das Bild.
      Ein Tipp aufs Molekül bringt das Raster zurück, bearbeitet wird nur dort ---------- */
-  var molC=$('mol'),molX=molC.getContext('2d'),vGrid=$('vGrid'),vCard=$('vCard'),foot=$('cardfoot'),molS=null,molKey='',molRaf=0,molOn=false,molTick=0,molLast=0;
+  var molC=$('mol'),molX=molC.getContext('2d'),vOrbit=$('vOrbit'),vMachine=$('vMachine'),machineRow=$('machineRow'),takes=$('takes'),vibeTxt=$('vibeTxt'),foot=$('cardfoot'),molS=null,molKey='',molRaf=0,molOn=false,molTick=0,molLast=0;
   /* Der Orbit ist immer schwarz, auch wenn das Grid hell ist: solange er an ist, steht die Seite auf dunkel */
   function molDark(){return true;}
   function forceDark(){document.documentElement.setAttribute('data-theme','dark');var m=document.querySelector('meta[name="theme-color"]');if(m)m.setAttribute('content','#0E0E0F');}
@@ -761,10 +762,13 @@ $('preName').addEventListener('click',function(){if(canName())nameSheet();});
     if(stu)setTimeout(function(){if(molOn&&playing)molS.fire({s:q,b:b,h:h,st:1},performance.now());},st()*500);}
   var transport=document.querySelector('.transport');
   var links=$('cardlinks');
-  function molSet(on){molOn=!!on;if(!molOn)cardStop();app.classList.toggle('molecule',molOn);molC.hidden=!molOn;foot.hidden=!molOn;hueRow.hidden=!molOn;links.hidden=!molOn;vGrid.hidden=!molOn;vCard.hidden=molOn;
-    if(molOn){foot.insertBefore(playB,cb);foot.insertBefore(fxB,cb);cardLabel();forceDark();}else{transport.insertBefore(playB,transport.firstChild);transport.insertBefore(fxB,dropB);ct.hidden=true;themeUI();}
-    S.view=molOn?'mol':'';save();if(molOn){molModel();molSize();molGo();}}
-  vGrid.addEventListener('click',function(){molSet(false);});vCard.addEventListener('click',function(){molSet(true);});
+  /* Der Orbit ist die Startseite, das Raster ist „die Maschine“ dahinter (S.view 'grid'); Play wandert mit in die Reihe bei Another take */
+  function molSet(on){molOn=!!on;if(!molOn)cardStop();app.classList.toggle('molecule',molOn);molC.hidden=!molOn;foot.hidden=!molOn;hueRow.hidden=!molOn;links.hidden=!molOn;takes.hidden=!molOn;machineRow.hidden=!molOn;vOrbit.hidden=molOn;vibeTxt.hidden=!molOn;
+    if(molOn){takes.insertBefore(playB,takes.firstChild);cardLabel();vibeUI();forceDark();}else{transport.insertBefore(playB,transport.firstChild);ct.hidden=true;themeUI();}
+    S.view=molOn?'':'grid';save();if(molOn){molModel();molSize();molGo();}}
+  function vibeUI(){var t=typeof S.say==='string'?S.say.trim():'';vibeTxt.textContent=t.length>26?t.slice(0,25).trim()+'…':t;}
+  vMachine.addEventListener('click',function(){molSet(false);});vOrbit.addEventListener('click',function(){molSet(true);});
+  $('takeBtn').addEventListener('click',anotherTake);$('vibeBtn').addEventListener('click',function(){vibe();});
   /* Unterer Streifen (Titel und Zeile) öffnet den Namen, der Rest spielt oder stoppt */
   function molTitleHit(e){var r=molC.getBoundingClientRect(),sc=Math.min(r.width/540,r.height/760);return e.clientY-r.top>r.height-130*sc;}
   /* Wischen über den Orbit (links/rechts) schaltet die Farbe weiter, ein Tipp bleibt ein Tipp: erst ab 40 px quer, und mehr quer als längs */
@@ -776,7 +780,7 @@ $('preName').addEventListener('click',function(){if(canName())nameSheet();});
   molC.addEventListener('click',function(e){if(swiped){swiped=false;return;}if(busyC)return;if(molTitleHit(e)){if(canName())nameSheet();}else setPlay(!playing);});
   molC.addEventListener('keydown',function(e){if(e.key==='Enter'||e.key===' '){e.preventDefault();if(!busyC&&canName())nameSheet();}});
   document.addEventListener('visibilitychange',function(){if(!document.hidden)molGo();});window.addEventListener('pageshow',molGo);
-  if(S.view==='mol')molSet(true);
+  molSet(S.view!=='grid');
 
-  window.MSTR={welcome:welcome,view:molSet,say:sayBeat,setPlay:setPlay,renderLoop:renderLoop,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,hue:setHue,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,col:col,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
+  window.MSTR={welcome:vibe,vibe:vibe,take:anotherTake,view:molSet,say:sayBeat,setPlay:setPlay,renderLoop:renderLoop,renderClip:renderClip,card:CARD,code:shareCode,url:shareUrl,hue:setHue,state:function(){return {pat:pat.slice(),bpm:bpm,sw:sw,pre:pre,playing:playing,col:col,fx:JSON.parse(JSON.stringify(FX)),fxa:JSON.parse(JSON.stringify(FXA)),fxo:JSON.parse(JSON.stringify(FXO))};}};
 })();

@@ -7,7 +7,7 @@ err=[]
 with sync_playwright() as p:
     b=p.chromium.launch(args=['--autoplay-policy=no-user-gesture-required'],**({'executable_path':os.environ['PW_CHROME']} if os.environ.get('PW_CHROME') else {}))
     ctx=b.new_context(viewport={'width':390,'height':844},accept_downloads=True);pg=ctx.new_page();pg.on('pageerror',lambda e:err.append(str(e)))
-    pg.goto('file://'+H+'/index.html');pg.evaluate("MSTR.welcome(false)");pg.wait_for_timeout(300)
+    pg.goto('file://'+H+'/index.html');pg.evaluate("MSTR.welcome(false);MSTR.view(false)");pg.wait_for_timeout(300)
     pg.evaluate("document.querySelector('#tempoBtn').click()");pg.wait_for_timeout(200)
     pg.fill('#tBpm','160');pg.dispatch_event('#tBpm','change');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
     # Unveränderte Vorlage: kein Stift, Titel öffnet kein Namens-Blatt
@@ -27,7 +27,7 @@ with sync_playwright() as p:
     pg.keyboard.press('Enter');pg.wait_for_timeout(200);assert pg.locator('#sheet').is_hidden()
     # Karten-Ansicht: Share-Knopf und Mehr, kein Teilen-Knopf in der Leiste
     assert pg.locator('#share').count()==0
-    pg.click('#vCard');pg.wait_for_timeout(200)
+    pg.click('#vOrbit');pg.wait_for_timeout(200)
     assert pg.locator('#shCardBtn').is_visible() and pg.locator('#shSend').is_visible() and pg.locator('#shWav').is_visible() and pg.inner_text('#shCardBtn')=='Save video' and 'with sound' in pg.inner_text('#shCardT')
     assert pg.evaluate('document.documentElement.scrollWidth')<=390
     # Arrangement: Takt 1 nur Kick und Hats, Takt 7 ohne Kick, Takt 9 nichts (Schlussschlag kommt extra)
@@ -56,9 +56,9 @@ with sync_playwright() as p:
     assert dl2.value.suggested_filename==f.suggested_filename
     # Zurück zum Raster während der Aufnahme: Aufnahme bricht ab, kein Download, Knopf wieder frei
     bx=pg.locator('#mol').bounding_box();pg.click('#mol',position={'x':60,'y':bx['height']-40});pg.wait_for_timeout(300);pg.click('#shDice');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
-    pg.click('#shCardBtn');pg.wait_for_timeout(1500);pg.click('#vGrid');pg.wait_for_timeout(600)
+    pg.click('#shCardBtn');pg.wait_for_timeout(1500);pg.click('#vMachine');pg.wait_for_timeout(600)
     assert pg.locator('#tracks').is_visible() and pg.locator('#shCardBtn').is_hidden()
-    pg.click('#vCard');pg.wait_for_timeout(100);assert pg.evaluate("document.querySelector('#shCardBtn').disabled")==False
+    pg.click('#vOrbit');pg.wait_for_timeout(100);assert pg.evaluate("document.querySelector('#shCardBtn').disabled")==False
     b.close()
 assert not err,err
 print('t10 ok')
