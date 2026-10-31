@@ -39,7 +39,7 @@ with sync_playwright() as p:
     print('fx',fxm);assert fxm['room']==.5 and fxm['echoO']==4 and fxm['sweepO']==2 and fxm['ev']>9*16 and fxm['plain']=={}
     # Video: Aufnahme in Echtzeit, Datei kommt als Download (am Rechner), Name mit Titel und Tempo; Wiedergabe stoppt dafür
     assert pg.evaluate('MSTR.card.canVideo()')
-    pg.click('#play');pg.wait_for_timeout(300)
+    pg.click('#mol',position={'x':180,'y':120});pg.wait_for_timeout(300);assert pg.evaluate('MSTR.state().playing'),'Tipp auf den Ring spielt'
     with pg.expect_download(timeout=60000) as dl:pg.click('#shCardBtn')
     f=dl.value;print('datei',f.suggested_filename,os.path.getsize(f.path()))
     assert f.suggested_filename in ('Card-Test-160bpm.mp4','Card-Test-160bpm.webm') and os.path.getsize(f.path())>200000
@@ -49,7 +49,7 @@ with sync_playwright() as p:
     with pg.expect_download(timeout=3000) as dl2:pg.click('#shCardBtn')
     assert dl2.value.suggested_filename==f.suggested_filename
     # Zurück zum Raster während der Aufnahme: Aufnahme bricht ab, kein Download, Knopf wieder frei
-    pg.click('#mol');pg.wait_for_timeout(300);pg.fill('#shName','Other');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
+    bx=pg.locator('#mol').bounding_box();pg.click('#mol',position={'x':60,'y':bx['height']-40});pg.wait_for_timeout(300);pg.fill('#shName','Other');pg.keyboard.press('Escape');pg.wait_for_timeout(200)
     pg.click('#shCardBtn');pg.wait_for_timeout(1500);pg.click('#vGrid');pg.wait_for_timeout(600)
     assert pg.locator('#tracks').is_visible() and pg.locator('#shCardBtn').is_hidden()
     pg.click('#vCard');pg.wait_for_timeout(100);assert pg.evaluate("document.querySelector('#shCardBtn').disabled")==False

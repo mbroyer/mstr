@@ -201,9 +201,10 @@ var CARD=(function(){
     mono(x,'TAP TO PLAY · ASIMPLEMANSLAB.COM/MSTR',32*sc,H-40*sc,GRY,'left',sc);}
 
   /* Karte im Sequencer: füllt eine Fläche W×H in den Farben der App; o = {fg, bg, dark, title, by, preset}.
-     Unten stehen Titel und Zeile wie auf der fertigen Karte, oben rechts „by @name“. Läuft der Beat nicht, steht das Bild */
+     Unten stehen Titel und Zeile wie auf der fertigen Karte, oben rechts „by @name“, oben links o.hint (etwa TAP TO PLAY). Läuft der Beat nicht, steht das Bild */
   function view(x,W,H,S,o){var sc=Math.min(W/540,H/760),live=S.live(),txt=o.title?130*sc:0;x.setTransform(1,0,0,1,0,0);x.fillStyle=o.bg;x.fillRect(0,0,W,H);
     var rs=Math.min(sc,(H-txt-40*sc)/560);ring(x,S,W/2,(H-txt)/2,rs,o.fg,o.dark?INK:o.bg,live,0);if(S.m.fx.lofi&&o.dark)vinyl(x,W,H,S,S.m.fx.lofi.a,live,sc);
+    if(o.hint)mono(x,o.hint,24*sc,34*sc,GRY,'left',sc);
     if(o.by){x.fillStyle=o.fg;x.font='600 '+(14*sc)+'px Figtree,sans-serif';x.textAlign='right';x.fillText('by '+(o.by.charAt(0)==='@'?o.by:'@'+o.by),W-24*sc,34*sc);x.textAlign='left';}
     if(o.title){x.fillStyle=o.fg;fit(x,o.title,W-48*sc,56*sc,'"Instrument Serif",ui-serif,Georgia,serif');x.fillText(o.title,24*sc,H-66*sc);
       mono(x,((o.preset?o.preset+' · ':'')+S.m.bpm+' BPM · SWING '+Math.round(S.m.sw*100)+'% · '+S.m.tot+' HITS').toUpperCase(),24*sc,H-36*sc,GRY,'left',sc);}}

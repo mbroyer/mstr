@@ -10,24 +10,29 @@ with sync_playwright() as p:
     assert pg.locator('#mol').is_hidden() and pg.locator('#tracks').is_visible()
     pg.click('#vCard');pg.wait_for_timeout(200)
     assert pg.locator('#mol').is_visible() and pg.locator('#tracks').is_hidden() and pg.get_attribute('#vCard','aria-pressed')=='true' and pg.get_attribute('#vGrid','aria-pressed')=='false'
+    assert pg.locator('.transport').is_hidden() and pg.locator('#shCardBtn').is_visible(),'in der Karte keine Leiste'
     assert pg.evaluate("JSON.parse(localStorage.getItem('mstr-v1')).view")=='mol'
     assert pg.evaluate('document.documentElement.scrollWidth')<=390
     box=pg.locator('#mol').bounding_box();assert box['height']>=320 and box['width']>=350
     # Im Stand atmet das Molekül nur leicht (keine Schläge), beim Spielen bewegt es sich
     snap="document.querySelector('#mol').toDataURL().length+'|'+document.querySelector('#mol').toDataURL().slice(-400)"
     assert pg.evaluate("document.querySelector('#mol').width")>=300
-    pg.click('#play');pg.wait_for_timeout(1200);b1=pg.evaluate(snap);pg.wait_for_timeout(300);b2=pg.evaluate(snap);assert b1!=b2,'bewegt sich beim Spielen'
+    pg.click('#mol',position={'x':180,'y':120});pg.wait_for_timeout(1200);b1=pg.evaluate(snap);pg.wait_for_timeout(300);b2=pg.evaluate(snap);assert b1!=b2,'bewegt sich beim Spielen'
     assert pg.evaluate('MSTR.state().playing')
     # Effekt an: Modell folgt (Raum), Blatt schließen, weiter spielen ohne Fehler
-    pg.click('#fxBtn');pg.wait_for_timeout(200);pg.locator('.fxrow[data-fx="room"] .fxi').click();pg.keyboard.press('Escape');pg.wait_for_timeout(900)
+    pg.click('#vGrid');pg.click('#fxBtn');pg.wait_for_timeout(200);pg.locator('.fxrow[data-fx="room"] .fxi').click();pg.keyboard.press('Escape');pg.click('#vCard');pg.wait_for_timeout(900)
     assert pg.evaluate('MSTR.state().fx.room')
-    # Neu laden: Ansicht bleibt; Tipp aufs Molekül öffnet das Namens-Blatt; Grid bringt das Raster zurück
+    # Neu laden: Ansicht bleibt; Tipp auf den Titel öffnet das Namens-Blatt oben (Tastatur verdeckt es nicht); Tipp auf den Ring stoppt; Grid bringt das Raster zurück
     pg.reload();pg.wait_for_timeout(400);assert pg.locator('#mol').is_visible()
-    pg.click('#mol');pg.wait_for_timeout(300);assert pg.locator('#shName').is_visible();pg.keyboard.press('Escape');pg.wait_for_timeout(200)
+    bx=pg.locator('#mol').bounding_box();pg.click('#mol',position={'x':60,'y':bx['height']-40});pg.wait_for_timeout(300);assert pg.locator('#shName').is_visible()
+    assert pg.evaluate("document.querySelector('.sheet').classList.contains('top')&&document.querySelector('.sheet').getBoundingClientRect().top<=1"),'Namensblatt oben'
+    pg.keyboard.press('Escape');pg.wait_for_timeout(200)
+    pg.click('#mol',position={'x':180,'y':120});pg.wait_for_timeout(300);assert pg.evaluate('MSTR.state().playing'),'Tipp auf den Ring spielt'
+    pg.click('#mol',position={'x':180,'y':120});pg.wait_for_timeout(300);assert not pg.evaluate('MSTR.state().playing'),'Tipp auf den Ring stoppt'
     pg.click('#vGrid');pg.wait_for_timeout(200);assert pg.locator('#tracks').is_visible() and pg.locator('#mol').is_hidden()
     assert pg.evaluate("JSON.parse(localStorage.getItem('mstr-v1')).view")==''
     # Zweites Umschalten, auch schnell hin und her: die Ansicht läuft weiter (iPhone blieb stehen)
-    pg.click('#vCard');pg.click('#vGrid');pg.click('#vCard');pg.wait_for_timeout(100);pg.click('#play');pg.wait_for_timeout(1200)
+    pg.click('#vCard');pg.click('#vGrid');pg.click('#vCard');pg.wait_for_timeout(1200)
     c1=pg.evaluate(snap);pg.wait_for_timeout(300);c2=pg.evaluate(snap);assert c1!=c2,'läuft nach dem zweiten Umschalten'
     b.close()
 assert not err,err
