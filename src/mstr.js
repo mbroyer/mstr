@@ -600,11 +600,11 @@
      dann teilen (Handy) oder sichern (Rechner). Ohne Video gibt es ein Bild. Dieselbe Datei wird beim zweiten Tipp sofort gegeben */
   var cb=$('shCardBtn'),ct=$('shCardT'),cardT=null,cfile=null,ckey='',busyC=false,cardGen=0,video=CARD.canVideo();
   function cardOpts(){return {title:title||(pre>=0?NM[BEATS[pre].n]:'Your beat'),by:handle,preset:pre>=0?NM[BEATS[pre].n]:'',glass:GLASS,file:baseName()+'-'+bpm+'bpm'};}
-  /* Der Knopf erzählt den Ablauf: „Create video“ (noch keins da), „Filming · 12 s left“ mit Füllstand, dann „Share video“ bzw.
+  /* Der Knopf erzählt den Ablauf: „Create video“ (noch keins da), „Generating · 12 s left“ mit Füllstand, dann „Share video“ bzw.
      „Save video“; die Zeile darunter erklärt jeden Schritt. Ändert sich der Beat, fängt es von vorn an */
   function cardKey(){var o=cardOpts();return shareCode()+'|'+o.title+'|'+o.by;}
   function cardNote(t){ct.textContent=t;ct.hidden=!t;}
-  function cardLabel(){if(busyC)return;cb.classList.remove('rec');cb.style.removeProperty('--p');var ready=cfile&&ckey===cardKey(),mob=nativeShare(),secs=Math.round(CARD.clipLen(bpm));
+  function cardLabel(){if(busyC)return;cb.classList.remove('gen');cb.style.removeProperty('--p');var ready=cfile&&ckey===cardKey(),mob=nativeShare(),secs=Math.round(CARD.clipLen(bpm));
     if(!video){cb.textContent=ready?(mob?'Share image':'Save image'):'Create image';cardNote(ready?'Ready. Tap to share it again.':'A picture of your orbit for Story and chats.');return;}
     if(ready){cb.textContent=mob?'Share video':'Save video';cardNote('Ready, '+secs+' s with sound. Tap to share it again, it stays until you change the beat.');}
     else{cb.textContent='Create video';cardNote(secs+' s with sound, for Story, Reels and chats. Recording takes as long as the video.');}}
@@ -623,8 +623,8 @@
     renderClip(function(buf){
       if(gen!==cardGen)return;
       if(!buf){busyC=false;cb.disabled=false;cardLabel();cardNote('That did not work in this browser.');return;}
-      o.mirror=molC;o.mirrorBg=molDark()?'#0E0E0F':'#FFFFFF';cb.classList.add('rec');cardNote('Filming live with sound. Keep this screen open until it is done, Grid cancels.');
-      cardT=CARD.record(ac,buf,scene,o,function(t,tot){cb.style.setProperty('--p',Math.min(1,t/tot));cb.textContent='Filming · '+Math.ceil(tot-t)+' s left';},function(f,why){
+      o.mirror=molC;o.mirrorBg=molDark()?'#0E0E0F':'#FFFFFF';cb.classList.add('gen');cardNote('Generating the video with sound. Keep this screen open until it is done, Grid cancels.');
+      cardT=CARD.record(ac,buf,scene,o,function(t,tot){cb.style.setProperty('--p',Math.min(1,t/tot));cb.textContent='Generating · '+Math.ceil(tot-t)+' s left';},function(f,why){
         busyC=false;cb.disabled=false;cardT=null;
         if(why==='abort'){cardLabel();return;}
         if(!f){cardLabel();cardNote('Recording did not work here. Saving a picture instead.');CARD.image(scene,o,function(f2){if(f2){cfile=f2;ckey=key;giveCard(f2);}});return;}

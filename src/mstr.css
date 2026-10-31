@@ -263,5 +263,5 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .app.molecule .transport{display:none}
 .app.molecule .cardfoot{padding-bottom:max(12px,env(safe-area-inset-bottom,0px))}
 #shCardT{margin-top:-8px;line-height:1.35}
-/* Aufnahme: der Knopf füllt sich von links mit dem Fortschritt (--p 0..1) */
-.pill.go.rec,.pill.go.rec:disabled{opacity:1;color:var(--ink);border-color:transparent;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 60%,var(--bg)) calc(var(--p,0) * 100%),color-mix(in srgb,var(--accent) 18%,var(--bg)) calc(var(--p,0) * 100%));transition:background .2s linear}
+/* Video entsteht: der Knopf füllt sich von links mit dem Fortschritt (--p 0..1) */
+.pill.go.gen,.pill.go.gen:disabled{opacity:1;color:var(--ink);border-color:transparent;background:linear-gradient(90deg,color-mix(in srgb,var(--accent) 60%,var(--bg)) calc(var(--p,0) * 100%),color-mix(in srgb,var(--accent) 18%,var(--bg)) calc(var(--p,0) * 100%));transition:background .2s linear}
