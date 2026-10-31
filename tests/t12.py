@@ -33,15 +33,24 @@ with sync_playwright() as p:
     s=say('something at 90 bpm');assert s['bpm']==90
     s=say('80s pop');assert pg.inner_text('#sub')=='based on Beat It' and s['bpm']!=80
     # Stimmungs-Wörter (die Chips der Vibe-Seite) landen stabil bei passenden Vorlagen, nie beim Zufall
-    CH={'calm':['Lo-Fi','One Drop'],'dark':['Techno','Minimal'],'happy':['Afrobeats','House'],'sad':['Lo-Fi','One Drop'],'party':['House','Amapiano'],
-        'angry':['Techno','Trap'],'dreamy':['Lo-Fi','One Drop'],'epic':['Rock','Beat It'],'playful':['Funk','Reggaeton'],'slow':['Lo-Fi','One Drop'],
-        'fast':["Drum'n'Bass",'Jungle'],'dusty':['Lo-Fi'],'warm':['Lo-Fi'],'spacey':['Minimal','Techno'],'dub':['One Drop'],'glitchy':['Electro','Jungle'],
-        'nervous':['Minimal','Electro'],'romantic':['Lo-Fi','One Drop'],'festival':['House','Afrobeats'],'focus':['Lo-Fi','Minimal'],'tired':['Lo-Fi','One Drop'],'late night drive':['Techno','Minimal','House']}
-    # (derselbe Satz mehrmals hintereinander ist ein neuer Take: dann kommen alle Vorlagen der genannten Stimmungen in Frage, hier night und drive)
+    CH={'calm':['Lo-Fi','One Drop','Funk','Reggaeton'],'dark':['Techno','Trap','Minimal',"Drum'n'Bass",'Electro'],'happy':['Afrobeats','Funk','House','Reggaeton','Beat It'],
+        'sad':['Lo-Fi','One Drop','Trap','2-Step'],'party':['House','Funk','Amapiano','Reggaeton','Beat It','Afrobeats'],'angry':['Rock','Techno','Trap','Jungle'],
+        'dreamy':['Lo-Fi','One Drop'],'epic':['Rock','Beat It',"Drum'n'Bass",'Trap'],'playful':['Funk','Reggaeton','Afrobeats','Beat It'],'slow':['Lo-Fi','One Drop','Funk','Reggaeton'],
+        'fast':["Drum'n'Bass",'Jungle','2-Step','Techno','Beat It'],'dusty':['Lo-Fi','Funk'],'warm':['Lo-Fi','Funk'],'spacey':['Minimal','Electro','2-Step',"Drum'n'Bass",'Techno'],'dub':['One Drop'],
+        'glitchy':['Electro','Jungle','2-Step'],'nervous':['Minimal','Electro','Jungle','2-Step'],'romantic':['Lo-Fi','One Drop','Reggaeton','2-Step'],'festival':['House','Afrobeats','Amapiano','Reggaeton'],
+        'focus':['Lo-Fi','Minimal','House'],'tired':['Lo-Fi','One Drop'],'late night drive':['Techno','Electro','House','Minimal','Trap',"Drum'n'Bass",'Beat It'],
+        # Stil-Reihe: jedes Wort trifft genau seinen Stil
+        'funk':['Funk'],'hip hop':['Lo-Fi'],'house':['House'],'reggae':['One Drop'],'rock':['Rock'],'80s':['Beat It'],'afro':['Afrobeats'],'latin':['Reggaeton'],
+        'trap':['Trap'],'garage':['2-Step'],'jungle':['Jungle'],'techno':['Techno']}
+    # (derselbe Satz mehrmals hintereinander ist ein neuer Take: dann kommen auch die übrigen Stile der genannten Stimmungen in Frage)
     for w,ok in CH.items():
         for i in range(4):
             s=say(w);bs=pg.inner_text('#sub').replace('based on ','');assert bs in ok,(w,bs,ok)
     s=say('dreamy');assert s['bpm']<80,s['bpm']
+    # Breite: 60 zufällige Vibes aus Stimmung und Energie verteilen sich auf viele Stile, Techno ist nicht vorn
+    import random,collections;random.seed(3);C=collections.Counter();WS=list(CH)[:22]
+    for i in range(60):say(' · '.join(random.sample(WS,2)));C[pg.inner_text('#sub')]+=1
+    print('stile',C.most_common(5));assert len(C)>=8 and C.most_common(1)[0][1]<=20 and C['based on Techno']<=8
     # Another take: derselbe Vibe gibt deutlich andere Muster (im Schnitt mindestens 12 von 112 Schritten) und mehr als eine Vorlage
     ds=[];bases=set();prev=say('sad · dreamy · minimal')
     for i in range(8):

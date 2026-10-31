@@ -12,7 +12,7 @@ with sync_playwright() as p:
     # Erster Besuch: ganze Seite ohne X, Feld, drei Wortreihen (21 Chips), Make the beat, Surprise me; kein waagerechtes Scrollen
     pg=fresh()
     assert pg.locator('#sheet').is_visible() and pg.locator('#sayIn').is_visible() and pg.locator('#sayGo').is_visible() and pg.locator('#vSurprise').is_visible()
-    assert pg.locator('#sheet [data-close]').count()==0 and pg.locator('#sheet .chip').count()==21 and pg.locator('#sheet .vgrp').count()==3
+    assert pg.locator('#sheet [data-close]').count()==0 and pg.locator('#sheet .chip').count()==33 and pg.locator('#sheet .vgrp').count()==4
     assert pg.evaluate('document.documentElement.scrollWidth')<=390 and pg.input_value('#sayIn')==''
     pg.screenshot(path=H+'/tests/t13-vibe.png')
     # Chips bauen den Satz, nochmal tippen nimmt das Wort raus; Make the beat: Blatt zu, Orbit läuft, Vibe steht oben

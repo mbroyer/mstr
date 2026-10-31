@@ -25,28 +25,32 @@ var WORTE=(function(){
     amapiano:'amapiano|log drum|south africa|piano'};
   /* Stimmung, wenn kein Stil genannt ist */
   var MOOD=[
-    ['dark|duester|finster|night|nacht|evil|horror|creepy|gruselig|underground|keller|cave|hoehle','techno','minimal'],
-    ['sad|traurig|melanchol|rain|regen|lonely|einsam|sleep|schlaf|mellow|sunday|sonntag|cozy|gemuetlich|coffee|kaffee','lofi','onedrop'],
-    ['happy|froehlich|sunny|sonnig|summer|sommer|beach|strand|holiday|urlaub|bright|hell','afrobeats','house'],
-    ['party|dance|tanz|tanzen|dancefloor|feier|wedding|hochzeit','house','amapiano'],
-    ['angry|wuetend|aggressive|aggressiv|hard|hart|brutal|heavy|schwer|metal','techno','trap'],
-    ['funny|lustig|silly|albern|bouncy|huepf|playful|verspielt','funk','reggaeton'],
-    ['epic|episch|stadium|stadion|huge|riesig|big room','rock','pop80'],
-    ['heart|heartbeat|herz|herzschlag|pulse|puls|hypnotic|hypnotisch|trance','minimal','techno'],
-    ['fast|schnell|frantic|hektisch|energy|energie|running|laufen|workout|sport','dnb','jungle'],
-    ['slow|langsam|lazy|faul|relaxed|entspannt|calm|ruhig','lofi','onedrop'],
-    ['dreamy|traeum|ambient|ethereal|floating|schweben','lofi','onedrop'],
-    ['dusty|dust|staub|warm|vinyl|crackle|knister|tape|kassette|cassette|retro|old school|oldschool','lofi','lofi'],
-    ['nervous|nervoes|anxious|restless|unruhig|jittery|zappelig','minimal','electro'],
-    ['romantic|romantisch|love|liebe|kiss|kuss|date|candle|kerze','lofi','onedrop'],
-    ['festival|crowd|menge|stage|buehne|open air|openair|big stage','house','afrobeats'],
-    ['focus|fokus|concentrat|konzentr|deep work|work|arbeit|homework|hausaufgaben','lofi','minimal'],
-    ['tired|muede|exhausted|erschoepft|hopeful|hoffnung|gentle|zart|soft|sanft','lofi','onedrop'],
-    ['drive|driving|road|strasse|autobahn|highway|cruise|cruising|roadtrip|road trip','techno','house'],
-    ['spacey|cosmic|kosmisch|galaxy|galaxie|planet|moon|mond','minimal','techno'],
-    ['glitchy|glitch|broken|kaputt|chopped|stutter','electro','jungle'],
+    ['dark|duester|finster|night|nacht|evil|horror|creepy|gruselig|underground|keller|cave|hoehle',['techno','trap','minimal','dnb','electro']],
+    ['sad|traurig|melanchol|rain|regen|lonely|einsam|sleep|schlaf|mellow|sunday|sonntag|cozy|gemuetlich|coffee|kaffee',['lofi','onedrop','trap','twostep']],
+    ['happy|froehlich|sunny|sonnig|summer|sommer|beach|strand|holiday|urlaub|bright|hell',['afrobeats','funk','house','reggaeton','pop80']],
+    ['party|dance|tanz|tanzen|dancefloor|feier|wedding|hochzeit',['house','funk','amapiano','reggaeton','pop80','afrobeats']],
+    ['angry|wuetend|aggressive|aggressiv|hard|hart|brutal|heavy|schwer|metal',['rock','techno','trap','jungle']],
+    ['funny|lustig|silly|albern|bouncy|huepf|playful|verspielt',['funk','reggaeton','afrobeats','pop80']],
+    ['epic|episch|stadium|stadion|huge|riesig|big room',['rock','pop80','dnb','trap']],
+    ['heart|heartbeat|herz|herzschlag|pulse|puls|hypnotic|hypnotisch|trance',['minimal','techno','house']],
+    ['fast|schnell|frantic|hektisch|energy|energie|running|laufen|workout|sport',['dnb','jungle','twostep','techno','pop80']],
+    ['slow|langsam|lazy|faul|relaxed|entspannt|calm|ruhig',['lofi','onedrop','funk','reggaeton']],
+    ['steady|stetig|groove|groovy|nod|kopfnicken',['funk','house','afrobeats','rock','lofi']],
+    ['swing|swung|shuffle|wonky|bouncy|jazzy',['funk','lofi','twostep','onedrop']],
+    ['dreamy|traeum|ambient|ethereal|floating|schweben',['lofi','onedrop']],
+    ['dusty|dust|staub|warm|vinyl|crackle|knister|tape|kassette|cassette|retro|old school|oldschool',['lofi','funk']],
+    ['clean|sauber|crisp|knackig',['house','pop80','afrobeats','twostep']],
+    ['nervous|nervoes|anxious|restless|unruhig|jittery|zappelig',['minimal','electro','jungle','twostep']],
+    ['romantic|romantisch|love|liebe|kiss|kuss|date|candle|kerze',['lofi','onedrop','reggaeton','twostep']],
+    ['festival|crowd|menge|stage|buehne|open air|openair|big stage',['house','afrobeats','amapiano','reggaeton']],
+    ['focus|fokus|concentrat|konzentr|deep work|work|arbeit|homework|hausaufgaben',['lofi','minimal','house']],
+    ['tired|muede|exhausted|erschoepft|hopeful|hoffnung|gentle|zart|soft|sanft',['lofi','onedrop']],
+    ['drive|driving|road|strasse|autobahn|highway|cruise|cruising|roadtrip|road trip',['techno','house','electro','pop80']],
+    ['spacey|cosmic|kosmisch|galaxy|galaxie|planet|moon|mond',['minimal','electro','twostep','dnb','techno']],
+    ['glitchy|glitch|broken|kaputt|chopped|stutter',['electro','jungle','twostep']],
+    ['busy|dense|wild|crazy|verrueckt|chaotic|chaos',['jungle','dnb','funk','amapiano']],
     /* „minimal“ allein ist eher Dichte als Stil: nur wenn nichts anderes davor steht, wird es Minimal */
-    ['minimal|sparse|reduced|reduziert','minimal','minimal']];
+    ['minimal|sparse|reduced|reduziert',['minimal','twostep','lofi']]];
   /* Klänge: Spur, Zeichen, Muster (null: eigene Regel unten) */
   var SOUND=[
     ['clap|klatsch',2,'c'],['rim|rimshot|sidestick',2,'k'],
@@ -97,12 +101,17 @@ var WORTE=(function(){
     function idx(n){return ctx.n.indexOf(n);}
     /* Stil: was zuerst im Text steht; „minimal techno“ zählt als Minimal */
     for(id in STYLE){i=find(t,STYLE[id]);if(i>=0&&(i<bi||(i===bi&&id==='minimal'))&&!neg(t,i)){bi=i;best=idx(id);}}
-    /* Stimmung: die zuerst genannte entscheidet (60/40 zwischen ihren zwei Vorlagen). Bei „Another take“ (ctx.avoid = Vorlage des
-       letzten Takes) kommen alle Vorlagen der genannten Stimmungen in den Topf, und die letzte bleibt draußen, wenn es andere gibt */
+    /* Stimmung: jede bringt mehrere Stile mit (der erste am typischsten). Mehrere Stimmungen: erst die Schnittmenge, sonst die zuerst
+       genannte. Gewürfelt wird gewichtet (2 : 1,5 : 1 …), so landet nicht alles bei Techno oder Lo-Fi. Bei „Another take“ (ctx.avoid =
+       Vorlage des letzten Takes) bleibt die letzte draußen, notfalls aus allen genannten Stimmungen */
     var styled=best>=0;
-    if(best<0){var mi=1e9,pot=[];MOOD.forEach(function(m){var j=find(t,m[0]);if(j<0)return;[m[1],m[2]].forEach(function(n){if(pot.indexOf(idx(n))<0)pot.push(idx(n));});
-      if(j<mi){mi=j;best=idx(rnd()<.6?m[1]:m[2]);}});
-      if(ctx.avoid!=null&&ctx.avoid===best){var alt=pot.filter(function(q){return q!==ctx.avoid;});if(alt.length)best=pick(alt);}}
+    if(best<0){var hits=[];MOOD.forEach(function(m){var j=find(t,m[0]);if(j>=0)hits.push([j,m[1]]);});
+      if(hits.length){hits.sort(function(a,b){return a[0]-b[0];});
+        var cand=hits[0][1].filter(function(n){return hits.every(function(h){return h[1].indexOf(n)>=0;});});if(!cand.length)cand=hits[0][1].slice();
+        var all=[];hits.forEach(function(h){h[1].forEach(function(n){if(all.indexOf(n)<0)all.push(n);});});
+        if(ctx.avoid!=null){var av=ctx.n[ctx.avoid],c2=cand.filter(function(n){return n!==av;});if(!c2.length)c2=all.filter(function(n){return n!==av;});if(c2.length)cand=c2;}
+        var wt=cand.map(function(n,q){return q===0?2:q===1?1.5:1;}),sum=wt.reduce(function(a,b){return a+b;},0),r0=rnd()*sum,q=0;
+        while(q<cand.length-1&&(r0-=wt[q])>=0)q++;best=idx(cand[q]);}}
     /* Tempo als Zahl (nicht „80s“ oder „90er“) */
     var num=/(^|\s)(\d{2,3})\s*(bpm)?(?=\s)/.exec(t.replace(/\b\d{2}(s|er|ies)\b/g,' ')),bpm=null;
     if(num&&+num[2]>=60&&+num[2]<=180)bpm=+num[2];

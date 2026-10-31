@@ -185,7 +185,8 @@ input[type=range]::-moz-range-thumb{width:20px;height:20px;border-radius:50%;bac
 .vibef textarea{font-size:26px;caret-color:var(--accent)}
 .vgrp{display:flex;flex-direction:column;gap:8px}
 .vgrp .lbl{font-family:var(--f-mono);font-size:11px;letter-spacing:.12em;text-transform:uppercase;color:var(--mute)}
-.vgo{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding-bottom:8px}
+/* Die Knopfzeile bleibt unten sichtbar, auch wenn die Wortreihen länger sind als der Bildschirm */
+.vgo{margin-top:auto;display:flex;align-items:center;justify-content:space-between;gap:12px;padding:12px 0 max(8px,env(safe-area-inset-bottom,0px));position:sticky;bottom:0;background:linear-gradient(transparent,var(--bg) 14px);z-index:2}
 .vgo .lnk{color:var(--mute);text-decoration:underline;text-underline-offset:3px;font-size:14px}
 .pill.go.big{height:56px;padding:0 20px 0 24px;background:var(--accent);color:var(--on-accent);border-color:transparent;font-size:17px;font-weight:700;gap:10px}
 .pill.go.big svg{width:22px;height:22px}
